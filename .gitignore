@@ -1,0 +1,7 @@
+# macOS
+.DS_Store
+
+# datasets
+data/
+*.parquet
+*.csv
