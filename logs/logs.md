@@ -124,3 +124,18 @@ Newest entries at the top. One entry per work session. Keep it factual; link com
 - Confirmed proteomics and metabolomics at 100% cell-line coverage with zero orphans.
 - Identified 271 orphaned fusion ModelIDs and 251 orphaned signature ModelIDs not in Sample Info.
 - Produced the full data audit report (12 sections): provenance, structure, identifiers, missing data, gene universe, cell line universe, expression scales, column reduction, tier classification, and open questions.
+
+## 2026-06-11 — Triveni
+**Focus:** D15 — Team Meet
+**Done:**
+- Meet the Team and completed the Level 0 EDA in order to find out what the actual data is about.
+- Complied the findings and created the sheet. [Data Architecture Sheet](https://docs.google.com/spreadsheets/d/1YAw23fSNvva7y_1YMlRYrkLlrCURqWsdQak9FKL5bPs/edit?usp=sharing)
+
+## 2026-06-12 — Triveni
+**Focus:** D16 — Developing Data Cleaning Pipeline
+**Done:**
+- Based on the collated data from the sheet - developed a data cleaning pipline for stripping the white spaces, double spaces and lower casing the entire 14 tables.
+
+**To Do**
+- Do level 1 EDA
+- Modify the data cleaning pipline as per the needs.
