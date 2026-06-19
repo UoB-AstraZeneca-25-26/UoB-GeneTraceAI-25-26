@@ -1,6 +1,6 @@
 # ── Large data files ────────────────────────────────────────────
 data/                        # all raw source files
-outputs/                     # all generated outputs
+outputs/processed/           # exported CSVs (large)
 
 # ── Parquet files ────────────────────────────────────────────────
 *.parquet
