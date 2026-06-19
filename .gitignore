@@ -1,8 +1,6 @@
 # ── Large data files ────────────────────────────────────────────
-# all raw source files
-data/
-# all generated outputs
-outputs/
+data/                        # all raw source files
+outputs/                     # all generated outputs
 
 # ── Large zip archives (too big for GitHub, share separately) ────
 GeneTraceAI_datasets.zip
@@ -19,8 +17,6 @@ GeneTraceAI_datasets.zip
 
 # ── Parquet files ────────────────────────────────────────────────
 *.parquet
-!reference/*.parquet
-!cleaned_track_data/*.parquet
 
 # ── Python ───────────────────────────────────────────────────────
 __pycache__/
