@@ -7,9 +7,10 @@ import os
 import pandas as pd
 
 
-PARQUET_CLEAN = "C:/Disertation/UoB-GeneTraceAI-25-26/data/parquet/data_clean"
-PROCESSED_DIR = "C:/Disertation/UoB-GeneTraceAI-25-26/outputs/processed"
-REPORT_PATH   = "C:/Disertation/UoB-GeneTraceAI-25-26/outputs/clean_data_report.xlsx"
+_ROOT         = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+PARQUET_CLEAN = os.path.join(_ROOT, "data", "parquet", "data_clean")
+PROCESSED_DIR = os.path.join(_ROOT, "outputs", "processed")
+REPORT_PATH   = os.path.join(_ROOT, "outputs", "clean_data_report.xlsx")
 
 CLEAN_FILE_MAP = {
     "hpa_rna":         "hpa_rna_clean.parquet",
