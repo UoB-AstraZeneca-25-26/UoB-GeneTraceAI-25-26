@@ -1,4 +1,5 @@
 # ── Large data files ────────────────────────────────────────────
+<<<<<<< HEAD
 # all raw source files
 data/
 # all generated outputs
@@ -8,6 +9,13 @@ outputs/
 *.parquet
 !reference/*.parquet
 !cleaned_track_data/*.parquet
+=======
+data/                        # all raw source files
+outputs/processed/           # exported CSVs (large)
+
+# ── Parquet files ────────────────────────────────────────────────
+*.parquet
+>>>>>>> 543c417 (New Folder structure with requirements and readme files)
 
 # ── Python ───────────────────────────────────────────────────────
 __pycache__/
