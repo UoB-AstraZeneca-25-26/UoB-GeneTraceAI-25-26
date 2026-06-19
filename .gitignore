@@ -11,7 +11,7 @@ outputs/
 !cleaned_track_data/*.parquet
 =======
 data/                        # all raw source files
-outputs/processed/           # exported CSVs (large)
+outputs/                     # all generated outputs
 
 # ── Parquet files ────────────────────────────────────────────────
 *.parquet
