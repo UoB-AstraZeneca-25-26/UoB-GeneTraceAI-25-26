@@ -15,6 +15,7 @@ env/
 venv/
 data/
 GTAI/     
+=======
 # ── Jupyter ──────────────────────────────────────────────────────
 .ipynb_checkpoints/
 
