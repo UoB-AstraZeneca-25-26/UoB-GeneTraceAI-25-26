@@ -7,7 +7,6 @@ import os
 import pandas as pd
 
 BASE          = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'data'))
-REF           = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'reference'))
 PARQUET_RAW   = os.path.join(BASE, "parquet/raw_data")
 PARQUET_CLEAN = os.path.join(BASE, "parquet/data_clean")
 
