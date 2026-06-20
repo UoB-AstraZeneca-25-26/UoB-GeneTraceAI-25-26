@@ -1,5 +1,6 @@
 # ── Large data files ────────────────────────────────────────────
 <<<<<<< HEAD
+<<<<<<< HEAD
 # all raw source files
 data/
 # all generated outputs
@@ -12,6 +13,12 @@ outputs/
 =======
 data/                        # all raw source files
 outputs/                     # all generated outputs
+=======
+# all raw source files
+data/                        
+# all generated outputs
+outputs/                     
+>>>>>>> 43298b5 (Path changes)
 
 # ── Parquet files ────────────────────────────────────────────────
 *.parquet
@@ -26,8 +33,10 @@ __pycache__/
 env/
 venv/
 data/
-GTAI/     
-=======
+GTAI/
+outputs/
+
+>>>>>>> 4b68e8b (Path changes)
 # ── Jupyter ──────────────────────────────────────────────────────
 .ipynb_checkpoints/
 
