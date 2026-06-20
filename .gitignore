@@ -1,6 +1,8 @@
 # ── Large data files ────────────────────────────────────────────
-data/                        # all raw source files
-outputs/                     # all generated outputs
+# all raw source files
+data/                        
+# all generated outputs
+outputs/                     
 
 # ── Parquet files ────────────────────────────────────────────────
 *.parquet
@@ -14,7 +16,10 @@ __pycache__/
 env/
 venv/
 data/
-GTAI/  # env   
+# env   
+GTAI/
+outputs/
+
 # ── Jupyter ──────────────────────────────────────────────────────
 .ipynb_checkpoints/
 
