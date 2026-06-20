@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>File 4 — Proteomics Reference</title>
+<style>
+  body { font-family: monospace; max-width: 900px; margin: 40px auto; padding: 0 20px; color: #222; line-height: 1.6; }
+  h1 { font-size: 1.2em; border-bottom: 1px solid #ccc; padding-bottom: 6px; }
+  h2 { font-size: 1em; margin-top: 2em; border-bottom: 1px dotted #ccc; padding-bottom: 3px; }
+  table { border-collapse: collapse; width: 100%; margin: 0.5em 0; font-size: 0.9em; }
+  td, th { border: 1px solid #ccc; padding: 4px 10px; text-align: left; }
+  th { background: #f5f5f5; }
+  .warn { color: #b00; font-weight: bold; }
+  .note { color: #555; font-style: italic; }
+  ul { margin: 0.3em 0 0.3em 1.5em; padding: 0; }
+  li { margin: 2px 0; }
+  code { background: #f0f0f0; padding: 1px 4px; }
+</style>
+</head>
+<body>
+
+<h1>File 4 — Proteomics (DepMap Harmonised MS / CCLE)</h1>
+<p class="note">Explored by Person 4. Part of CellLineFinder multi-omics pipeline.</p>
+
+<h2>File basics</h2>
+<table>
+  <tr><th>Property</th><th>Value</th></tr>
+  <tr><td>Filename</td><td>4_proteomics.csv (assumed; DepMap harmonised MS proteomics)</td></tr>
+  <tr><td>Shape</td><td>375 rows × 12,559 columns</td></tr>
+  <tr><td>Row identity</td><td>Cell lines — ACH- accessions in index (unnamed column 0)</td></tr>
+  <tr><td>Column identity</td><td>Proteins — format <code>UniProt_Accession (GENE_SYMBOL)</code></td></tr>
+  <tr><td>Separator</td><td>Comma (standard CSV)</td></tr>
+  <tr><td>Nulls</td><td>27.8% overall missing — see missingness section</td></tr>
+</table>
+
+<h2>Orientation — important</h2>
+<p class="warn">This file is transposed relative to all other expression files.</p>
+<ul>
+  <li>Rows = cell lines (ACH- IDs). Columns = proteins.</li>
+  <li>All other files (HPA, DepMap RNA) have genes as rows and cell lines as columns.</li>
+  <li>At integration stage: melt to long format <code>(ACH_ID, gene_symbol, protein_zscore)</code> before joining.</li>
+</ul>
+
+<h2>Column format breakdown</h2>
+<table>
+  <tr><th>Category</th><th>Count</th><th>Example</th></tr>
+  <tr><td>Canonical UniProt (SYMBOL)</td><td>10,916</td><td><code>P00533 (EGFR)</code></td></tr>
+  <tr><td>Isoform entries</td><td>1,642</td><td><code>O15079-2 (SNPH)</code>, <code>P05067-8 (APP)</code></td></tr>
+  <tr><td>No gene symbol (bare UniProt)</td><td>17</td><td><code>O00370</code>, <code>E9PSI1</code></td></tr>
+  <tr><td><strong>Total columns</strong></td><td><strong>12,559</strong></td><td></td></tr>
+</table>
+
+<h2>Value type</h2>
+<table>
+  <tr><th>Property</th><th>Value</th></tr>
+  <tr><td>Type</td><td>Z-scores per protein across cell lines</td></tr>
+  <tr><td>Mean of column means</td><td>−0.0368 (expected ~0 for z-scores)</td></tr>
+  <tr><td>Mean of column stds</td><td>0.9923 (expected ~1 for z-scores)</td></tr>
+  <tr><td>Value range (EGFR example)</td><td>−3.18 to +5.15</td></tr>
+  <tr><td>Zeros present</td><td>No — 0.0% zeros in numeric data</td></tr>
+  <tr><td>Negative values</td><td>Yes — 52.3% of values are negative (expected for z-scores)</td></tr>
+</table>
+<p class="warn">Do NOT re-normalise or log-transform. Values are already z-scored.</p>
+<p>Source: DepMap Harmonised MS proteomics (mass spectrometry, CCLE cell lines).</p>
+
+<h2>Cell line coverage</h2>
+<table>
+  <tr><th>Metric</th><th>Value</th></tr>
+  <tr><td>Total cell lines</td><td>375</td></tr>
+  <tr><td>ID format</td><td>ACH- accessions (DepMap IDs)</td></tr>
+  <tr><td>Min proteins detected per cell line</td><td>8,096</td></tr>
+  <tr><td>Max proteins detected per cell line</td><td>10,425</td></tr>
+  <tr><td>Mean proteins detected per cell line</td><td>9,068</td></tr>
+  <tr><td>Cell lines with &lt;5,000 proteins</td><td>0 — coverage is excellent throughout</td></tr>
+</table>
+
+<h2>Missingness</h2>
+<table>
+  <tr><th>Metric</th><th>Value</th></tr>
+  <tr><td>Overall missing</td><td>27.8%</td></tr>
+  <tr><td>Proteins fully present (0% missing)</td><td>~majority of core proteins</td></tr>
+  <tr><td>Proteins &gt;25% missing</td><td>substantial — typical for MS proteomics</td></tr>
+  <tr><td>Proteins &gt;50% missing</td><td>3,544 columns</td></tr>
+  <tr><td>Worst columns (most missing)</td><td>~97.9% missing (e.g. KLK3, TPH1 — tissue-specific)</td></tr>
+  <tr><td>Per cell line missing range</td><td>varies — all lines still detect 8,000+ proteins</td></tr>
+</table>
+<p class="warn">Missing proteomics ≠ zero protein. Missing = below MS detection threshold.</p>
+<ul>
+  <li>Must be flagged as <strong>below-detection</strong> in the knowledge graph.</li>
+  <li>Never impute with zero or any value.</li>
+  <li>Never interpret missing proteomics as evidence of absence of expression — only RNA can indicate that.</li>
+  <li>At confidence scoring: missing proteomics lowers corroboration score but does not contradict RNA evidence.</li>
+</ul>
+
+<h2>Duplicate gene symbols</h2>
+<table>
+  <tr><th>Metric</th><th>Value</th></tr>
+  <tr><td>Unique gene symbols (canonical cols)</td><td>~10,520</td></tr>
+  <tr><td>Genes with &gt;1 UniProt column</td><td>396</td></tr>
+  <tr><td>Top duplicated genes</td><td>PLEC (6), MAP4 (5), SEC16A (4), TPM1 (4), MACF1 (4), PML (4)</td></tr>
+</table>
+<p>These are distinct protein entries (paralogs, isoforms, alternative translations) mapping to the same gene symbol. Decision needed at integration: take <strong>max</strong> or <strong>mean</strong> across all UniProt entries for that gene symbol. Do not silently drop any.</p>
+
+<h2>Isoform entries</h2>
+<ul>
+  <li>1,642 columns carry a <code>-N</code> suffix (e.g. <code>P00533-2</code>) indicating UniProt isoform notation.</li>
+  <li>These are real isoform-resolved measurements, not duplicates or errors.</li>
+  <li>MVP decision: <strong>drop isoform columns, keep canonical only</strong> (10,916 columns). Revisit post-MVP.</li>
+  <li>17 columns have no gene symbol at all — low priority, safe to drop.</li>
+</ul>
+
+<h2>Cell line ID bridge</h2>
+<table>
+  <tr><th>Step</th><th>Detail</th></tr>
+  <tr><td>Index format</td><td>ACH- accessions (DepMap IDs)</td></tr>
+  <tr><td>All rows are ACH- format</td><td>Yes — confirmed</td></tr>
+  <tr><td>Bridge to cell line name</td><td>File 9 (sample_info) — <code>DepMap_ID → stripped_cell_line_name</code></td></tr>
+  <tr><td>Bridge to CVCL</td><td>File 9 → File 7 (Cellosaurus)</td></tr>
+  <tr><td>File 8 needed?</td><td>No — unlike File 2 (RNA), this file already uses ACH- IDs directly</td></tr>
+</table>
+
+<h2>Ground truth spot check</h2>
+<table>
+  <tr><th>Gene</th><th>UniProt cols</th><th>Cell lines detected</th><th>Value range</th><th>Mean z-score</th></tr>
+  <tr><td>EGFR</td><td>P00533 (EGFR) — 1 col</td><td>375 / 375</td><td>−3.18 to +5.15</td><td>−0.009</td></tr>
+  <tr><td>ERBB2</td><td>P04626 (ERBB2) — 1 col</td><td>375 / 375</td><td>up to +5.15</td><td>+0.020</td></tr>
+  <tr><td>KRAS</td><td>present</td><td>375 / 375</td><td>wide range</td><td>~0</td></tr>
+  <tr><td>TP53</td><td>present</td><td>375 / 375</td><td>wide range</td><td>~0</td></tr>
+</table>
+<p>All four ground truth genes are fully detected across all 375 cell lines with good dynamic range. Full A431/SKBR3 rank validation deferred to integration stage (requires File 9 bridge).</p>
+
+<h2>Role in CellLineFinder</h2>
+<ul>
+  <li><strong>Corroborating evidence layer</strong> — proteomics confirms whether a gene detected at RNA level also has detectable protein.</li>
+  <li>RNA says "the recipe exists"; proteomics says "the dish was actually made."</li>
+  <li>High protein z-score + high RNA expression = strong evidence for target presence.</li>
+  <li>High RNA + missing proteomics = moderate evidence (protein may be present but below MS detection).</li>
+  <li>High RNA + low protein z-score = flag as potential post-transcriptional regulation — worth noting in AI evidence card.</li>
+  <li>Does <strong>not</strong> contribute to the statistical confidence score directly; feeds the AI rationale layer.</li>
+</ul>
+
+<h2>Integration decisions (deferred)</h2>
+<ol>
+  <li>Melt to long format: <code>(ACH_ID, gene_symbol, protein_zscore)</code></li>
+  <li>Drop isoform columns (1,642) for MVP — canonical only</li>
+  <li>Collapse 396 multi-UniProt genes: take max or mean across entries</li>
+  <li>Drop 17 no-symbol bare UniProt columns</li>
+  <li>Flag NaN as <code>below_detection = True</code> in KG node — never fill</li>
+  <li>Bridge ACH- → CVCL via File 9 → File 7</li>
+  <li>Values are z-scores — do not re-normalise</li>
+  <li>Log all unmapped rows after join — never silently drop</li>
+</ol>
+
+<h2>Known pitfalls</h2>
+<ul>
+  <li class="warn">File is transposed — rows are cell lines, not genes. Easy to join in wrong orientation.</li>
+  <li>Missing values are below-detection, not zero — never impute.</li>
+  <li>396 genes have multiple UniProt columns — collapsing strategy must be agreed before integration.</li>
+  <li>Isoform columns (-N suffix) will cause duplicate gene symbol joins if not filtered first.</li>
+  <li>27.8% sparsity is normal for MS proteomics — do not interpret as data quality issue.</li>
+  <li>Tissue-specific proteins (e.g. KLK3, TPH1) are almost entirely missing across cell lines — expected.</li>
+</ul>
+
+<hr>
+<p class="note">Generated during dataset exploration phase. Person 4 — File 4. CellLineFinder / AstraZeneca MSc Dissertation 2026.</p>
+
+</body>
+</html>
