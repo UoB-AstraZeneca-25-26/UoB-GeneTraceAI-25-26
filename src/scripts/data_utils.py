@@ -91,3 +91,13 @@ def save_dataframes_to_csv(tables: dict, out_dir: str) -> None:
         path = os.path.join(out_dir, f"{name}.csv")
         df.to_csv(path, index=False)
         print(f"Saved {name} -> {path}")
+
+def save_dataframes_to_parquet(tables: dict, out_dir: str) -> None:
+    """Save a dict of DataFrames to CSV files in out_dir."""
+    os.makedirs(out_dir, exist_ok=True)
+    print(out_dir)
+    for name, df in tables.items():
+        path = os.path.join(out_dir, f"{name}.parquet")
+        print(path)
+        df.to_parquet(path, index=False)
+        print(f"Saved {name} -> {path}")
