@@ -5,3 +5,9 @@
 data/
 *.parquet
 *.csv
+
+# datasets
+outputs/processed/
+*.parquet
+*.csv
+*.xlsx
