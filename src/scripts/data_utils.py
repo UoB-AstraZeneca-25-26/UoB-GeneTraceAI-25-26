@@ -7,7 +7,10 @@ import os
 import pandas as pd
 
 BASE          = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'data'))
+<<<<<<< HEAD
 REF           = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'reference'))
+=======
+>>>>>>> 3bf70d4 (Mapping the proteomics data to the lookup file.)
 PARQUET_RAW   = os.path.join(BASE, "parquet/raw_data")
 PARQUET_CLEAN = os.path.join(BASE, "parquet/data_clean")
 
