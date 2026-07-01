@@ -13,7 +13,7 @@
 | ensg_id        | string | Bare ENSG, no version suffix — PRIMARY KEY       |
 | hgnc_symbol    | string | Current approved symbol                          |
 | prev_symbols   | string | Pipe-delimited list                              |
-| alias_symbols  | string | Pipe-delimited list                              |
+| alias_symbols  | string | Pipe-delimited list                              |   
 | hgnc_id        | string |                                                  |
 | biotype        | string | Always protein_coding                            |
 
