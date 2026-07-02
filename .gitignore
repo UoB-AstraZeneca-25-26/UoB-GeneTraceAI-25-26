@@ -1,13 +1,31 @@
-# macOS
-.DS_Store
-
-# datasets
+# ── Large data files ────────────────────────────────────────────
+# all raw source files
 data/
-*.parquet
-*.csv
+# all generated outputs
+outputs/
 
-# datasets
-outputs/processed/
+# ── Parquet files ────────────────────────────────────────────────
 *.parquet
-*.csv
-*.xlsx
+!reference/*.parquet
+
+# ── Python ───────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+.venv
+env/
+venv/
+
+# ── Jupyter ──────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── OS / editor ──────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+
+# ── What IS tracked ─────────────────────────────────────────────
+# src/           → all notebooks and scripts
+# outputs/clean_data_report.xlsx  → quality report (small)
+# README.md, requirements.txt, .gitignore
