@@ -201,24 +201,3 @@ Track - C/outputs/
 ```
 
 **Track C status: complete.** All four datasets are cleaned, resolved to canonical keys where a gene axis exists, and consistently validated against the protein-coding gene universe where a gene axis applies. Documented for handoff into the composite scoring layer once the remaining open architectural items (§7) — all team-level, not Track C-internal — are resolved.
-
-[TRACK-C][MUTATIONS] Fix: strip versioned ENSG IDs at source before universe filter
-
-Inserted strip cell at position [4] — before variant dedup, collapse, and
-detail output. Removes ENSG version suffixes (e.g. ENSG00000157764.14 →
-ENSG00000157764) so the universe filter join operates on clean base IDs.
-
-Result: 64 non-protein-coding genes correctly excluded (18,122 → 18,058);
-out-of-universe row count rises by 3,649 as expected (~57 variants/gene × 64
-genes now correctly filtered). mutations_collapsed.parquet and
-mutations_variant_detail.parquet both rebuilt from clean IDs.
-
-[TRACK-C][FUSIONS] Fix: strip versioned ENSG IDs and redo collapse in single cell
-
-Strip cell at position [6] strips exploded['ensg_id'] then immediately redoes
-fusions_clean via groupby — initial fix had groupby before strip (silent no-op);
-caught from log output and corrected before commit.
-
-Result: 181 non-protein-coding genes correctly excluded (16,198 → 16,017);
-32 versioned ID pairs merged into base form before filter. fusions_gene_level.parquet
-rebuilt from clean IDs.
