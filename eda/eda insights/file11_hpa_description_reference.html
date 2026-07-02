@@ -1,0 +1,421 @@
+<html><head><title>File 11 HPA Description Reference</title><style>body{font-family:monospace;padding:2rem} table{border-collapse:collapse} td,th{border:1px solid #ccc;padding:4px 8px;font-size:13px} h2{margin-top:2rem}</style></head><body><h1>File 11 — HPA Description Reference</h1><h2>Summary</h2><table><tr><td><b>Shape</b></td><td>1,206 rows x 8 cols</td></tr><tr><td><b>Separator</b></td><td>	</td></tr><tr><td><b>Cell line column</b></td><td>Cell line</td></tr><tr><td><b>Unique cell lines (raw)</b></td><td>1206</td></tr><tr><td><b>Unique cell lines (normalised)</b></td><td>1206</td></tr><tr><td><b>Columns</b></td><td>['Cell line', 'Disease', 'Disease subtype', 'Cellosaurus ID', 'Patient', 'Primary/Metastasis', 'Sample collection site', '_norm']</td></tr></table><h2>Null Summary</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>null_count</th>
+      <th>null_pct</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Cell line</th>
+      <td>0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>Disease</th>
+      <td>0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>Disease subtype</th>
+      <td>159</td>
+      <td>13.2</td>
+    </tr>
+    <tr>
+      <th>Cellosaurus ID</th>
+      <td>8</td>
+      <td>0.7</td>
+    </tr>
+    <tr>
+      <th>Patient</th>
+      <td>105</td>
+      <td>8.7</td>
+    </tr>
+    <tr>
+      <th>Primary/Metastasis</th>
+      <td>339</td>
+      <td>28.1</td>
+    </tr>
+    <tr>
+      <th>Sample collection site</th>
+      <td>68</td>
+      <td>5.6</td>
+    </tr>
+    <tr>
+      <th>_norm</th>
+      <td>0</td>
+      <td>0.0</td>
+    </tr>
+  </tbody>
+</table><h2>First 5 Rows</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Cell line</th>
+      <th>Disease</th>
+      <th>Disease subtype</th>
+      <th>Cellosaurus ID</th>
+      <th>Patient</th>
+      <th>Primary/Metastasis</th>
+      <th>Sample collection site</th>
+      <th>_norm</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>143B</td>
+      <td>Bone cancer</td>
+      <td>Osteosarcoma</td>
+      <td>CVCL_2270</td>
+      <td>13</td>
+      <td>Primary</td>
+      <td>bone</td>
+      <td>143B</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>22Rv1</td>
+      <td>Prostate cancer</td>
+      <td>Adenocarcinoma</td>
+      <td>CVCL_1045</td>
+      <td>Male</td>
+      <td>primary</td>
+      <td>prostate</td>
+      <td>22RV1</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>23132/87</td>
+      <td>Gastric cancer</td>
+      <td>Adenocarcinoma</td>
+      <td>CVCL_1046</td>
+      <td>Male, 72</td>
+      <td>primary</td>
+      <td>stomach</td>
+      <td>23132/87</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>253J</td>
+      <td>Bladder cancer</td>
+      <td>Carcinoma</td>
+      <td>CVCL_7935</td>
+      <td>Male, 53</td>
+      <td>metastasis</td>
+      <td>lymph node</td>
+      <td>253J</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>253J-BV</td>
+      <td>Bladder cancer</td>
+      <td>Carcinoma</td>
+      <td>CVCL_7937</td>
+      <td>Male, 53</td>
+      <td>metastasis</td>
+      <td>lymph node</td>
+      <td>253JBV</td>
+    </tr>
+  </tbody>
+</table><h2>Value Counts — Low Cardinality Columns</h2><h3>Disease</h3><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>count</th>
+    </tr>
+    <tr>
+      <th>Disease</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Lung cancer</th>
+      <td>232</td>
+    </tr>
+    <tr>
+      <th>Leukemia</th>
+      <td>93</td>
+    </tr>
+    <tr>
+      <th>Brain cancer</th>
+      <td>80</td>
+    </tr>
+    <tr>
+      <th>Lymphoma</th>
+      <td>76</td>
+    </tr>
+    <tr>
+      <th>Non-cancerous</th>
+      <td>63</td>
+    </tr>
+    <tr>
+      <th>Colorectal cancer</th>
+      <td>63</td>
+    </tr>
+    <tr>
+      <th>Breast cancer</th>
+      <td>62</td>
+    </tr>
+    <tr>
+      <th>Skin cancer</th>
+      <td>62</td>
+    </tr>
+    <tr>
+      <th>Ovarian cancer</th>
+      <td>59</td>
+    </tr>
+    <tr>
+      <th>Pancreatic cancer</th>
+      <td>46</td>
+    </tr>
+    <tr>
+      <th>Gastric cancer</th>
+      <td>42</td>
+    </tr>
+    <tr>
+      <th>Head and Neck cancer</th>
+      <td>38</td>
+    </tr>
+    <tr>
+      <th>Kidney cancer</th>
+      <td>35</td>
+    </tr>
+    <tr>
+      <th>Myeloma</th>
+      <td>34</td>
+    </tr>
+    <tr>
+      <th>Uterine cancer</th>
+      <td>29</td>
+    </tr>
+    <tr>
+      <th>Esophageal cancer</th>
+      <td>27</td>
+    </tr>
+    <tr>
+      <th>Bladder cancer</th>
+      <td>26</td>
+    </tr>
+    <tr>
+      <th>Liver cancer</th>
+      <td>24</td>
+    </tr>
+    <tr>
+      <th>Bone cancer</th>
+      <td>21</td>
+    </tr>
+    <tr>
+      <th>Neuroblastoma</th>
+      <td>17</td>
+    </tr>
+    <tr>
+      <th>Sarcoma</th>
+      <td>15</td>
+    </tr>
+    <tr>
+      <th>Rhabdoid</th>
+      <td>14</td>
+    </tr>
+    <tr>
+      <th>Uncategorized</th>
+      <td>11</td>
+    </tr>
+    <tr>
+      <th>Thyroid cancer</th>
+      <td>11</td>
+    </tr>
+    <tr>
+      <th>Prostate cancer</th>
+      <td>8</td>
+    </tr>
+    <tr>
+      <th>Cervical cancer</th>
+      <td>8</td>
+    </tr>
+    <tr>
+      <th>Bile duct cancer</th>
+      <td>7</td>
+    </tr>
+    <tr>
+      <th>Adrenocortical cancer</th>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>Gallbladder cancer</th>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>Testis cancer</th>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table><h3>Primary/Metastasis</h3><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>count</th>
+    </tr>
+    <tr>
+      <th>Primary/Metastasis</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>primary</th>
+      <td>457</td>
+    </tr>
+    <tr>
+      <th>NaN</th>
+      <td>339</td>
+    </tr>
+    <tr>
+      <th>metastasis</th>
+      <td>328</td>
+    </tr>
+    <tr>
+      <th>Metastasis</th>
+      <td>43</td>
+    </tr>
+    <tr>
+      <th>Primary</th>
+      <td>39</td>
+    </tr>
+  </tbody>
+</table><h3>Sample collection site</h3><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>count</th>
+    </tr>
+    <tr>
+      <th>Sample collection site</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>lung</th>
+      <td>113</td>
+    </tr>
+    <tr>
+      <th>pleural effusion</th>
+      <td>106</td>
+    </tr>
+    <tr>
+      <th>haematopoietic and lymphoid tissue</th>
+      <td>102</td>
+    </tr>
+    <tr>
+      <th>lymph node</th>
+      <td>77</td>
+    </tr>
+    <tr>
+      <th>central nervous system</th>
+      <td>77</td>
+    </tr>
+    <tr>
+      <th>ascites</th>
+      <td>71</td>
+    </tr>
+    <tr>
+      <th>NaN</th>
+      <td>68</td>
+    </tr>
+    <tr>
+      <th>liver</th>
+      <td>45</td>
+    </tr>
+    <tr>
+      <th>bone marrow</th>
+      <td>42</td>
+    </tr>
+    <tr>
+      <th>skin</th>
+      <td>39</td>
+    </tr>
+    <tr>
+      <th>fibroblast</th>
+      <td>36</td>
+    </tr>
+    <tr>
+      <th>ovary</th>
+      <td>31</td>
+    </tr>
+    <tr>
+      <th>kidney</th>
+      <td>31</td>
+    </tr>
+    <tr>
+      <th>upper aerodigestive tract</th>
+      <td>30</td>
+    </tr>
+    <tr>
+      <th>breast</th>
+      <td>30</td>
+    </tr>
+    <tr>
+      <th>endometrium</th>
+      <td>28</td>
+    </tr>
+    <tr>
+      <th>soft tissue</th>
+      <td>26</td>
+    </tr>
+    <tr>
+      <th>oesophagus</th>
+      <td>23</td>
+    </tr>
+    <tr>
+      <th>pancreas</th>
+      <td>22</td>
+    </tr>
+    <tr>
+      <th>urinary tract</th>
+      <td>22</td>
+    </tr>
+    <tr>
+      <th>large intestine</th>
+      <td>21</td>
+    </tr>
+    <tr>
+      <th>bone</th>
+      <td>21</td>
+    </tr>
+    <tr>
+      <th>colon</th>
+      <td>19</td>
+    </tr>
+    <tr>
+      <th>pleural_effusion</th>
+      <td>16</td>
+    </tr>
+    <tr>
+      <th>stomach</th>
+      <td>13</td>
+    </tr>
+    <tr>
+      <th>abdomen</th>
+      <td>12</td>
+    </tr>
+    <tr>
+      <th>central_nervous_system</th>
+      <td>12</td>
+    </tr>
+    <tr>
+      <th>lymph_node</th>
+      <td>11</td>
+    </tr>
+    <tr>
+      <th>thyroid</th>
+      <td>8</td>
+    </tr>
+    <tr>
+      <th>haematopoietic_and_lymphoid_tissue</th>
+      <td>8</td>
+    </tr>
+  </tbody>
+</table></body></html>
