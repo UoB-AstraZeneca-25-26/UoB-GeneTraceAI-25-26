@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>File 14 — Genomic Instability Reference</title>
+<style>
+  body { font-family: monospace; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
+  h1 { font-size: 1.2rem; }
+  h2 { font-size: 1rem; margin-top: 2rem; border-bottom: 1px solid #ccc; padding-bottom: 0.25rem; }
+  table { border-collapse: collapse; margin: 0.5rem 0; }
+  td, th { border: 1px solid #ccc; padding: 3px 10px; font-size: 13px; text-align: left; }
+  th { background: #f5f5f5; }
+  .warn { color: #b45309; }
+  .ok { color: #166534; }
+  .note { color: #1e40af; }
+  ul { margin: 0.25rem 0; padding-left: 1.5rem; }
+  li { font-size: 13px; }
+  p { font-size: 13px; margin: 0.4rem 0; }
+</style>
+</head>
+<body>
+
+<h1>File 14 — Genomic Instability Reference</h1>
+<p>Source: <code>14_Signatures.csv</code></p>
+<p class="note">Note: filename says "Signatures" but content is a genomic instability profile — MSI, ploidy, CIN, WGD, LoH. No mutational signatures or pathway scores.</p>
+
+<h2>Shape &amp; format</h2>
+<table>
+  <tr><td>Rows (raw)</td><td>3,021</td></tr>
+  <tr><td>Rows (after default filter)</td><td>1,955</td></tr>
+  <tr><td>Columns</td><td>12</td></tr>
+  <tr><td>Separator</td><td>comma</td></tr>
+  <tr><td>Format</td><td>Wide — one row per sequencing run, multiple runs per cell line</td></tr>
+  <tr><td>Unique cell lines (ACH-)</td><td>1,955 after filtering to IsDefaultEntryForModel == "Yes"</td></tr>
+</table>
+
+<h2>Columns</h2>
+<table>
+  <tr><th>Column</th><th>Type</th><th>Notes</th></tr>
+  <tr><td>Unnamed: 0</td><td>int</td><td>Row index — drop</td></tr>
+  <tr><td>SequencingID</td><td>string (CDS-)</td><td>Sequencing run ID — not needed for joins</td></tr>
+  <tr><td>ModelID</td><td>string (ACH-)</td><td>Cell line identifier — join key to File 9 (sample_info)</td></tr>
+  <tr><td>ModelConditionID</td><td>string (MC-)</td><td>Model condition — not needed after default filter</td></tr>
+  <tr><td>IsDefaultEntryForModel</td><td>Yes/No</td><td>Filter to "Yes" to get one row per cell line (3,021 → 1,955)</td></tr>
+  <tr><td>IsDefaultEntryForMC</td><td>Yes/No</td><td>Model condition level flag — not needed</td></tr>
+  <tr><td>MSIScore</td><td>float</td><td>Microsatellite instability score. No nulls. MSI-high threshold: >3.5</td></tr>
+  <tr><td>LoHFraction</td><td>float</td><td>Fraction of genome with loss of heterozygosity. 333 nulls after default filter</td></tr>
+  <tr><td>WGD</td><td>float (0.0/1.0)</td><td>Whole genome doubling — binary, store as boolean. 439 nulls in raw file</td></tr>
+  <tr><td>CIN</td><td>float</td><td>Chromosomal instability score. 439 nulls in raw file</td></tr>
+  <tr><td>Ploidy</td><td>float</td><td>Average ploidy. Values range ~2.0–3.6 in sample. 439 nulls in raw file</td></tr>
+  <tr><td>Aneuploidy</td><td>float (integer values)</td><td>Number of aneuploid chromosome arms. Range 0–39. 439 nulls in raw file</td></tr>
+</table>
+
+<h2>Key identifier</h2>
+<p class="ok">ModelID contains ACH- IDs throughout (3,021/3,021). Joins directly to File 9 (sample_info) on DepMap_ID, and via File 8 (OmicsProfiles) to expression data. No CVCL accessions present — CVCL bridge must go via File 9 → File 7.</p>
+
+<h2>Filtering strategy</h2>
+<p>3,021 rows represent multiple sequencing runs per cell line. <code>IsDefaultEntryForModel == "Yes"</code> reduces to 1,955 unique cell lines, one row each. Always apply this filter before any join or analysis.</p>
+
+<h2>Nulls</h2>
+<table>
+  <tr><th>Column</th><th>Nulls (raw)</th><th>Nulls (after default filter)</th><th>Treatment</th></tr>
+  <tr><td>MSIScore</td><td>0</td><td>0</td><td>—</td></tr>
+  <tr><td>LoHFraction</td><td>439 (14.5%)</td><td>333 (17.0%)</td><td class="warn">Flag as missing — do not impute</td></tr>
+  <tr><td>WGD</td><td>439 (14.5%)</td><td>—</td><td class="warn">Flag as missing — do not impute</td></tr>
+  <tr><td>CIN</td><td>439 (14.5%)</td><td>—</td><td class="warn">Flag as missing — do not impute</td></tr>
+  <tr><td>Ploidy</td><td>439 (14.5%)</td><td>—</td><td class="warn">Flag as missing — do not impute</td></tr>
+  <tr><td>Aneuploidy</td><td>439 (14.5%)</td><td>—</td><td class="warn">Flag as missing — do not impute</td></tr>
+</table>
+<p>The 333 null LoHFraction rows after filtering are genuine missing data — those cell lines have an MSIScore (mean 11.4, max 91.6) but no chromosomal instability measurements available.</p>
+
+<h2>MSIScore distribution</h2>
+<table>
+  <tr><td>Count</td><td>3,021 (no nulls)</td></tr>
+  <tr><td>Min</td><td>0.30</td></tr>
+  <tr><td>25th percentile</td><td>1.24</td></tr>
+  <tr><td>Median</td><td>2.08</td></tr>
+  <tr><td>75th percentile</td><td>3.22</td></tr>
+  <tr><td>Max</td><td>93.22</td></tr>
+  <tr><td>Mean</td><td>6.39 (right-skewed, pulled by high-MSI outliers)</td></tr>
+  <tr><td>MSI-high (&gt;3.5) — raw</td><td>652</td></tr>
+  <tr><td>MSI-high (&gt;3.5) — after default filter</td><td>386</td></tr>
+</table>
+<p class="note">MSI-high threshold of 3.5 is a standard cutoff. Document as a team decision.</p>
+
+<h2>WGD distribution (after default filter)</h2>
+<table>
+  <tr><td>No whole genome doubling (0)</td><td>856</td></tr>
+  <tr><td>Whole genome doubling (1)</td><td>1,726</td></tr>
+  <tr><td>Null</td><td>439</td></tr>
+</table>
+<p>WGD is binary — stored as float but treat as boolean in Neo4j.</p>
+
+<h2>Aneuploidy distribution (after default filter)</h2>
+<p>Integer values 0–39. Roughly bimodal — spike at 0 (135 diploid/stable lines) then gradually rising through 18–27 range (60–81 lines each). Stored as float — cast to int on ingestion.</p>
+
+<h2>Role in CellLineFinder</h2>
+<p>These are contextual flags for the evidence card, not inputs to the expression-based confidence score. Useful for:</p>
+<ul>
+  <li>Flagging MSI-high lines where genomic instability may confound target expression</li>
+  <li>Flagging high ploidy or WGD lines where copy number affects apparent expression levels</li>
+  <li>Flagging high CIN lines as potentially less reproducible models</li>
+</ul>
+<p>Feed into the AI rationale layer (trade-off flags) rather than the statistical scoring model.</p>
+
+<h2>Known pitfalls</h2>
+<ul>
+  <li>Always filter <code>IsDefaultEntryForModel == "Yes"</code> before any join — raw file has 3,021 rows for 1,955 cell lines</li>
+  <li>WGD is float (0.0/1.0) not boolean — cast explicitly</li>
+  <li>Aneuploidy is float (integer values) — cast to int</li>
+  <li>No CVCL accessions — bridge to CVCL golden key via File 9 (DepMap_ID → cell_line_name) → File 7</li>
+  <li>333 null LoHFraction rows after filtering are genuine missing data, not QC failures</li>
+  <li>File named "Signatures" but contains no mutational or pathway signatures</li>
+</ul>
+
+</body>
+</html>
