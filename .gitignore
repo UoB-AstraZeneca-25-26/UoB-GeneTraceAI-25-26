@@ -48,3 +48,9 @@ Thumbs.db
 # src/           → all notebooks and scripts
 # outputs/clean_data_report.xlsx  → quality report (small)
 # README.md, requirements.txt, .gitignore
+
+data/gene expression/*.csv
+data/gene expression/*.tsv
+data/gene expression/*.txt
+data/gene properties/*.csv
+data/nomenclature/7_cellosaurus.csv
