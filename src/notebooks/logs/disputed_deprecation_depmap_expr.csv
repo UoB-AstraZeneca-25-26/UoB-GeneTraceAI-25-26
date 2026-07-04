@@ -1,8 +1,0 @@
-profile_id,model_id,coverage,cell_line_name,cvcl_accession,deprecation_status
-pr-fpu3e3,ach-000109,65468.567514871,nci-h3255,cvcl_6831,disputed
-pr-iyme0n,ach-000621,65072.039961772236,mda-mb-157,cvcl_0618,disputed
-pr-ks7v17,ach-000338,63348.23738250503,sr-786,cvcl_1711,disputed
-pr-im5a2o,ach-000428,60137.08187863767,uo-31,cvcl_1911,disputed
-pr-vuoq0c,ach-001075,58510.350037499455,nci-h292,cvcl_0455,disputed
-pr-cug5qc,ach-000833,56762.69298441267,rh-30,cvcl_0041,disputed
-pr-byfzvl,ach-001543,50041.217752148536,kosc-2,cvcl_1337,disputed
