@@ -120,7 +120,6 @@ Both datasets use identical `ach-` formatted IDs with identical lengths and zero
 |---|---|---|
 | Matched | 1,812 | 98.48% |
 | Lost — null `rrid` at source | 22 | 1.20% |
-<<<<<<< HEAD:src/Track - A/Track A - Updates.md
 <<<<<<< HEAD
 <<<<<<< HEAD
 | Lost — CVCL absent from dump (`CVCL_X507`, `CVCL_V618`) | 2 | 0.9% |
@@ -130,9 +129,6 @@ Both datasets use identical `ach-` formatted IDs with identical lengths and zero
 =======
 | Lost — CVCL absent from dump (`CVCL_X507`, `CVCL_V618`) | 2 | 0.9% |
 >>>>>>> 2fa224e (Data gathered on the Track A harmonization)
-=======
-| Lost — CVCL absent from dump (`CVCL_X507`, `CVCL_V618`) | 2 | 0.9% |
->>>>>>> 2fa224e (Data gathered on the Track A harmonization):logs/Track A - Updates.md
 | **Total lost** | **24** | **1.30%** |
 
 ### Join 2: sample_info ↔ depmap_profiles (inner join)
@@ -156,7 +152,6 @@ Both datasets use identical `ach-` formatted IDs with identical lengths and zero
 
 4. **Zero format-related losses** across all three joins — no case mismatches, no prefix pollution, no null keys in DepMap join, no length inconsistencies detected.
 
-<<<<<<< HEAD:src/Track - A/Track A - Updates.md
 <<<<<<< HEAD
 <<<<<<< HEAD
 5. **Cumulative loss from sample_info anchor** → `24 (Cellosaurus) + 91 (DepMap) = 95 records` affected across both integrations (overlap unknown without three-way join).
@@ -178,13 +173,6 @@ Both datasets use identical `ach-` formatted IDs with identical lengths and zero
 
 7. **Total irrecoverable loss** → **95 records maximum (6.25% of sample_info)** split between source nulls, snapshot version gaps, and deprecated registry entries; none resolvable within the provided data environment.
 >>>>>>> 2fa224e (Data gathered on the Track A harmonization)
-=======
-5. **Cumulative loss from sample_info anchor** → `24 (Cellosaurus) + 91 (DepMap) = 95 records` affected across both integrations (overlap unknown without three-way join).
-
-6. **Final harmonized coverage** → Cellosaurus join retains **98.48%** (1,812/1,840); DepMap join retains **95.05%** (1,749/1,840); three-way intersection is the effective working dataset.
-
-7. **Total irrecoverable loss** → **95 records maximum (6.25% of sample_info)** split between source nulls, snapshot version gaps, and deprecated registry entries; none resolvable within the provided data environment.
->>>>>>> 2fa224e (Data gathered on the Track A harmonization):logs/Track A - Updates.md
 
 ---
 
@@ -196,7 +184,6 @@ Both datasets use identical `ach-` formatted IDs with identical lengths and zero
 | sample_info ↔ depmap_profiles | `ach-` (len=10) | 95.05% (1,749/1,840) | Complete — loss documented |
 | Three-way intersection | Both | TBD | Pending final merge step |
 
-<<<<<<< HEAD:src/Track - A/Track A - Updates.md
 <<<<<<< HEAD
 <<<<<<< HEAD
 ## 9. Insights From the Data Recovery Methods
@@ -236,9 +223,6 @@ Both datasets use identical `ach-` formatted IDs with identical lengths and zero
 =======
 ## 9. Insights From the Data Recovery Methods
 >>>>>>> 2fa224e (Data gathered on the Track A harmonization)
-=======
-## 9. Insights From the Data Recovery Methods
->>>>>>> 2fa224e (Data gathered on the Track A harmonization):logs/Track A - Updates.md
 
 ### 9.1 Table 1 — Cellosaurus ↔ Sample_info
 
@@ -256,7 +240,6 @@ Both datasets use identical `ach-` formatted IDs with identical lengths and zero
 
 **Resolution summary:** Initial loss was 28 / 1,840 = 1.52% (28 unmatched). Multi-tier recovery (secondary accession +1, name fallback +8, Sanger primary key +17) resolved 26 / 28 = 92.86% of initial loss. Final matching rate improved from 98.48% → 99.89% (1,838 / 1,840), with only 2 irrecoverable NaN rows (0.9%) remaining.
 
-<<<<<<< HEAD:src/Track - A/Track A - Updates.md
 <<<<<<< HEAD
 1. Perform **three-way inner join** across all three datasets to establish the final high-confidence working set.
 2. Document three-way intersection count and residual loss for the Integration Contract.
@@ -264,8 +247,6 @@ Both datasets use identical `ach-` formatted IDs with identical lengths and zero
 4. Confirm null-rrid row handling policy with supervisor before final pipeline run.
 >>>>>>> 9ad337c (Findings from the data harmonization of track A.)
 =======
-=======
->>>>>>> 2fa224e (Data gathered on the Track A harmonization):logs/Track A - Updates.md
 ### 9.2 Table 2 — Sample_info ↔ DepMap Profiles
 
 *(via `depmap_id` ↔ `modelid`)*
@@ -279,9 +260,5 @@ Both datasets use identical `ach-` formatted IDs with identical lengths and zero
 | Cellosaurus xref bridge | `depmap` field in Cellosaurus cross-references yielded 1,893 entries; direct Cellosaurus → DepMap match = 1,768 / 1,822 = 97.04% | recovers +19 over initial join |
 | Residual loss | 72 / 1,840 = 3.91% | cell lines present in sample_info but absent from both `depmap_profiles` and Cellosaurus xref; version gap irrecoverable without unified DepMap release |
 
-<<<<<<< HEAD:src/Track - A/Track A - Updates.md
 **Resolution summary:** Initial loss was 91 / 1,840 = 4.95% (91 unmatched from sample_info side). The Cellosaurus depmap xref bridge recovered +19 records = 20.88% of initial loss resolved. Final matching rate improved from 95.05% → 96.09% (1,768 / 1,840), with 72 irrecoverable records (3.91%) remaining due to the release version gap.
 >>>>>>> 2fa224e (Data gathered on the Track A harmonization)
-=======
-**Resolution summary:** Initial loss was 91 / 1,840 = 4.95% (91 unmatched from sample_info side). The Cellosaurus depmap xref bridge recovered +19 records = 20.88% of initial loss resolved. Final matching rate improved from 95.05% → 96.09% (1,768 / 1,840), with 72 irrecoverable records (3.91%) remaining due to the release version gap.
->>>>>>> 2fa224e (Data gathered on the Track A harmonization):logs/Track A - Updates.md
