@@ -1,6 +1,4 @@
 # ── Large data files ────────────────────────────────────────────
-<<<<<<< HEAD
-<<<<<<< HEAD
 # all raw source files
 data/
 # all generated outputs
@@ -10,19 +8,6 @@ outputs/
 *.parquet
 !reference/*.parquet
 !cleaned_track_data/*.parquet
-=======
-data/                        # all raw source files
-outputs/                     # all generated outputs
-=======
-# all raw source files
-data/                        
-# all generated outputs
-outputs/                     
->>>>>>> 43298b5 (Path changes)
-
-# ── Parquet files ────────────────────────────────────────────────
-*.parquet
->>>>>>> 543c417 (New Folder structure with requirements and readme files)
 
 # ── Python ───────────────────────────────────────────────────────
 __pycache__/
@@ -33,7 +18,6 @@ __pycache__/
 env/
 venv/
 data/
-GTAI/
 outputs/
 
 # ── Jupyter ──────────────────────────────────────────────────────
@@ -48,9 +32,3 @@ Thumbs.db
 # src/           → all notebooks and scripts
 # outputs/clean_data_report.xlsx  → quality report (small)
 # README.md, requirements.txt, .gitignore
-
-data/gene expression/*.csv
-data/gene expression/*.tsv
-data/gene expression/*.txt
-data/gene properties/*.csv
-data/nomenclature/7_cellosaurus.csv
