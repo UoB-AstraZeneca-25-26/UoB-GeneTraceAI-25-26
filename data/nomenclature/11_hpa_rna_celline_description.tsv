@@ -1,0 +1,1207 @@
+Cell line	Disease	Disease subtype	Cellosaurus ID	Patient	Primary/Metastasis	Sample collection site
+143B	Bone cancer	Osteosarcoma	CVCL_2270	13	Primary	bone
+22Rv1	Prostate cancer	Adenocarcinoma	CVCL_1045	Male	primary	prostate
+23132/87	Gastric cancer	Adenocarcinoma	CVCL_1046	Male, 72	primary	stomach
+253J	Bladder cancer	Carcinoma	CVCL_7935	Male, 53	metastasis	lymph node
+253J-BV	Bladder cancer	Carcinoma	CVCL_7937	Male, 53	metastasis	lymph node
+42-MG-BA	Brain cancer	Astrocytoma	CVCL_1798	Male, 63	primary	central nervous system
+537-mel	Skin cancer	Melanoma	CVCL_8052			
+5637	Bladder cancer		CVCL_0126	Male, 68		urinary tract
+59M	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_2291	Female, 65	metastasis	ascites
+624-mel	Skin cancer	Melanoma	CVCL_8054			
+639V	Bladder cancer	Transitional Cell Carcinoma	CVCL_1048	Male, 69	primary	urinary tract
+647V	Bladder cancer	Carcinoma	CVCL_1049	Male, 59	primary	urinary tract
+697	Leukemia	Acute Lymphoblastic Leukemia (ALL), B-cell	CVCL_0079	Male, 12	primary	bone marrow
+769-P	Kidney cancer	Renal Carcinoma, clear cell	CVCL_1050	Female, 63	primary	kidney
+786-O	Kidney cancer	Renal Carcinoma, clear cell	CVCL_1051	Male, 58	primary	kidney
+8-MG-BA	Brain cancer	Astrocytoma	CVCL_1052	Female, 54	primary	central nervous system
+8305C	Thyroid cancer	Carcinoma	CVCL_1053	Female, 67	primary	thyroid
+8505C	Thyroid cancer	Carcinoma	CVCL_1054	Female, 78	primary	thyroid
+888-mel	Skin cancer	Melanoma	CVCL_4632		Metastasis	
+A-1207	Brain cancer	Glioblastoma	CVCL_8481	Female		central nervous system
+A-172	Brain cancer	Glioblastoma	CVCL_0131	Male, 53	primary	central nervous system
+A-204	Rhabdoid	Malignant Rhabdoid Tumor	CVCL_1058	Female, 1	primary	soft tissue
+A-253	Head and Neck cancer	Squamous Cell Carcinoma, salivary gland	CVCL_1060	Male, 54	primary	upper aerodigestive tract
+A-375	Skin cancer	Melanoma	CVCL_0132	Female, 54	primary	skin
+A-427	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1055	Male, 52		lung
+A-431	Skin cancer		CVCL_0037	Female, 85	primary	skin
+A-498	Kidney cancer	Renal Cell Carcinoma	CVCL_1056	Female, 52	primary	kidney
+A-549	Lung cancer		CVCL_0023	Male, 58	primary	lung
+A-673	Bone cancer	Ewings Sarcoma	CVCL_0080	Female, 15	primary	soft tissue
+A-704	Kidney cancer	Renal Cell Carcinoma	CVCL_1065	Male, 78	primary	kidney
+A101D	Skin cancer	Melanoma	CVCL_1057	Male, 56		skin
+A2058	Skin cancer	Melanoma	CVCL_1059	Male, 43	metastasis	lymph node
+A2780	Ovarian cancer	Adenocarcinoma, endometrioid	CVCL_0134	Female	primary	ovary
+A3/Kawakami	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_1062	Female, 68	primary	ascites
+A4/Fukuda	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_1064	Female, 52	primary	ascites
+ABC-1	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1066	Male, 47	metastasis	pleural effusion
+ACC-MESO-1	Lung cancer	Mesothelioma	CVCL_5113	Female, 61		pleura
+ACHN	Kidney cancer	Renal Cell Carcinoma	CVCL_1067	Male, 22	metastasis	pleural effusion
+AF22	Uncategorized			Female, 36		
+AGS	Gastric cancer	Adenocarcinoma	CVCL_0139	Female, 54	primary	stomach
+ALL-SIL	Leukemia	Acute Lymphoblastic Leukemia (ALL), T-cell	CVCL_1805	Male, 17	primary	haematopoietic and lymphoid tissue
+AM-38	Brain cancer	Glioblastoma	CVCL_1070	Male, 36	primary	central nervous system
+AML-193	Leukemia	Acute Myelogenous Leukemia (AML), M5 (Eosinophilic/Monocytic)	CVCL_1071	Female, 13	primary	haematopoietic and lymphoid tissue
+AMO1	Myeloma	Multiple Myeloma, plasmacytoma	CVCL_1806	Female, 64	primary	ascites
+AN3-CA	Uterine cancer		CVCL_0028	Female, 55	metastasis	endometrium
+ASC2telo differentiated	Uncategorized			Female		
+ASC52telo	Non-cancerous		CVCL_U602	Female		
+AsPC-1	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_0152	Female, 62	metastasis	ascites
+AU565	Breast cancer	Adenocarcinoma	CVCL_1074	Female, 43	metastasis	pleural effusion
+B-CPAP	Thyroid cancer	Carcinoma, papillary	CVCL_0153	Female, 76	primary	thyroid
+BC-3C	Bladder cancer	Transitional Cell Carcinoma	CVCL_1958	Female, 82	primary	urinary tract
+BCP-1	Lymphoma	B-cell, Non-Hodgkins	CVCL_0107	Male, 94		haematopoietic and lymphoid tissue
+BDCM	Leukemia	Acute Myelogenous Leukemia (AML), M5 (Eosinophilic/Monocytic)	CVCL_4613	Male		haematopoietic and lymphoid tissue
+BEN	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), unspecified	CVCL_1082	Male, 71	metastasis	lymph node
+BEWO	Uncategorized		CVCL_0044	Male	metastasis	central nervous system
+BFTC-905	Bladder cancer	Transitional Cell Carcinoma	CVCL_1083	Female, 51	primary	urinary tract
+BFTC-909	Kidney cancer	Renal Carcinoma, transitional cell	CVCL_1084	Male, 64	primary	kidney
+BHT-101	Thyroid cancer	Carcinoma, papillary	CVCL_1085	Female, 63	metastasis	lymph node
+BHY	Head and Neck cancer	Squamous Cell Carcinoma, oral	CVCL_1086	Male, 52	primary	upper aerodigestive tract
+BICR 10	Head and Neck cancer	Squamous Cell Carcinoma, oral	CVCL_2307		Primary	upper_aerodigestive_tract
+BICR 16	Head and Neck cancer	Squamous Cell Carcinoma, oral	CVCL_2308	Male	primary	upper aerodigestive tract
+BICR 18	Head and Neck cancer	Squamous Cell Carcinoma	CVCL_2309	Male	metastasis	lymph node
+BICR 22	Head and Neck cancer	Squamous Cell Carcinoma, oral	CVCL_2310	Male, 88	metastasis	lymph node
+BICR 31	Head and Neck cancer	Squamous Cell Carcinoma, oral	CVCL_2312	Male	primary	upper aerodigestive tract
+BICR 56	Head and Neck cancer	Squamous Cell Carcinoma, oral	CVCL_2313	Female	primary	upper aerodigestive tract
+BICR 6	Head and Neck cancer	Squamous Cell Carcinoma, oral	CVCL_2314	Male	primary	upper aerodigestive tract
+BICR 78	Head and Neck cancer	Squamous Cell Carcinoma, oral	CVCL_2315		Primary	upper_aerodigestive_tract
+BJ [Human fibroblast]	Non-cancerous		CVCL_3653	Male		
+BJ hTERT+ SV40 Large T+	Uncategorized			Male		
+BJ hTERT+ SV40 Large T+ RasG12V	Uncategorized			Male		
+BJ1-hTERT	Non-cancerous		CVCL_6573	Male		fibroblast
+BJAB	Lymphoma		CVCL_5711			
+BL-41	Lymphoma	B-cell, Non-Hodgkins, Burkitts	CVCL_1087	Male, 8		haematopoietic and lymphoid tissue
+BL-70	Lymphoma	B-cell, Non-Hodgkins, Burkitts	CVCL_1088	Male, 16		haematopoietic and lymphoid tissue
+BT-12	Rhabdoid	Atypical Teratoid Rhabdoid Tumor (ATRT)	CVCL_M155	Female, 0		soft tissue
+BT-20	Breast cancer	Breast Ductal Carcinoma	CVCL_0178	Female, 74	primary	breast
+BT-474	Breast cancer	Breast Ductal Carcinoma	CVCL_0179	Female, 60	primary	breast
+BT-483	Breast cancer	Breast Ductal Carcinoma	CVCL_2319	Female, 23	primary	breast
+BT-549	Breast cancer	Breast Ductal Carcinoma	CVCL_1092	Female, 72	primary	breast
+BV-173	Leukemia	Chronic Myelogenous Leukemia (CML), blast crisis	CVCL_0181	Male, 45		haematopoietic and lymphoid tissue
+BxPC-3	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_0186	Female, 61	primary	pancreas
+C-33 A	Cervical cancer	Carcinoma	CVCL_1094	66	Primary	cervix
+C170	Colorectal cancer		CVCL_S959			
+C2BBe1	Colorectal cancer	Adenocarcinoma	CVCL_1096	Male, 72	primary	colon
+C32 [Human melanoma]	Skin cancer	Melanoma, amelanotic	CVCL_1097	Male, 53	primary	skin
+C8166	Lymphoma	ATL	CVCL_1099	Male		haematopoietic and lymphoid tissue
+Ca Ski	Cervical cancer	Squamous Cell Carcinoma	CVCL_1100	40	Metastasis	small_intestine
+CA46	Lymphoma	B-cell, Non-Hodgkins, Burkitts	CVCL_1101	Male		ascites
+CACO-2	Colorectal cancer		CVCL_0025	Male, 72		colon
+CADO-ES1	Bone cancer	Ewings Sarcoma	CVCL_1103	Female, 19	metastasis	pleural effusion
+Caki-1	Kidney cancer	Renal Carcinoma, clear cell	CVCL_0234	Male, 49	metastasis	skin
+Caki-2	Kidney cancer	Renal Carcinoma, clear cell	CVCL_0235	Male, 69	primary	kidney
+CAL-120	Breast cancer	Carcinoma	CVCL_1104	Female, 43	metastasis	pleural effusion
+CAL-12T	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), unspecified	CVCL_1105	Male	primary	lung
+CAL-148	Breast cancer	Breast Ductal Carcinoma	CVCL_1106	Female, 58	metastasis	pleural effusion
+CAL-27	Head and Neck cancer	Squamous Cell Carcinoma	CVCL_1107	Male, 56	primary	upper aerodigestive tract
+CAL-29	Bladder cancer	Transitional Cell Carcinoma	CVCL_1808	Female, 80	primary	urinary tract
+CAL-33	Head and Neck cancer	Squamous Cell Carcinoma, oral	CVCL_1108	Male, 69	primary	upper aerodigestive tract
+CAL-51	Breast cancer	Carcinoma	CVCL_1110	Female, 45	metastasis	pleural effusion
+CAL-54	Kidney cancer	Renal Cell Carcinoma	CVCL_1111	Male, 75	metastasis	pleural effusion
+CAL-62	Thyroid cancer	Carcinoma, anaplastic	CVCL_1112	Female, 70	primary	pleural effusion
+CAL-78	Bone cancer	Chondrosarcoma	CVCL_1809	Male, 76		soft tissue
+CAL-85-1	Breast cancer	Carcinoma	CVCL_1114	Female, 35	primary	breast
+Calu-1	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_0608	Male, 47	metastasis	pleura
+Calu-3	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_0609	Male, 25	metastasis	pleural effusion
+Calu-6	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), unspecified	CVCL_0236	Female, 61	metastasis	pleural effusion
+CAMA-1	Breast cancer	Carcinoma	CVCL_1115	Female, 51	metastasis	pleural effusion
+Caov-3	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_0201	Female, 54	primary	ovary
+Caov-4	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_0202	Female, 45	metastasis	ovary
+Capan-1	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_0237	Male, 40	metastasis	liver
+CAPAN-2	Pancreatic cancer		CVCL_0026	Male, 56	primary	pancreas
+CaR-1	Colorectal cancer	Adenocarcinoma	CVCL_1116	70	Metastasis	large_intestine
+CAS-1	Brain cancer	Glioblastoma	CVCL_1117	Male, 63	primary	central nervous system
+CCF-STTG1	Brain cancer	Astrocytoma	CVCL_1118	Female, 68	primary	central nervous system
+CCK-81	Colorectal cancer	Adenocarcinoma	CVCL_2873	Female, 62	metastasis	large intestine
+CCRF-SB	Leukemia		CVCL_1860			
+CFPAC-1	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_1119	Male, 26	metastasis	liver
+CH-157MN	Brain cancer	Meningioma	CVCL_5723	Female, 41		central nervous system
+ChaGo-K-1	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), unspecified	CVCL_1121	Male, 45	metastasis	lung
+CHP-126	Neuroblastoma		CVCL_1123	Female, 1	primary	autonomic ganglia
+CHP-212	Neuroblastoma		CVCL_1125	Male, 1		central nervous system
+Ci-1	Lymphoma	B-cell, Non-Hodgkins	CVCL_1861	Female, 38		ascites
+CJM [Human melanoma]	Skin cancer	Melanoma	CVCL_U797	Male	metastasis	skin
+CL-11	Colorectal cancer	Adenocarcinoma	CVCL_1978	Male	primary	colon
+CL-14	Colorectal cancer	Adenocarcinoma	CVCL_1979	Male		large intestine
+CL-34	Colorectal cancer	Adenocarcinoma	CVCL_1980	Female	primary	colon
+CL-40	Colorectal cancer	Adenocarcinoma	CVCL_1982	Female	primary	colon
+CMK	Leukemia	Acute Myelogenous Leukemia (AML), M7 (Megakaryoblastic)	CVCL_0216	Male, 0		haematopoietic and lymphoid tissue
+CML-T1	Leukemia	Chronic Myelogenous Leukemia (CML), blast crisis	CVCL_1126	Female, 36		haematopoietic and lymphoid tissue
+COLO 201	Colorectal cancer	Adenocarcinoma	CVCL_1987	Male, 70	metastasis	ascites
+COLO 206F	Colorectal cancer		CVCL_1988		Metastasis	ascites
+COLO 320	Colorectal cancer	Adenocarcinoma	CVCL_1989	Female, 55	primary	large intestine
+COLO 320DM	Colorectal cancer		CVCL_0219			
+COLO 668	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1128	Female, 47	metastasis	central nervous system
+COLO 678	Colorectal cancer	Adenocarcinoma	CVCL_1129	Male, 69	metastasis	lymph node
+COLO 679	Skin cancer	Melanoma	CVCL_1130	Female, 47	metastasis	skin
+COLO 680N	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1131	Female, 57		oesophagus
+COLO 684	Uterine cancer	Endometrial Adenocarcinoma	CVCL_1132	Female, 63	primary	endometrium
+COLO 699	Lung cancer		CVCL_1992		Metastasis	pleural_effusion
+COLO 704	Ovarian cancer	Adenocarcinoma	CVCL_1994	50	Metastasis	ascites
+COLO 741	Skin cancer	Melanoma	CVCL_1133	Female, 69	metastasis	skin
+COLO 783	Skin cancer	Melanoma	CVCL_1997	Female, 48	metastasis	lymph node
+COLO 792	Skin cancer	Melanoma	CVCL_1134	Male, 62	metastasis	central nervous system
+COLO 794	Skin cancer	Melanoma	CVCL_2408	14	Primary	skin
+COLO 800	Skin cancer	Melanoma	CVCL_1135	Male, 14	metastasis	skin
+COLO 829	Skin cancer	Melanoma	CVCL_1137	Male, 45	primary	skin
+COLO 849	Skin cancer	Melanoma	CVCL_2002	43	Metastasis	lymph_node
+COR-L105	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1138	Male	metastasis	pleural effusion
+COR-L23	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Large Cell Carcinoma	CVCL_1139	Male, 62	metastasis	pleural effusion
+COR-L24	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_2409	Male, 71	metastasis	lymph node
+COR-L26	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_2410		Metastasis	bone_marrow
+COR-L279	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1140	Male, 63	metastasis	lymph node
+COR-L311	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_2412	Male, 63	primary	lung
+COR-L47	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_2415	Male, 67	metastasis	bone marrow
+COR-L88	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1141	Male, 55	metastasis	pleural effusion
+COR-L95	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_2418	Male, 64	primary	lung
+COV318	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_2419	Female	metastasis	ascites
+COV362	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_2420	Female	metastasis	pleural effusion
+COV413B	Ovarian cancer		CVCL_2423		Metastasis	uriry_tract
+COV434	Ovarian cancer	Adenocarcinoma, endometrioid	CVCL_2010	Female, 26	primary	ovary
+COV504	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_2424		Metastasis	pleural_effusion
+COV644	Ovarian cancer	Adenocarcinoma, mucinous	CVCL_2425	Female	primary	ovary
+CPC-N	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1146		Metastasis	pleural_effusion
+CW-2	Colorectal cancer	Adenocarcinoma	CVCL_1151	Female, 55	primary	large intestine
+D283 Med	Brain cancer	Medulloblastoma	CVCL_1155	Male, 6	metastasis	abdomen
+D341 Med	Brain cancer		CVCL_0018	Male, 3		central nervous system
+DAN-G	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_0243	Female, 68		pancreas
+Daoy	Brain cancer	Medulloblastoma	CVCL_1167	Male, 4	primary	central nervous system
+Daudi	Lymphoma		CVCL_0008	Male, 16		haematopoietic and lymphoid tissue
+DB	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_1168	Male, 45	metastasis	ascites
+DBTRG-05MG	Brain cancer	Glioblastoma	CVCL_1169	Female, 59	primary	central nervous system
+DEL	Lymphoma	T-cell, Non-Hodgkins, Anaplastic Large Cell (ALCL)	CVCL_1170	Male, 12		pleural effusion
+DEOC-1	Skin cancer	Melanoma	CVCL_4161			
+Detroit 562	Head and Neck cancer	Squamous Cell Carcinoma, pharynx	CVCL_1171	Female	metastasis	pleural effusion
+DK-MG	Brain cancer	Glioblastoma	CVCL_1173	Female, 67	primary	central nervous system
+DM-3	Non-cancerous	Lung	CVCL_2019	Male, 62		fibroblast
+DMS 114	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1174	Male, 68	primary	lung
+DMS 153	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1175	Male, 44	metastasis	liver
+DMS 273	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1176	Female, 50	metastasis	pleural effusion
+DMS 454	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_2438	Male	primary	lung
+DMS 53	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1177	Male, 54	primary	lung
+DMS 79	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1178	Male, 65	metastasis	pleural effusion
+DND-41	Leukemia	Acute Lymphoblastic Leukemia (ALL), T-cell	CVCL_2022	Male, 13	primary	haematopoietic and lymphoid tissue
+DoHH2	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_1179	Male, 60	metastasis	pleural effusion
+DOK	Head and Neck cancer	Oral Dysplasia	CVCL_1180	57		upper_aerodigestive_tract
+DOV13	Ovarian cancer	Adenocarcinoma	CVCL_6774		Primary	ovary
+DU145	Prostate cancer	Adenocarcinoma	CVCL_0105	Male, 69	metastasis	central nervous system
+DU4475	Breast cancer	Carcinoma	CVCL_1183	Female, 62	metastasis	skin
+DV-90	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1184	Male, 50	metastasis	pleural effusion
+EB1	Lymphoma	B-cell, Non-Hodgkins, Burkitts	CVCL_2027	Female, 9	primary	bone
+EB2	Lymphoma	B-cell, Non-Hodgkins, Burkitts	CVCL_1186	7		ovary
+EB3 [Human Burkitt lymphoma]	Lymphoma	B-cell, Non-Hodgkins, Burkitts	CVCL_1185	3		haematopoietic_and_lymphoid_tissue
+EBC-1	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_2891	Male, 69	metastasis	skin
+EC-GI-10	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1187	Male, 65		lymph node
+ECC10	Gastric cancer	Small Cell Carcinoma	CVCL_1188	Male, 73		liver
+ECC12	Gastric cancer	Small Cell Carcinoma	CVCL_1189	Male, 63		stomach
+EFE-184	Uterine cancer	Endometrial Adenocarcinoma	CVCL_1191	Female, 69	metastasis	ascites
+EFM-19	Breast cancer	Breast Ductal Carcinoma	CVCL_0253	Female, 50	metastasis	pleural effusion
+EFM-192A	Breast cancer	Adenocarcinoma	CVCL_1812	Female, 46	metastasis	pleural effusion
+EFO-21	Ovarian cancer		CVCL_0029	Female, 56	metastasis	ascites
+EFO-27	Ovarian cancer	Adenocarcinoma, endometrioid	CVCL_1192	Female, 36	metastasis	abdomen
+EHEB	Lymphoma	B-cell	CVCL_1194	Female, 69		haematopoietic and lymphoid tissue
+EJM	Myeloma	Multiple Myeloma	CVCL_2030	Female, 58	primary	ascites
+EKVX	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1195	Male	primary	lung
+EM-2	Leukemia	Chronic Myelogenous Leukemia (CML), blast crisis	CVCL_1196	Female, 5		bone marrow
+EN	Uterine cancer	Endometrial Adenocarcinoma	CVCL_2034	Female, 50	primary	endometrium
+EoL-1	Leukemia	Acute Myelogenous Leukemia (AML), M5 (Eosinophilic/Monocytic)	CVCL_0258	Male, 33		haematopoietic and lymphoid tissue
+EPLC-272H	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_1197	Male, 57	primary	lung
+ES-2	Ovarian cancer	Adenocarcinoma, clear cell	CVCL_3509	Female, 47	primary	ovary
+ESS-1	Uterine cancer	Endometrial Stromal Sarcoma	CVCL_1205	Female, 76	primary	endometrium
+Evsa-T	Breast cancer	Carcinoma	CVCL_1207	58	Metastasis	ascites
+EW-8	Bone cancer	Ewings Sarcoma	CVCL_V618	Male		bone
+EWS-502	Bone cancer	Ewings Sarcoma	CVCL_S740	Female		bone
+F-36P	Leukemia	Acute Myelogenous Leukemia (AML), M6 (Erythroleukemia)	CVCL_2037	Male, 68	metastasis	pleural effusion
+FaDu	Head and Neck cancer	Squamous Cell Carcinoma	CVCL_1218	Male, 56	primary	upper aerodigestive tract
+Farage	Lymphoma	B-cell, Non-Hodgkins	CVCL_3302	70	Metastasis	lymph_node
+fHDF/TERT166	Non-cancerous		CVCL_GZ73	Male		
+FTC-133	Thyroid cancer	Carcinoma, anaplastic	CVCL_1219	Male, 42	metastasis	thyroid
+FTC-238	Thyroid cancer	Carcinoma, follicular	CVCL_2447	Male, 42	metastasis	lung
+FU-OV-1	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_2047	Female, 65	primary	ovary
+Fu97	Gastric cancer	Adenocarcinoma	CVCL_2908	Female, 66	primary	stomach
+G-292 clone A141B1	Bone cancer	Osteosarcoma	CVCL_2909	Female, 9	primary	bone
+G-361	Skin cancer	Melanoma	CVCL_1220	Male, 31	primary	skin
+G-401	Rhabdoid	Malignant Rhabdoid Tumor	CVCL_0270	Male, 0	primary	kidney
+G-402	Kidney cancer	Renal Cell Carcinoma	CVCL_1221	Female, 0	primary	kidney
+GA-10	Lymphoma	B-cell, Non-Hodgkins, Burkitts	CVCL_1222	Male, 41		haematopoietic and lymphoid tissue
+GAMG	Brain cancer		CVCL_1226	Female, 42	primary	central nervous system
+GB-1	Brain cancer	Glioblastoma	CVCL_1227	Male, 35	primary	central nervous system
+GCIY	Gastric cancer	Adenocarcinoma	CVCL_1228	Female, 39	metastasis	ascites
+GCT	Sarcoma	Pleomorphic Sarcoma	CVCL_1229	Male, 29	metastasis	soft tissue
+GDM-1	Leukemia	Acute Myelogenous Leukemia (AML)	CVCL_1230	Female, 66		haematopoietic and lymphoid tissue
+GI-1	Brain cancer	Glioblastoma	CVCL_1231	Male, 61	primary	central nervous system
+GMS-10	Brain cancer	Glioblastoma	CVCL_1233	Male, 49	primary	central nervous system
+GOS-3	Brain cancer	Glioblastoma	CVCL_2050	Male, 64	primary	central nervous system
+GP2d	Colorectal cancer	Adenocarcinoma	CVCL_2450	Female, 71	primary	colon
+Granta-519	Lymphoma	B-cell, Non-Hodgkins, Mantle Cell	CVCL_1818	Female, 58	primary	haematopoietic and lymphoid tissue
+GSS	Gastric cancer	Adenocarcinoma	CVCL_8876	Male, 75	metastasis	liver
+GSU	Gastric cancer	Adenocarcinoma	CVCL_8877	Male, 37	metastasis	ascites
+GTL-16	Gastric cancer	Adenocarcinoma	CVCL_7668		Metastasis	liver
+H4	Brain cancer	Glioma	CVCL_1239	Male, 37	primary	central nervous system
+HaCaT	Non-cancerous		CVCL_0038	Male		
+HAP1	Leukemia		CVCL_Y019	Male		bone marrow
+HARA [Human squamous cell lung carcinoma]	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_2914	Male, 57	metastasis	pleural effusion
+HBEC3-KT	Non-cancerous		CVCL_X491	Female, 65		
+HBF/TERT88	Non-cancerous		CVCL_9Q52	Female		
+HBL-100	Uncategorized		CVCL_4362			
+HCA7	Colorectal cancer	Adenocarcinoma	CVCL_0289		Primary	Colon
+HCC-56	Colorectal cancer	Adenocarcinoma	CVCL_2917	Female		large intestine
+HCC1011	Kidney cancer		CVCL_V675			
+HCC1143	Breast cancer	Breast Ductal Carcinoma	CVCL_1245	Female, 52	primary	breast
+HCC1162	Uterine cancer	Endometrial Adenocarcinoma	CVCL_V651		Primary	endometrium
+HCC1171	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_5126	Male, 58	primary	lung
+HCC1187	Breast cancer	Breast Ductal Carcinoma	CVCL_1247	Female, 41	primary	breast
+HCC1195	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenosquamous Carcinoma	CVCL_5127	Male, 47	primary	lung
+HCC1263	Colorectal cancer		CVCL_V686			
+HCC1319	Kidney cancer		CVCL_V671			
+HCC1359	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Large Cell Carcinoma	CVCL_5128	Female, 55	primary	lung
+HCC1395	Breast cancer	Breast Ductal Carcinoma	CVCL_1249	Female, 43	primary	breast
+HCC1419	Breast cancer	Breast Ductal Carcinoma	CVCL_1251	Female, 42	primary	breast
+HCC1428	Breast cancer	Carcinoma	CVCL_1252	Female, 49	metastasis	pleural effusion
+HCC1438	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Large Cell Carcinoma	CVCL_L088	Male, 43	primary	lung
+HCC1482	Cervical cancer		CVCL_V591			
+HCC1493	Breast cancer		CVCL_V592			
+HCC15	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_2057	Male, 47	primary	lung
+HCC1500	Breast cancer	Breast Ductal Carcinoma	CVCL_1254	Female, 32	primary	breast
+HCC1534	Lung cancer		CVCL_V595			
+HCC1569	Breast cancer	Carcinoma	CVCL_1255	Female, 70	primary	breast
+HCC1576	Adrenocortical cancer		CVCL_V597			
+HCC1588	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_A351	Female, 63	primary	lung
+HCC1599	Breast cancer	Breast Ductal Carcinoma	CVCL_1256	Female, 44	primary	breast
+HCC1806	Breast cancer	Breast Ductal Carcinoma	CVCL_1258	Female, 60	primary	breast
+HCC1833	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_5129	Female, 69	primary	lung
+HCC193	Lung cancer		CVCL_5130		Primary	lung
+HCC1937	Breast cancer	Breast Ductal Carcinoma	CVCL_0290	Female, 24	primary	breast
+HCC1954	Breast cancer	Breast Ductal Carcinoma	CVCL_1259	Female, 61	primary	breast
+HCC202	Breast cancer	Breast Ductal Carcinoma	CVCL_2062	Female, 82	primary	breast
+HCC2108	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_A352	Male, 59	primary	lung
+HCC2157	Breast cancer	Breast Ductal Carcinoma	CVCL_1261	Female, 48	primary	breast
+HCC2218	Breast cancer	Breast Ductal Carcinoma	CVCL_1263	Female, 38	primary	breast
+HCC2270	Lung cancer		CVCL_V635			
+HCC2279	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_5131	Female, 52	primary	lung
+HCC2302	Lung cancer		CVCL_V636			
+HCC2429	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), unspecified	CVCL_5132	Female, 34		lung
+HCC2450	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_5133	Male, 52		lung
+HCC2688	Breast cancer		CVCL_3376			breast
+HCC2814	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_V586	Male, 55		lung
+HCC2885	Lung cancer		CVCL_V588			
+HCC2911	Breast cancer		CVCL_0V16			
+HCC2935	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1265	Male, 39	primary	pleural effusion
+HCC33	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_2058	Male, 52	metastasis	pleural effusion
+HCC364	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_5134	Male, 76		lung
+HCC366	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenosquamous Carcinoma	CVCL_2059	Female, 80	primary	lung
+HCC38	Breast cancer	Breast Ductal Carcinoma	CVCL_1267	Female, 50	primary	breast
+HCC4006	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1269	Male	metastasis	pleural effusion
+HCC4011	Lung cancer		CVCL_S700			
+HCC4017	Lung cancer		CVCL_V579			
+HCC44	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_2060	Female, 54	primary	lung
+HCC461	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_5135	Male, 69		lung
+HCC515	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_5136	Female, 39		lung
+HCC630	Ovarian cancer		CVCL_V729			
+HCC70	Breast cancer	Breast Ductal Carcinoma	CVCL_1270	Female, 49	primary	breast
+HCC78	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_2061	Male, 65	metastasis	pleural effusion
+HCC827	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_2063	Female, 39	primary	lung
+HCC827 GR5	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_V622	Female, 39	primary	lung
+HCC89	Kidney cancer	Rel Cell Carcinoma	CVCL_V731			
+HCC95	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_5137	Male, 65	metastasis	pleural effusion
+HCT 116	Colorectal cancer	Adenocarcinoma	CVCL_0291	Male, 48	primary	large intestine
+HCT 15	Colorectal cancer	Adenocarcinoma	CVCL_0292	Male, 67	primary	large intestine
+HD-MY-Z	Uncategorized	Acute Myeloid Leukemia	CVCL_1273	Male, 29		pleural effusion
+HDLM-2	Lymphoma		CVCL_0009	Male, 74		pleural effusion
+HDQ-P1	Breast cancer	Breast Ductal Carcinoma	CVCL_2067	Female, 50	primary	breast
+HEC-1-A	Uterine cancer	Endometrial Adenocarcinoma	CVCL_0293	Female, 71	primary	endometrium
+HEC-1-B	Uterine cancer	Endometrial Adenocarcinoma	CVCL_0294	Female, 71	primary	endometrium
+HEC-108	Uterine cancer	Endometrial Adenocarcinoma	CVCL_2923	Female	primary	endometrium
+HEC-151	Uterine cancer	Endometrial Adenocarcinoma	CVCL_2925	Female	primary	endometrium
+HEC-251	Uterine cancer	Endometrial Adenocarcinoma	CVCL_2927	Female, 53	primary	endometrium
+HEC-265	Uterine cancer	Endometrial Adenocarcinoma	CVCL_2928	Female, 59	primary	endometrium
+HEC-50B	Uterine cancer	Endometrial Adenocarcinoma	CVCL_2929	Female	metastasis	ascites
+HEC-59	Uterine cancer	Endometrial Adenocarcinoma	CVCL_2930	Female	primary	endometrium
+HEC-6	Uterine cancer	Endometrial Adenocarcinoma	CVCL_2931	Female, 48	primary	endometrium
+HEK TE	Non-cancerous		CVCL_WS59	Female		kidney
+HEK293	Non-cancerous		CVCL_0045	Female		
+HEL	Leukemia		CVCL_0001	Male, 30		haematopoietic and lymphoid tissue
+HEL 92.1.7	Leukemia	Acute Myelogenous Leukemia (AML), M6 (Erythroleukemia)	CVCL_2481	Male, 30		bone marrow
+HeLa	Cervical cancer		CVCL_0030	Female, 31		cervix
+Hep 3B2.1-7	Liver cancer	Hepatocellular Carcinoma	CVCL_0326	Male, 8	primary	liver
+Hep-G2	Liver cancer		CVCL_0027	Male, 15	primary	liver
+HEY	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_0297			ovary
+HEY A8	Ovarian cancer	Adenocarcinoma, low grade serous	CVCL_8878	Female	metastasis	ascites
+HGC-27	Gastric cancer	Adenocarcinoma	CVCL_1279		metastasis	lymph node
+HH [Human lymphoma]	Lymphoma	T-cell, Non-Hodgkins, Cutaneous	CVCL_1280	Male, 61		haematopoietic and lymphoid tissue
+HHSteC	Uncategorized					
+HL-60	Leukemia		CVCL_0002	Female, 35	primary	haematopoietic and lymphoid tissue
+HLF	Liver cancer	Hepatocellular Carcinoma	CVCL_2947	Male, 68	primary	liver
+HLF-a	Non-cancerous	Lung	CVCL_2255	Female, 54	primary	fibroblast
+HMC-1	Leukemia		CVCL_0003	Male, 52		
+HMC-1-8	Breast cancer	Carcinoma	CVCL_2949	Female, 35	metastasis	pleural effusion
+HMCB	Skin cancer	Melanoma	CVCL_3317	Female, 57	primary	skin
+HMEL	Non-cancerous		CVCL_IZ34	Female		breast
+HMY-1	Skin cancer	Melanoma	CVCL_2950	62	Metastasis	lymph_node
+HN	Head and Neck cancer	Squamous Cell Carcinoma, oral	CVCL_1283	60	Metastasis	lymph_node
+HNT-34	Leukemia	Acute Myelogenous Leukemia (AML), M4 (Myelomonocytic)	CVCL_2071	Female, 47		haematopoietic and lymphoid tissue
+HOP-62	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1285	Female, 60	primary	lung
+HOP-92	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), unspecified	CVCL_1286	Male, 62	primary	lung
+HOS	Bone cancer	Osteosarcoma	CVCL_0312	Female, 13	primary	bone
+HPAC	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_3517	Female, 64	primary	pancreas
+HPAF-II	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_0313	Male, 44	metastasis	ascites
+HPB-ALL	Leukemia	Acute Lymphoblastic Leukemia (ALL), T-cell	CVCL_1820	Male, 14	primary	haematopoietic and lymphoid tissue
+Hs 172.T	Non-cancerous	Bladder	CVCL_0660	Male, 50		fibroblast
+Hs 229.T	Non-cancerous	Lung	CVCL_0698	Male, 65	primary	fibroblast
+Hs 255.T	Non-cancerous	Colorectal	CVCL_0707	Female, 46		fibroblast
+Hs 274.T	Non-cancerous	Breast	CVCL_0711	Female, 66		fibroblast
+Hs 281.T	Non-cancerous	Breast	CVCL_0715	Female, 37		fibroblast
+Hs 294T	Skin cancer	Melanoma	CVCL_0331	Male, 56	metastasis	lymph node
+Hs 343.T	Non-cancerous	Breast	CVCL_0726	Female, 47		fibroblast
+Hs 38.T	Ovarian cancer		CVCL_0735			
+Hs 578T	Breast cancer	Carcinoma	CVCL_0332	Female, 74	primary	breast
+Hs 600.T	Non-cancerous	Skin	CVCL_0814	Male	primary	fibroblast
+Hs 606.T	Non-cancerous	Breast	CVCL_0819	Female, 44		fibroblast
+Hs 611.T	Lymphoma	B-cell, Hodgkins	CVCL_0823	Female, 48		haematopoietic and lymphoid tissue
+Hs 616.T	Non-cancerous	Lymphoma	CVCL_0825	Male, 16		fibroblast
+Hs 618.T	Non-cancerous	Lung	CVCL_0827	Female, 60	primary	fibroblast
+Hs 675.T	Non-cancerous	Colorectal	CVCL_0836	Male		fibroblast
+Hs 683	Brain cancer	Oligodendroglioma	CVCL_0844	Male, 76	primary	central nervous system
+Hs 688(A).T	Non-cancerous	Skin	CVCL_0846	Male, 69	primary	fibroblast
+Hs 695T	Skin cancer	Melanoma, amelanotic	CVCL_0851	Male, 26	metastasis	lymph node
+Hs 698.T	Non-cancerous	Colorectal	CVCL_0855	Male, 70	metastasis	soft tissue
+Hs 706.T	Non-cancerous	Bone	CVCL_0863	Female, 16		fibroblast
+Hs 729.T	Uncategorized	Soft tissue	CVCL_0871	Male, 74	primary	
+Hs 737.T	Non-cancerous	Bone	CVCL_0878	Female, 10		fibroblast
+Hs 739.T	Non-cancerous	Breast	CVCL_0882	Female, 52		fibroblast
+Hs 742.T	Non-cancerous	Breast	CVCL_0888	Female, 71		fibroblast
+Hs 746.T	Gastric cancer	Adenocarcinoma	CVCL_0333	Male, 74	metastasis	soft tissue
+Hs 751.T	Non-cancerous	Lymphoma	CVCL_0891	Male, 19		fibroblast
+Hs 766T	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_0334	Male, 64	metastasis	lymph node
+Hs 819.T	Non-cancerous	Bone	CVCL_0928	Male, 60		fibroblast
+Hs 821.T	Non-cancerous	Bone	CVCL_0932	Female, 31	primary	fibroblast
+Hs 822.T	Non-cancerous	Bone	CVCL_0933	Female, 9	primary	fibroblast
+Hs 834.T	Non-cancerous	Skin	CVCL_0938	Female, 27	metastasis	lymph node
+Hs 839.T	Non-cancerous	Skin	CVCL_0941	Female, 42		fibroblast
+Hs 840.T	Non-cancerous	Upper aerodigestive	CVCL_0942	Male, 7		fibroblast
+Hs 852.T	Skin cancer	Melanoma	CVCL_0950	Male, 53		skin
+Hs 863.T	Non-cancerous	Bone	CVCL_0959	Female, 5		fibroblast
+Hs 870.T	Non-cancerous	Bone	CVCL_0966	Male, 22		fibroblast
+Hs 888.T	Non-cancerous	Bone	CVCL_0979	Male, 20		fibroblast
+Hs 895.T	Non-cancerous	Skin	CVCL_0993	Female, 48	metastasis	fibroblast
+Hs 934.T	Non-cancerous	Skin	CVCL_1031	Female, 58	primary	fibroblast
+Hs 936.T	Skin cancer	Melanoma	CVCL_1033	Male		skin
+Hs 939.T	Skin cancer	Melanoma	CVCL_1036	Female, 24		skin
+Hs 940.T	Non-cancerous	Skin	CVCL_1038	Male, 57	primary	fibroblast
+Hs 944.T	Skin cancer	Melanoma	CVCL_1040	Male, 51	metastasis	skin
+HSC-2	Head and Neck cancer	Squamous Cell Carcinoma	CVCL_1287	Male, 69	metastasis	upper aerodigestive tract
+HSC-3	Head and Neck cancer	Squamous Cell Carcinoma	CVCL_1288	Male, 64	metastasis	upper aerodigestive tract
+HSC-4	Head and Neck cancer	Squamous Cell Carcinoma	CVCL_1289	Male, 64	metastasis	upper aerodigestive tract
+HSkMC	Uncategorized					
+HT	Lymphoma	B-cell, Non-Hodgkins	CVCL_1290	Male, 70		ascites
+HT-1080	Sarcoma	Fibrosarcoma	CVCL_0317	Male, 35	metastasis	soft tissue
+HT-1197	Bladder cancer	Carcinoma	CVCL_1291	Male, 44	primary	urinary tract
+HT-1376	Bladder cancer	Carcinoma	CVCL_1292	Female, 58	primary	urinary tract
+HT-144	Skin cancer	Melanoma	CVCL_0318	Male, 29	metastasis	skin
+HT-29	Colorectal cancer	Adenocarcinoma	CVCL_0320	Female, 44	primary	large intestine
+HT-55	Colorectal cancer	Adenocarcinoma	CVCL_1294		primary	large intestine
+HT115	Colorectal cancer	Adenocarcinoma	CVCL_2520			colon
+hTCEpi	Non-cancerous		CVCL_AQ44	Male, 62		
+hTEC/SVTERT24-B	Non-cancerous		CVCL_JM27	Female		
+hTERT-HME1	Non-cancerous		CVCL_3383	Female, 53		
+hTERT-RPE1	Non-cancerous		CVCL_4388	Female, 1		
+HuCC-T1	Bile duct cancer	Cholangiocarcinoma, intrahepatic	CVCL_0324	Male, 56	metastasis	ascites
+HuG1-N	Gastric cancer	Adenocarcinoma, tubular	CVCL_4846	Male, 55	metastasis	stomach
+HuH-1	Liver cancer	Hepatocellular Carcinoma, HBs-antigen carrier	CVCL_2956	Male, 53	primary	liver
+HuH-28	Bile duct cancer	Cholangiocarcinoma, intrahepatic	CVCL_2955	Female, 37	primary	biliary tract
+HuH-6	Liver cancer	Hepatoblastoma	CVCL_4381	Male, 1		liver
+Huh-7	Liver cancer	Hepatocellular Carcinoma	CVCL_0336	Male, 57	primary	liver
+HuNS1	Myeloma	Multiple Myeloma	CVCL_2526	Male		haematopoietic and lymphoid tissue
+HuP-T3	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_1299	Male, 66	metastasis	ascites
+HuP-T4	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_1300	Male, 60	metastasis	ascites
+HuT 102	Lymphoma	T-cell	CVCL_3526	Male, 28		lymph node
+HuT 78	Lymphoma	T-cell, Non-Hodgkins, Cutaneous	CVCL_0337	Male, 53		haematopoietic and lymphoid tissue
+HuTu 80	Gastric cancer	Duodenal Adenocarcinoma	CVCL_1301	Male, 53	primary	small intestine
+HUVEC/TERT2	Non-cancerous		CVCL_9Q53	Female		
+IA-LM	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Large Cell Carcinoma	CVCL_1302	Male, 68	metastasis	skin
+IGR-1	Skin cancer	Melanoma	CVCL_1303	Male, 42	metastasis	lymph node
+IGR-37	Skin cancer	Melanoma	CVCL_2075	Male, 26	metastasis	lymph node
+IGR-39	Skin cancer	Melanoma	CVCL_2076	Male, 26	primary	skin
+IGROV-1	Ovarian cancer	Adenocarcinoma, mixed	CVCL_1304	Female, 47	primary	ovary
+IM95	Gastric cancer	Adenocarcinoma	CVCL_2961	Male, 63	primary	stomach
+IMR-32	Neuroblastoma		CVCL_0346	Male, 1	metastasis	abdomen
+INA-6	Myeloma	Multiple Myeloma	CVCL_5209	Male, 80		pleural effusion
+IOMM-Lee	Brain cancer	Meningioma	CVCL_5779	Male, 61		central nervous system
+IPC-298	Skin cancer	Melanoma	CVCL_1307	Female, 64	primary	skin
+Ishikawa (Heraklio) 02 ER-	Uterine cancer	Endometrial Adenocarcinoma	CVCL_6543	Female, 39	primary	endometrium
+IST-Mes1	Lung cancer	Mesothelioma	CVCL_1311	Female, 70	primary	pleural effusion
+IST-Mes2	Lung cancer	Mesothelioma	CVCL_1312	Male, 71		pleural effusion
+J82	Bladder cancer	Transitional Cell Carcinoma	CVCL_0359	Male, 58	primary	urinary tract
+JeKo-1	Lymphoma	B-cell, Non-Hodgkins, Mantle Cell	CVCL_1865	Female, 78		haematopoietic and lymphoid tissue
+JH-EsoAd1	Esophageal cancer	Adenocarcinoma	CVCL_8098	Male, 66		oesophagus
+JHH-1	Liver cancer	Hepatocellular Carcinoma	CVCL_2785	Male, 50	primary	liver
+JHH-2	Liver cancer	Hepatocellular Carcinoma	CVCL_2786	Male, 57	metastasis	ascites
+JHH-4	Liver cancer	Hepatocellular Carcinoma	CVCL_2787	Male, 51	primary	liver
+JHH-5	Liver cancer	Hepatocellular Carcinoma	CVCL_0364	Male, 50	primary	liver
+JHH-6	Liver cancer	Hepatocellular Carcinoma	CVCL_2788	Female, 57	primary	liver
+JHH-7	Liver cancer	Hepatocellular Carcinoma	CVCL_2805	Male, 53	primary	liver
+JHOC-5	Ovarian cancer	Adenocarcinoma, clear cell	CVCL_4640	Female, 47	primary	ovary
+JHOM-1	Ovarian cancer	Adenocarcinoma, mucinous	CVCL_4644	Female, 88	primary	ovary
+JHOM-2B	Ovarian cancer	Adenocarcinoma, mucinous	CVCL_4645	Female, 56	primary	ovary
+JHOS-2	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_4647	Female, 45	primary	ovary
+JHOS-4	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_4649	Female, 44	primary	ovary
+JHUEM-1	Uterine cancer	Endometrial Adenocarcinoma	CVCL_4655	Female, 56	primary	endometrium
+JHUEM-2	Uterine cancer	Endometrial Adenocarcinoma	CVCL_4656	Female, 62	primary	endometrium
+JHUEM-3	Uterine cancer	Endometrial Adenocarcinoma	CVCL_4657	Female, 60		endometrium
+JHUEM-7	Uterine cancer	Endometrial Adenocarcinoma	CVCL_4658	Female, 58	primary	endometrium
+JIMT-1	Breast cancer	Breast Ductal Carcinoma	CVCL_2077	Female, 62	metastasis	pleural effusion
+Jiyoye	Lymphoma	B-cell, Non-Hodgkins, Burkitts	CVCL_1317	7		ascites
+JJ012	Bone cancer		CVCL_D605			
+JJN-3	Myeloma	Multiple Myeloma	CVCL_2078	Female, 57	primary	bone marrow
+JK-1	Leukemia	Chronic Myelogenous Leukemia (CML), blast crisis	CVCL_2079	Male, 58		haematopoietic and lymphoid tissue
+JL-1	Lung cancer	Mesothelioma	CVCL_2080	Male, 54	primary	pleura
+JM-1	Leukemia	Acute Lymphoblastic Leukemia (ALL), B-cell	CVCL_3532	Male		haematopoietic and lymphoid tissue
+JMSU-1	Bladder cancer	Carcinoma	CVCL_2081	Male, 75	metastasis	ascites
+JURKAT	Leukemia		CVCL_0065	Male, 14	primary	haematopoietic and lymphoid tissue
+Jurkat E6.1	Leukemia		CVCL_0367		Primary	haematopoietic_and_lymphoid_tissue
+JURL-MK1	Leukemia	Chronic Myelogenous Leukemia (CML), blast crisis	CVCL_2086	Male, 73		haematopoietic and lymphoid tissue
+JVM-2	Lymphoma	B-cell, Non-Hodgkins, Mantle Cell	CVCL_1319	Female, 63		haematopoietic and lymphoid tissue
+JVM-3	Leukemia	Chronic Lymphoblastic Leukemia (CLL), B-cell	CVCL_1320	Male, 73		haematopoietic and lymphoid tissue
+K-562	Leukemia		CVCL_0004	Female, 53	metastasis	pleural effusion
+K029AX	Skin cancer	Melanoma	CVCL_8784	Female	primary	skin
+KALS-1	Brain cancer	Glioblastoma	CVCL_1323	Female, 74	primary	central nervous system
+Karpas-1106P	Lymphoma	B-cell, Non-Hodgkins, Mediastil Large	CVCL_1821	23		pleural_effusion
+Karpas-299	Lymphoma	T-cell, Non-Hodgkins, Anaplastic Large Cell (ALCL)	CVCL_1324	Male, 25		haematopoietic and lymphoid tissue
+Karpas-422	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_1325	Female, 73	metastasis	pleural effusion
+Karpas-620	Myeloma	Multiple Myeloma	CVCL_1823	Female, 77	primary	haematopoietic and lymphoid tissue
+Karpas-707	Myeloma		CVCL_0010	Male, 53		
+Kasumi-1	Leukemia	Acute Myelogenous Leukemia (AML), M2 (Myeloblastic)	CVCL_0589	Male, 7	primary	haematopoietic and lymphoid tissue
+Kasumi-2	Leukemia	Acute Lymphoblastic Leukemia (ALL), B-cell	CVCL_0590	Male, 15		bone marrow
+Kasumi-6	Leukemia	Acute Myelogenous Leukemia (AML), M2 (Myeloblastic)	CVCL_0614	Male, 64	primary	haematopoietic and lymphoid tissue
+KATO III	Gastric cancer	Adenocarcinoma, signet ring cell	CVCL_0371	Male, 57	metastasis	pleural effusion
+KCI-MOH1	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_2090	64	Primary	pancreas
+KCL-22	Leukemia	Chronic Myelogenous Leukemia (CML), blast crisis	CVCL_2091	Female, 32		pleural effusion
+KD [Human abdomen rhabdoid tumor]	Rhabdoid	Malignant Rhabdoid Tumor	CVCL_U757	Female, 0		soft tissue
+KE-37	Leukemia	Acute Lymphoblastic Leukemia (ALL), T-cell	CVCL_1327	Male, 27		haematopoietic and lymphoid tissue
+KE-39	Gastric cancer	Adenocarcinoma	CVCL_3385	Male, 77	metastasis	lymph node
+KE-97	Myeloma	Myeloma	CVCL_3386	Male, 52	metastasis	abdomen
+Kelly	Neuroblastoma		CVCL_2092	Female, 1	primary	autonomic ganglia
+KG-1	Leukemia	Acute Myelogenous Leukemia (AML)	CVCL_0374	Male, 59	primary	bone marrow
+KG-1-C	Brain cancer	Oligodendroglioma	CVCL_2971	Male, 13	primary	central nervous system
+KHM-1B	Myeloma	Multiple Myeloma	CVCL_2972	Male, 53	primary	pleural effusion
+Ki-JK	Lymphoma	T-cell, Non-Hodgkins, Anaplastic Large Cell (ALCL)	CVCL_2093	Male, 15		pleural effusion
+KLE	Uterine cancer	Endometrial Adenocarcinoma	CVCL_1329	Female, 68	primary	endometrium
+KLM-1	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_5146		Metastasis	liver
+KM-H2	Lymphoma	B-cell, Hodgkins	CVCL_1330	Male, 37	metastasis	pleural effusion
+KM12	Colorectal cancer	Adenocarcinoma	CVCL_1331		primary	large intestine
+KMBC-2	Bladder cancer	Carcinoma	CVCL_2977	Female	primary	urinary tract
+KMM-1	Myeloma	Multiple Myeloma	CVCL_2981	Male, 62	primary	haematopoietic and lymphoid tissue
+KMRC-1	Kidney cancer	Renal Carcinoma, clear cell	CVCL_2983	Male	primary	kidney
+KMRC-2	Kidney cancer	Renal Carcinoma, clear cell	CVCL_2984	Male	primary	kidney
+KMRC-20	Kidney cancer	Renal Cell Carcinoma	CVCL_2986	Female	primary	kidney
+KMRC-3	Kidney cancer	Renal Carcinoma, clear cell	CVCL_2985	Male	primary	kidney
+KMS-11	Myeloma	Multiple Myeloma	CVCL_2989	Female, 67	primary	pleural effusion
+KMS-12-BM	Myeloma	Multiple Myeloma	CVCL_1334	Female, 64	primary	bone marrow
+KMS-18	Myeloma	Multiple Myeloma	CVCL_A637	Male, 60	primary	haematopoietic and lymphoid tissue
+KMS-20	Myeloma	Multiple Myeloma	CVCL_2990	Female, 65	primary	bone marrow
+KMS-21-BM	Myeloma	Multiple Myeloma	CVCL_2991	Male, 62	primary	haematopoietic and lymphoid tissue
+KMS-26	Myeloma	Multiple Myeloma	CVCL_2992	Male, 50	primary	pleural effusion
+KMS-27	Myeloma	Multiple Myeloma	CVCL_2993	Male, 52	primary	haematopoietic and lymphoid tissue
+KMS-28BM	Myeloma	Multiple Myeloma	CVCL_2994	Female, 77	primary	haematopoietic and lymphoid tissue
+KMS-34	Myeloma	Multiple Myeloma	CVCL_2996	Female, 60	primary	pleural effusion
+KNS-42	Brain cancer	Glioblastoma	CVCL_0378	Male, 16	primary	central nervous system
+KNS-60	Brain cancer	Glioblastoma	CVCL_2798	Male, 55	primary	central nervous system
+KNS-62	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_1335	Male, 49	metastasis	central nervous system
+KNS-81	Brain cancer	Glioblastoma	CVCL_2799	Male, 65	primary	central nervous system
+KO52	Leukemia	Acute Myelogenous Leukemia (AML), M2 (Myeloblastic)	CVCL_1321	Male, 46		bone marrow
+KOPN-8	Leukemia	Acute Lymphoblastic Leukemia (ALL), B-cell	CVCL_1866	Female, 0	primary	haematopoietic and lymphoid tissue
+KP-2	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_3004	Female, 65	primary	pancreas
+KP-3	Pancreatic cancer	Ductal Adenosquamous Carcinoma, exocrine	CVCL_3005	Male, 75	metastasis	liver
+KP-4	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_1338	Male, 50	metastasis	ascites
+KP-MRT-RY	Rhabdoid	Malignant Rhabdoid Tumor	CVCL_7051	Male, 0		soft tissue
+KP-N-RT-BM-1	Neuroblastoma		CVCL_1339	Female, 1	metastasis	bone marrow
+KP-N-SI9s	Neuroblastoma		CVCL_1340	Male, 5	metastasis	autonomic ganglia
+KP-N-YN	Neuroblastoma		CVCL_1341	Male, 2	metastasis	lymph node
+KPL-1	Breast cancer	Carcinoma	CVCL_2094	Female, 69	metastasis	pleural effusion
+KPL-4	Brain cancer	Carcinoma	CVCL_5310		Metastasis	pleural_effusion
+KS-1 [Human glioblastoma]	Brain cancer	Astrocytoma	CVCL_1343	Female, 45	primary	central nervous system
+KU-19-19	Bladder cancer	Transitional Cell Carcinoma	CVCL_1344	Female, 76		urinary tract
+Ku812	Leukemia	Chronic Myelogenous Leukemia (CML), blast crisis	CVCL_0379	Male, 38		haematopoietic and lymphoid tissue
+Kuramochi	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_1345	Female	metastasis	ascites
+KYM-1	Rhabdoid	Malignant Rhabdoid Tumor	CVCL_3007	Male, 0	primary	soft tissue
+KYO-1	Leukemia	Chronic Myelogenous Leukemia (CML), blast crisis	CVCL_2095	Male, 22		haematopoietic and lymphoid tissue
+KYSE-140	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1347	Male, 54	primary	oesophagus
+KYSE-150	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1348	Female, 49	primary	oesophagus
+KYSE-180	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1349	Male, 53	primary	oesophagus
+KYSE-270	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1350	Male, 79	primary	oesophagus
+KYSE-30	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1351	Male, 64	primary	oesophagus
+KYSE-410	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1352	Male, 51	primary	oesophagus
+KYSE-450	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1353	Male, 59	primary	oesophagus
+KYSE-510	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1354	Female, 67	primary	oesophagus
+KYSE-520	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1355	Female, 58	primary	oesophagus
+KYSE-70	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1356	Male, 77	primary	oesophagus
+L-1236	Lymphoma	B-cell, Hodgkins	CVCL_2096	Male, 34		haematopoietic and lymphoid tissue
+L-363	Myeloma	Multiple Myeloma	CVCL_1357	Female, 36	primary	haematopoietic and lymphoid tissue
+L-428	Lymphoma	B-cell, Hodgkins	CVCL_1361	Female, 37		pleural effusion
+L-540	Lymphoma	B-cell, Hodgkins	CVCL_1362	Female, 20		bone marrow
+L3.3	Pancreatic cancer	Ductal Adenosquamous Carcinoma	CVCL_8147	Female, 77	metastasis	lymph node
+LAMA-84	Leukemia	Chronic Myelogenous Leukemia (CML), blast crisis	CVCL_0388	Female, 29	primary	haematopoietic and lymphoid tissue
+LC-1F	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_1372	Male, 69	primary	lung
+LCLC-103H	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Large Cell Carcinoma	CVCL_1375	Male, 61	metastasis	pleural effusion
+LCLC-97TM1	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Large Cell Carcinoma	CVCL_1376	Male, 44	primary	lung
+LHCN-M2	Non-cancerous		CVCL_8890	Male, 41		
+Li-7	Liver cancer		CVCL_3840	Male, 45		liver
+LK-2	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_1377	Male, 74	primary	lung
+LMSU	Gastric cancer	Adenocarcinoma	CVCL_4849	Female, 27	metastasis	lymph node
+LN-18	Brain cancer	Glioblastoma	CVCL_0392	Male, 65	primary	central nervous system
+LN-215	Brain cancer	Glioblastoma	CVCL_3954	Female, 60		central nervous system
+LN-229	Brain cancer	Glioblastoma	CVCL_0393	Female, 60	primary	central nervous system
+LN-235	Brain cancer	Astrocytoma	CVCL_3957	Male, 38		central nervous system
+LN-308	Brain cancer	Glioblastoma	CVCL_0394	Male, 60		central nervous system
+LN-319	Brain cancer	Astrocytoma	CVCL_3958	Male, 67		central nervous system
+LN-340	Brain cancer	Glioblastoma	CVCL_3955	Male, 57		central nervous system
+LN-382	Brain cancer	Glioblastoma	CVCL_3956	Male, 67		central nervous system
+LN-428	Brain cancer	Glioblastoma	CVCL_3959	Male, 48		central nervous system
+LN-443	Brain cancer	Glioblastoma	CVCL_3960	Female		central nervous system
+LN-464	Brain cancer	Glioblastoma	CVCL_3962	Male, 67		central nervous system
+LNCaP	Prostate cancer		CVCL_0395	50	Metastasis	lymph_node
+LNCaP clone FGC	Prostate cancer	Adenocarcinoma	CVCL_1379	Male, 50	metastasis	lymph node
+LOU-NH91	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_2104	Female, 64	primary	lung
+Loucy	Leukemia	Acute Lymphoblastic Leukemia (ALL), T-cell	CVCL_1380	Female, 38		haematopoietic and lymphoid tissue
+LoVo	Colorectal cancer	Adenocarcinoma	CVCL_0399	Male, 56	metastasis	lymph node
+LOX-IMVI	Skin cancer	Melanoma	CVCL_1381	Male, 58	metastasis	lymph node
+LP-1	Myeloma		CVCL_0012	Female, 56	primary	haematopoietic and lymphoid tissue
+LS1034	Colorectal cancer	Adenocarcinoma	CVCL_1382	Male, 54	primary	large intestine
+LS123	Colorectal cancer	Adenocarcinoma	CVCL_1383	Female, 65	primary	colon
+LS180	Colorectal cancer	Adenocarcinoma	CVCL_0397	Female, 58	primary	colon
+LS411N	Colorectal cancer	Adenocarcinoma	CVCL_1385	Male, 32	primary	large intestine
+LS513	Colorectal cancer	Adenocarcinoma	CVCL_1386	Male, 63	primary	large intestine
+Lu-65	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Large Cell Carcinoma	CVCL_1392	Male, 64	primary	lung
+Lu-99	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Large Cell Carcinoma	CVCL_3015	Male, 63	metastasis	pleura
+LUDLU-1	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_2582	Male, 72	primary	lung
+LXF 289	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1394	Male, 62	primary	lung
+LXFL 529L	Lung cancer		CVCL_D085			
+M-07e	Leukemia	Acute Myelogenous Leukemia (AML), M7 (Megakaryoblastic)	CVCL_2106	Female, 0		haematopoietic and lymphoid tissue
+M059K	Brain cancer	Glioblastoma	CVCL_0401	Male, 33	primary	central nervous system
+Malme-3M	Skin cancer	Melanoma	CVCL_1438	Male, 43	metastasis	lung
+MC116	Lymphoma	B-cell, Non-Hodgkins	CVCL_1399	Male		pleural effusion
+MCAS	Ovarian cancer	Cystadenocarcinoma, mucinous	CVCL_3020	Female, 60	primary	ovary
+MCF-10A	Non-cancerous		CVCL_0598	36	Primary	breast
+MCF-7	Breast cancer		CVCL_0031	Female, 69	metastasis	pleural effusion
+MDA-MB-134-VI	Breast cancer	Breast Ductal Carcinoma	CVCL_0617	Female, 47	metastasis	pleural effusion
+MDA-MB-157	Breast cancer	Breast Ductal Carcinoma	CVCL_0618	Female, 44	metastasis	pleural effusion
+MDA-MB-175-VII	Breast cancer	Breast Ductal Carcinoma	CVCL_1400	Female, 56	metastasis	pleural effusion
+MDA-MB-231	Breast cancer	Carcinoma	CVCL_0062	Female, 51	metastasis	pleural effusion
+MDA-MB-330	Breast cancer	Carcinoma	CVCL_0619	43	Metastasis	pleural_effusion
+MDA-MB-361	Breast cancer	Carcinoma	CVCL_0620	Female, 40	metastasis	central nervous system
+MDA-MB-415	Breast cancer	Carcinoma	CVCL_0621	Female, 38	metastasis	pleural effusion
+MDA-MB-435	Skin cancer		CVCL_0417			
+MDA-MB-435S	Skin cancer	Melanoma, amelanotic	CVCL_0622	Female, 31	metastasis	skin
+MDA-MB-436	Breast cancer	Carcinoma	CVCL_0623	Female, 43	metastasis	pleural effusion
+MDA-MB-453	Breast cancer	Carcinoma	CVCL_0418	Female, 48	metastasis	pericardial effusion
+MDA-MB-468	Breast cancer	Carcinoma	CVCL_0419	Female, 51	metastasis	pleural effusion
+MDA-PCa-2b	Prostate cancer	Adenocarcinoma	CVCL_4748	Male, 63	metastasis	bone
+MDST8	Colorectal cancer	Adenocarcinoma	CVCL_2588			large intestine
+ME-1 [Human leukemia]	Leukemia	Acute Myelogenous Leukemia (AML), M4 (Myelomonocytic)	CVCL_2110	Male, 40		haematopoietic and lymphoid tissue
+ME-180	Cervical cancer	Squamous Cell Carcinoma	CVCL_1401	66	Metastasis	abdomen
+MEC-1	Leukemia	Chronic Lymphoblastic Leukemia (CLL), B-cell	CVCL_1870	Male, 61		haematopoietic and lymphoid tissue
+MEG-01	Leukemia	Chronic Myelogenous Leukemia (CML)	CVCL_0425	Male, 55		bone marrow
+Mel 928	Skin cancer	Melanoma	CVCL_C694			
+Mel Ho	Skin cancer	Melanoma	CVCL_1402	Female	primary	skin
+Mel JuSo	Skin cancer	Melanoma	CVCL_1403	Female, 58	primary	skin
+MES-SA	Sarcoma	Uterine Sarcoma	CVCL_1404	Female, 56	primary	endometrium
+MeWo	Skin cancer	Melanoma	CVCL_0445	Male, 78	metastasis	lymph node
+MFE-280	Uterine cancer	Endometrial Adenocarcinoma	CVCL_1405	Female, 77	primary	endometrium
+MFE-296	Uterine cancer	Endometrial Adenocarcinoma	CVCL_1406	Female, 68	primary	endometrium
+MFE-319	Uterine cancer		CVCL_2112	Female, 81		endometrium
+MFM-223	Breast cancer	Breast Ductal Carcinoma	CVCL_1408	0	Metastasis	pleural_effusion
+MG-63	Bone cancer	Osteosarcoma	CVCL_0426	Male, 14	primary	bone
+MHH-CALL-2	Leukemia	Acute Lymphoblastic Leukemia (ALL), B-cell	CVCL_1409	Female, 15		haematopoietic and lymphoid tissue
+MHH-CALL-3	Leukemia	Acute Lymphoblastic Leukemia (ALL), B-cell	CVCL_0089	Female, 11		bone marrow
+MHH-CALL-4	Leukemia	Acute Lymphoblastic Leukemia (ALL), B-cell	CVCL_1410	Male, 10		haematopoietic and lymphoid tissue
+MHH-ES-1	Bone cancer	Ewings Sarcoma	CVCL_1411	Male, 12	metastasis	ascites
+MHH-NB-11	Neuroblastoma		CVCL_1412	Male, 4	metastasis	autonomic ganglia
+MHH-PREB-1	Lymphoma	B-cell, Non-Hodgkins	CVCL_1413	7		lymph_node
+MIA PaCa-2	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_0428	Male, 65	primary	pancreas
+Mino	Lymphoma	B-cell, Non-Hodgkins, Mantle Cell	CVCL_1872	Male, 68		haematopoietic and lymphoid tissue
+MJ	Lymphoma	T-cell, Non-Hodgkins, Cutaneous	CVCL_1414	Male, 50		haematopoietic and lymphoid tissue
+MKN1	Gastric cancer	Adenocarcinoma	CVCL_1415	Male, 72	metastasis	lymph node
+MKN45	Gastric cancer	Adenocarcinoma	CVCL_0434	Female, 62	metastasis	liver
+MKN7	Gastric cancer	Adenocarcinoma, tubular	CVCL_1417	Male, 39	metastasis	lymph node
+MKN74	Gastric cancer	Adenocarcinoma	CVCL_2791	Male, 37	metastasis	liver
+ML-1 [Human thyroid carcinoma]	Thyroid cancer	Carcinoma, follicular	CVCL_H525	Female, 50		thyroid
+ML-2	Leukemia	Acute Myelogenous Leukemia (AML)	CVCL_1418	26		haematopoietic_and_lymphoid_tissue
+MM1.S	Myeloma	Multiple Myeloma	CVCL_8792	Female, 45	primary	haematopoietic and lymphoid tissue
+MOLM-13	Leukemia		CVCL_2119	Male, 20	primary	haematopoietic and lymphoid tissue
+MOLM-16	Leukemia	Acute Myelogenous Leukemia (AML)	CVCL_2120	Female, 77		haematopoietic and lymphoid tissue
+MOLM-6	Leukemia	Chronic Myelogenous Leukemia (CML), blast crisis	CVCL_2122	Male, 44		haematopoietic and lymphoid tissue
+MOLP-2	Myeloma	Multiple Myeloma	CVCL_2123	Male, 55	primary	haematopoietic and lymphoid tissue
+MOLP-8	Myeloma	Multiple Myeloma	CVCL_2124	Male, 52	primary	haematopoietic and lymphoid tissue
+MOLT-13	Leukemia	Acute Lymphoblastic Leukemia (ALL), T-cell	CVCL_1422	Female, 2		bone marrow
+MOLT-16	Leukemia	Acute Lymphoblastic Leukemia (ALL), T-cell	CVCL_1424	Female, 5		haematopoietic and lymphoid tissue
+MOLT-3	Leukemia	Acute Lymphoblastic Leukemia (ALL), T-cell	CVCL_0624	Male, 19		haematopoietic and lymphoid tissue
+MOLT-4	Leukemia		CVCL_0013	Male, 19		haematopoietic and lymphoid tissue
+MON	Rhabdoid	Malignant Rhabdoid Tumor	CVCL_M846	Male, 0		soft tissue
+Mono-Mac-1	Leukemia	Acute Myelogenous Leukemia (AML)	CVCL_1425	Male, 64	primary	haematopoietic and lymphoid tissue
+Mono-Mac-6	Leukemia	Acute Myelogenous Leukemia (AML), M5 (Eosinophilic/Monocytic)	CVCL_1426	Male, 64	primary	haematopoietic and lymphoid tissue
+MOR	Lung cancer		CVCL_2618			
+MOR/CPR	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_2620	Female	primary	lung
+MPP 89	Lung cancer	Mesothelioma	CVCL_1427	Male, 67		pleural effusion
+MS751	Cervical cancer	Squamous Cell Carcinoma	CVCL_4996	47	Metastasis	lymph_node
+MSTO-211H	Lung cancer	Mesothelioma	CVCL_1430	Male, 62	metastasis	pleural effusion
+MUTZ-3	Leukemia	Acute Myelogenous Leukemia (AML)	CVCL_1433	Male, 29		haematopoietic and lymphoid tissue
+MUTZ-5	Leukemia	Acute Lymphoblastic Leukemia (ALL), B-cell	CVCL_1873	Male, 26		haematopoietic and lymphoid tissue
+MV4-11	Leukemia	Acute Myelogenous Leukemia (AML)	CVCL_0064	Male, 10	primary	haematopoietic and lymphoid tissue
+MX-1	Breast cancer		CVCL_4774	29		breast
+NALM-1	Leukemia	Chronic Myelogenous Leukemia (CML), blast crisis	CVCL_0091	Female, 3		haematopoietic and lymphoid tissue
+NALM-19	Leukemia	Acute Lymphoblastic Leukemia (ALL), B-cell	CVCL_1835	Male, 26		haematopoietic and lymphoid tissue
+NALM-6	Leukemia	Acute Lymphoblastic Leukemia (ALL), B-cell	CVCL_0092	Male, 19	primary	haematopoietic and lymphoid tissue
+Namalwa	Lymphoma	B-cell, Non-Hodgkins, Burkitts	CVCL_0067	Female, 3		haematopoietic and lymphoid tissue
+NB1	Neuroblastoma		CVCL_1440	Male, 2	metastasis	lymph node
+NB4	Leukemia		CVCL_0005	Female, 23	primary	bone marrow
+NCC-StC-K140	Gastric cancer	Adenocarcinoma	CVCL_3055	Female, 36		stomach
+NCE-G 111	Brain cancer		CVCL_N739		Primary	central_nervous_system
+NCE-G 118	Brain cancer		CVCL_N741		Primary	central_nervous_system
+NCE-G 120	Brain cancer		CVCL_N742		Primary	central_nervous_system
+NCE-G 121	Brain cancer		CVCL_N743		Primary	central_nervous_system
+NCE-G 122	Brain cancer		CVCL_N744			
+NCE-G 124	Brain cancer		CVCL_N746		Primary	central_nervous_system
+NCE-G 130	Brain cancer		CVCL_N747		Primary	central_nervous_system
+NCE-G 140	Brain cancer		CVCL_N748		Primary	central_nervous_system
+NCE-G 22	Brain cancer		CVCL_N723			central_nervous_system
+NCE-G 28T	Brain cancer		CVCL_0V15		Primary	central_nervous_system
+NCE-G 44	Brain cancer		CVCL_N727		Primary	central_nervous_system
+NCE-G 59	Brain cancer		CVCL_N729		Primary	central_nervous_system
+NCE-G 61	Brain cancer		CVCL_N731		Primary	central_nervous_system
+NCE-G 84	Brain cancer		CVCL_N735			
+NCI-H1048	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1453	Female, 53	metastasis	pleural effusion
+NCI-H1092	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1454	Male, 67	metastasis	bone marrow
+NCI-H1105	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1455	Male, 73	metastasis	lymph node
+NCI-H1155	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Large Cell Carcinoma	CVCL_1456	Male, 36	metastasis	lymph node
+NCI-H1184	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1458	Male, 42	metastasis	lymph node
+NCI-H1299	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Large Cell Carcinoma	CVCL_0060	Male, 43	metastasis	lymph node
+NCI-H1341	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1463	Female, 26	metastasis	cervix
+NCI-H1355	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1464	Male, 53	metastasis	pleural effusion
+NCI-H1373	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1465	Male, 56	primary	lung
+NCI-H1385	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_1466	Female, 49	metastasis	lymph node
+NCI-H1395	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1467	Female, 55	primary	lung
+NCI-H1435	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1470	Female, 35	primary	lung
+NCI-H1436	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1471	Male, 39	metastasis	lymph node
+NCI-H1437	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1472	Male, 60	metastasis	pleural effusion
+NCI-H146	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1473	Male, 59	metastasis	bone marrow
+NCI-H1563	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1475	Male	primary	lung
+NCI-H1568	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1476	Female, 48	metastasis	lymph node
+NCI-H157	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_0463	Male, 59	metastasis	pleural effusion
+NCI-H1573	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1478	Female, 35	metastasis	soft tissue
+NCI-H1581	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Large Cell Carcinoma	CVCL_1479	Male, 44	primary	lung
+NCI-H1618	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1480	Female, 55	metastasis	bone marrow
+NCI-H1623	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1481	Male, 58	metastasis	lymph node
+NCI-H1648	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1482	Male, 39	metastasis	lymph node
+NCI-H1650	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1483	Male, 27	metastasis	pleural effusion
+NCI-H1651	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1484	Male, 71	primary	lung
+NCI-H1666	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1485	Female, 50	metastasis	pleural effusion
+NCI-H1693	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1488	Female, 55	metastasis	lymph node
+NCI-H1694	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1489	Male, 61	metastasis	ascites
+NCI-H1703	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_1490	Male, 54	primary	lung
+NCI-H1734	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1491	Female, 56	primary	lung
+NCI-H1755	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1492	Female, 65	metastasis	liver
+NCI-H1770	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), unspecified	CVCL_1493	57	Metastasis	lymph_node
+NCI-H1781	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1494	Female, 66	metastasis	pleural effusion
+NCI-H1792	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1495	Male, 50	metastasis	pleural effusion
+NCI-H1793	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1496	Female, 52	primary	lung
+NCI-H1819	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1497	Female, 55	metastasis	lymph node
+NCI-H1836	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1498	Male, 52	primary	lung
+NCI-H1838	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1499	Female	primary	lung
+NCI-H1869	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_1500	Male, 58	metastasis	pleural effusion
+NCI-H187	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1501	47	Metastasis	pleural_effusion
+NCI-H1876	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1503	Male, 59	metastasis	lymph node
+NCI-H1882	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1504		Metastasis	bone_marrow
+NCI-H1915	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Large Cell Carcinoma	CVCL_1505	Female, 61	metastasis	central nervous system
+NCI-H1930	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1507	Male, 41	metastasis	lymph node
+NCI-H1944	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1508	Female, 62	metastasis	soft tissue
+NCI-H196	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1509	Male, 68	metastasis	pleural effusion
+NCI-H1963	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1510	Male, 56	primary	lung
+NCI-H1975	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1511	Female	primary	lung
+NCI-H2004RT	Rhabdoid	Malignant Rhabdoid Tumor	CVCL_WS70	Male		soft tissue
+NCI-H2009	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1514	Female, 68	metastasis	lymph node
+NCI-H2023	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1515	Male, 26	metastasis	lymph node
+NCI-H2029	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1516	Female, 69	metastasis	lymph node
+NCI-H2030	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1517	Male	metastasis	lymph node
+NCI-H2052	Lung cancer	Mesothelioma	CVCL_1518	Male, 65	metastasis	pleural effusion
+NCI-H2066	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1520	Female, 70	primary	lung
+NCI-H2073	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1521	Female, 47	primary	lung
+NCI-H2077	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_5157	Male, 58		
+NCI-H2081	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1522	Female, 59	metastasis	pleural effusion
+NCI-H2085	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1523	Male, 45	primary	lung
+NCI-H2087	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1524	Male, 69	metastasis	lymph node
+NCI-H209	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1525	Male, 55	metastasis	bone marrow
+NCI-H2106	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Large Cell Carcinoma	CVCL_1526	Male, 58	metastasis	lymph node
+NCI-H211	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1529	Female, 50	metastasis	bone marrow
+NCI-H2110	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), unspecified	CVCL_1530		metastasis	pleural effusion
+NCI-H2122	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1531	Female, 46	metastasis	pleural effusion
+NCI-H2126	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1532	Male, 65	metastasis	haematopoietic and lymphoid tissue
+NCI-H2135	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), unspecified	CVCL_1533		Primary	lung
+NCI-H2170	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_1535	Male	primary	lung
+NCI-H2171	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1536	Male, 50	metastasis	pleural effusion
+NCI-H2172	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), unspecified	CVCL_1537	Female	primary	lung
+NCI-H2196	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1539	Male, 67	metastasis	bone marrow
+NCI-H2198	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1540		Metastasis	lymph_node
+NCI-H2227	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1542	Male, 54	primary	lung
+NCI-H2228	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1543	Female	primary	lung
+NCI-H226	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_1544	Male	metastasis	pleural effusion
+NCI-H2286	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1545	Female, 57	primary	lung
+NCI-H2291	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1546	Male	metastasis	lymph node
+NCI-H23	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1547	Male, 51	primary	lung
+NCI-H2342	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1549	Male, 55	primary	lung
+NCI-H2347	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1550	Female, 54	primary	lung
+NCI-H2369	Lung cancer	Mesothelioma	CVCL_A532			lung
+NCI-H2373	Lung cancer	Mesothelioma	CVCL_A533	0		lung
+NCI-H2405	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1551	Male, 47	metastasis	ascites
+NCI-H2444	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), unspecified	CVCL_1552	Male	primary	lung
+NCI-H2452	Lung cancer	Mesothelioma	CVCL_1553	Male	metastasis	pleura
+NCI-H2461	Lung cancer	Mesothelioma	CVCL_A536	0		lung
+NCI-H2595	Lung cancer	Mesothelioma	CVCL_A545	0		lung
+NCI-H2596	Lung cancer	Mesothelioma	CVCL_A546			
+NCI-H2722	Lung cancer	Mesothelioma	CVCL_U994			lung
+NCI-H2795	Lung cancer	Mesothelioma	CVCL_U996			lung
+NCI-H28	Lung cancer	Mesothelioma	CVCL_1555	Male, 48	metastasis	pleural effusion
+NCI-H2803	Lung cancer	Mesothelioma	CVCL_U997			lung
+NCI-H2804	Lung cancer	Mesothelioma	CVCL_U998			lung
+NCI-H2810	Lung cancer	Mesothelioma	CVCL_U999			lung
+NCI-H2882	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_5158	Female, 61		lung
+NCI-H2887	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), unspecified	CVCL_5159	Male, 31		lung
+NCI-H292	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Mucoepidermoid Carcinoma	CVCL_0455	Female, 32	metastasis	lymph node
+NCI-H3122	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_5160	Male		lung
+NCI-H322	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1556	Male, 52	primary	lung
+NCI-H3255	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_6831	Female, 52	primary	lung
+NCI-H345	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1558	64	Metastasis	bone_marrow
+NCI-H358	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1559	Male	primary	lung
+NCI-H441	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1561	Male, 33	metastasis	pericardial effusion
+NCI-H446	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1562	Male, 61	metastasis	pleural effusion
+NCI-H460	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Large Cell Carcinoma	CVCL_0459	Male	metastasis	pleural effusion
+NCI-H508	Colorectal cancer	Caecum Adenocarcinoma	CVCL_1564	Male, 55	metastasis	abdomen
+NCI-H510A	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1565	Male, 56	metastasis	autonomic ganglia
+NCI-H520	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_1566	Male	primary	lung
+NCI-H522	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1567	Male, 58	primary	lung
+NCI-H524	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1568	Male, 63	metastasis	lymph node
+NCI-H526	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1569	Male, 55	metastasis	bone marrow
+NCI-H596	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenosquamous Carcinoma	CVCL_1571	Male, 73	primary	lung
+NCI-H647	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenosquamous Carcinoma	CVCL_1574	Male, 56	metastasis	pleural effusion
+NCI-H650	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1575	Male	metastasis	lung
+NCI-H660	Prostate cancer	Small Cell Carcinoma	CVCL_1576	Male, 63	metastasis	lymph node
+NCI-H661	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Large Cell Carcinoma	CVCL_1577	Male, 43	metastasis	lymph node
+NCI-H684	Colorectal cancer	Adenocarcinoma	CVCL_9980	Male, 55	metastasis	liver
+NCI-H69	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1579	Male, 55	metastasis	pleural effusion
+NCI-H716	Colorectal cancer	Adenocarcinoma	CVCL_1581	Male, 33	metastasis	ascites
+NCI-H727	Lung cancer	Carcinoid	CVCL_1584	Female, 65	primary	lung
+NCI-H747	Colorectal cancer	Adenocarcinoma	CVCL_1587	Male, 69	metastasis	large intestine
+NCI-H810	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Large Cell Carcinoma	CVCL_1590	Male, 51	primary	lung
+NCI-H82	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1591	Male, 41	metastasis	pleural effusion
+NCI-H820	Lung cancer		CVCL_1592		Metastasis	lymph_node
+NCI-H838	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1594	Male, 59	metastasis	lymph node
+NCI-H841	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1595	Male, 51	metastasis	lung
+NCI-H847	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1596	63	Metastasis	pleural_effusion
+NCI-H854	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_A584	Male, 75	primary	lung
+NCI-H889	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1598	Female, 69	metastasis	lymph node
+NCI-H920	Lung cancer		CVCL_1599			
+NCI-H929	Myeloma	Multiple Myeloma, plasmacytoma	CVCL_1600	Female, 62	metastasis	pleural effusion
+NCI-N417	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1602		Primary	lung
+NCI-N87	Gastric cancer	Adenocarcinoma, tubular	CVCL_1603	Male	metastasis	liver
+NCO2	Leukemia	Chronic Myelogenous Leukemia (CML)	CVCL_3043	Female, 35		haematopoietic and lymphoid tissue
+NH-6	Neuroblastoma		CVCL_1606	Female, 0	metastasis	autonomic ganglia
+NHAHTDD	Non-cancerous		CVCL_WS73	Male		central nervous system
+NMC-G1	Brain cancer	Glioblastoma	CVCL_1608	Female	primary	central nervous system
+NOMO-1	Leukemia	Acute Myelogenous Leukemia (AML), M5 (Eosinophilic/Monocytic)	CVCL_1609	Female, 31	primary	bone marrow
+NTERA-2	Uncategorized		CVCL_0034	22	metastasis	lung
+NU-DHL-1	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_1876	Male, 73	metastasis	lymph node
+NU-DUL-1	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_1877	Male, 43		central nervous system
+NUGC-2	Gastric cancer	Adenocarcinoma	CVCL_1611	Female, 56	metastasis	lymph node
+NUGC-3	Gastric cancer	Adenocarcinoma	CVCL_1612	Male, 72	metastasis	soft tissue
+NUGC-4	Gastric cancer	Adenocarcinoma	CVCL_3082	Female, 35	metastasis	lymph node
+OAW28	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_1614	Female, 75	metastasis	ascites
+OAW42	Ovarian cancer	Carcinoma	CVCL_1615	Female, 46	metastasis	ascites
+OC 314	Ovarian cancer	Cystadenocarcinoma, clear cell	CVCL_1616	Female, 39	metastasis	ascites
+OCI-AML-2	Leukemia	Acute Myelogenous Leukemia (AML), M4 (Myelomonocytic)	CVCL_1619	Male, 65	primary	haematopoietic and lymphoid tissue
+OCI-AML-3	Leukemia	Acute Myelogenous Leukemia (AML), M4 (Myelomonocytic)	CVCL_1844	Male, 57	primary	haematopoietic and lymphoid tissue
+OCI-AML-5	Leukemia	Acute Myelogenous Leukemia (AML)	CVCL_1620	Male, 77	primary	haematopoietic and lymphoid tissue
+OCI-Ly10	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_8795	66		lymph_node
+OCI-Ly19	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_1878	Female, 27	primary	bone marrow
+OCI-Ly3	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_8800	Male, 52	primary	bone marrow
+OCI-Ly7	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_1881	48	Primary	haematopoietic_and_lymphoid_tissue
+OCI-M1	Leukemia	Acute Myelogenous Leukemia (AML), M6 (Erythroleukemia)	CVCL_2149	62		haematopoietic and lymphoid tissue
+OCI-M2	Leukemia	Acute Myelogenous Leukemia (AML)	CVCL_2150	56	Primary	haematopoietic_and_lymphoid_tissue
+OCI-My5	Myeloma	Multiple Myeloma	CVCL_E332	Male		haematopoietic and lymphoid tissue
+OCI-My7	Myeloma	Multiple Myeloma	CVCL_E333	Male		haematopoietic and lymphoid tissue
+OCUM-1	Gastric cancer	Adenocarcinoma	CVCL_3084	Female, 38	metastasis	stomach
+OE19	Esophageal cancer		CVCL_1622	Male, 72	primary	oesophagus
+OE21	Esophageal cancer	Squamous Cell Carcinoma	CVCL_2661	Male, 74	primary	oesophagus
+OE33	Esophageal cancer	Adenocarcinoma	CVCL_0471	Female, 73	primary	oesophagus
+OELE	Non-cancerous		CVCL_IW56	Female		ovary
+Okajima	Gastric cancer		CVCL_9815		Metastasis	pleural_effusion
+ONCO-DG-1	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_1882	Female, 60	metastasis	ascites
+ONS-76	Brain cancer	Medulloblastoma	CVCL_1624	Female, 2	primary	central nervous system
+OPM-1	Myeloma	Multiple Myeloma	CVCL_5210	Female, 56		haematopoietic and lymphoid tissue
+OPM-2	Myeloma	Multiple Myeloma	CVCL_1625	Female, 56	primary	haematopoietic and lymphoid tissue
+OS-RC-2	Kidney cancer	Renal Cell Carcinoma	CVCL_1626	Male, 52	primary	kidney
+OUMS-23	Colorectal cancer	Adenocarcinoma	CVCL_3088	Male, 37	metastasis	pericardial effusion
+OV-90	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_3768	Female, 64	metastasis	ascites
+OV56	Ovarian cancer	Adenocarcinoma, serous	CVCL_2673	Female, 46	metastasis	ascites
+OV7	Ovarian cancer	Adenocarcinoma, mixed	CVCL_2675	Female, 78	primary	ovary
+OVCA420	Ovarian cancer	Adenocarcinoma, serous	CVCL_3935			ovary
+OVCA432	Ovarian cancer	Adenocarcinoma, serous	CVCL_3769		Primary	ovary
+OVCA433	Ovarian cancer	Adenocarcinoma, serous	CVCL_0475			ovary
+OVCAR-3	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_0465	Female, 60	metastasis	ascites
+OVCAR-4	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_1627	Female, 42	metastasis	ascites
+OVCAR-5	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_1628	67	Metastasis	ascites
+OVCAR-8	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_1629	Female, 64	primary	ovary
+OVISE	Ovarian cancer	Adenocarcinoma, clear cell	CVCL_3116	Female, 40	metastasis	bone
+OVK18	Ovarian cancer	Adenocarcinoma, endometrioid	CVCL_3770	Female, 49	metastasis	ascites
+OVKATE	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_3110	Female, 40	primary	ovary
+OVMANA	Ovarian cancer	Adenocarcinoma, clear cell	CVCL_3111	Female, 51	primary	ovary
+OVSAHO	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_3114	Female, 56	metastasis	abdomen
+OVTOKO	Ovarian cancer	Adenocarcinoma, clear cell	CVCL_3117	Female, 78	metastasis	spleen
+P12-Ichikawa	Leukemia	Acute Lymphoblastic Leukemia (ALL), T-cell	CVCL_1630	Male, 7		haematopoietic and lymphoid tissue
+P31/FUJ	Leukemia	Acute Myelogenous Leukemia (AML), M5 (Eosinophilic/Monocytic)	CVCL_1632	Male, 7		haematopoietic and lymphoid tissue
+P3HR-1	Lymphoma	B-cell, Non-Hodgkins, Burkitts	CVCL_2676	Male, 7		ascites
+PA-1	Ovarian cancer		CVCL_0479	12	Metastasis	ascites
+Panc 02.03	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_1633	Female, 70	primary	pancreas
+Panc 02.13	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_1634	Female, 64	primary	pancreas
+Panc 03.27	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_1635	Female, 65	primary	pancreas
+Panc 04.03	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_1636	Male, 70	primary	pancreas
+Panc 05.04	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_1637	Female, 77	primary	pancreas
+Panc 08.13	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_1638	Male, 85	primary	pancreas
+Panc 10.05	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_1639	Male, 81	primary	pancreas
+PANC-1	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_0480	Male, 56	primary	pancreas
+PaTu 8902	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_1845	Female, 44	primary	pancreas
+PaTu 8988s	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_1846	Female, 64	metastasis	liver
+PaTu 8988t	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_1847	Female, 64	metastasis	liver
+PC-14	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1640	Male, 45	primary	lung
+PC-3	Prostate cancer		CVCL_0035	Male, 62	metastasis	bone
+PC-9	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_B260	Male, 45		lung
+PE/CA-PJ15	Head and Neck cancer	Squamous Cell Carcinoma, oral	CVCL_2678	Male, 45	primary	upper aerodigestive tract
+PE/CA-PJ34 (clone C12)	Head and Neck cancer	Squamous Cell Carcinoma, basaloid	CVCL_2679	Male, 60	primary	upper aerodigestive tract
+PE/CA-PJ41 (clone D2)	Head and Neck cancer	Squamous Cell Carcinoma, oral	CVCL_2680	Female, 67	primary	upper aerodigestive tract
+PE/CA-PJ49	Head and Neck cancer	Squamous Cell Carcinoma, oral	CVCL_2681	Male, 57	primary	upper aerodigestive tract
+Peer	Leukemia	Acute Lymphoblastic Leukemia (ALL), T-cell	CVCL_1913	Female, 4		haematopoietic and lymphoid tissue
+PEO1	Ovarian cancer	Cystadenocarcinoma	CVCL_2686		Metastasis	ascites
+PF-382	Leukemia	Acute Lymphoblastic Leukemia (ALL), T-cell	CVCL_1641	Female, 6		pleural effusion
+Pfeiffer	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_3326	Male	metastasis	pleural effusion
+PK-1	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_4717	Male	metastasis	liver
+PK-45H	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_6748	Female	primary	pancreas
+PK-45P	Pancreatic cancer		CVCL_6749			
+PK-59	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_4897	Female, 66	metastasis	liver
+PK-8	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_4718		Metastasis	liver
+PL-21	Leukemia	Acute Myelogenous Leukemia (AML), M3 (Promyelocytic)	CVCL_2161	Male, 24		haematopoietic and lymphoid tissue
+PL45	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_3567	81		pancreas
+PLB-985	Leukemia	Acute Myelogenous Leukemia (AML), M3 (Promyelocytic)	CVCL_2162	Female, 35	primary	haematopoietic and lymphoid tissue
+PLC/PRF/5	Liver cancer	Hepatocellular Carcinoma	CVCL_0485	Male, 24	primary	liver
+PODO/SVTERT152	Non-cancerous			Male, 41		
+PODO/TERT256	Non-cancerous			Female		
+PrEC LH	Non-cancerous		CVCL_V626	Male		prostate
+PSN1	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_1644	Male, 36	primary	pancreas
+QGP-1	Pancreatic cancer	Somatostatinoma	CVCL_3143	Male, 61	primary	pancreas
+Raji	Lymphoma	B-cell, Non-Hodgkins, Burkitts	CVCL_0511	Male, 11		bone
+Ramos	Lymphoma	B-cell, Non-Hodgkins, Burkitts	CVCL_0597	3	Primary	ascites
+RC-K8	Lymphoma	B-cell	CVCL_1883	55	Primary	ascites
+RCC10RGB	Kidney cancer	Renal Cell Carcinoma	CVCL_1647	Male	primary	kidney
+RCH-ACV	Leukemia	Acute Lymphoblastic Leukemia (ALL), B-cell	CVCL_1851	Female, 8		bone marrow
+RCM-1 [Human rectal adenocarcinoma]	Colorectal cancer	Adenocarcinoma	CVCL_1648	Female, 73	primary	large intestine
+RD	Sarcoma	Rhabdomyosarcoma, embryonal	CVCL_1649	Female, 7	primary	soft tissue
+RD-ES	Bone cancer	Ewings Sarcoma	CVCL_2169	Male, 19	primary	bone
+REC-1	Lymphoma	B-cell, Non-Hodgkins, Mantle Cell	CVCL_1884	Male, 61		lymph node
+REH	Leukemia		CVCL_1650	Female, 15	primary	haematopoietic and lymphoid tissue
+RERF-GC-1B	Gastric cancer	Adenocarcinoma	CVCL_3152	Male, 41	metastasis	lymph node
+RERF-LC-A1	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_4402	Male	metastasis	pleural effusion
+RERF-LC-Ad1	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1651	Male, 70	primary	lung
+RERF-LC-Ad2	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1652	Male	primary	lung
+RERF-LC-KJ	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1654	Male, 78	primary	lung
+RERF-LC-MS	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1655	Male	primary	lung
+RERF-LC-OK	Lung cancer		CVCL_3154			
+RERF-LC-Sq1	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_1656	Female, 74	primary	lung
+Rh18	Sarcoma	Rhabdomyosarcoma	CVCL_1659	Female, 2		soft tissue
+Rh30	Sarcoma		CVCL_0041	Male, 17	metastasis	bone marrow
+Rh41	Sarcoma	Rhabdomyosarcoma, alveolar	CVCL_2176	Female, 7	metastasis	liver
+Ri-1	Lymphoma	B-cell, Non-Hodgkins	CVCL_1885	Female, 57		haematopoietic and lymphoid tissue
+RKN	Sarcoma	Leiomyosarcoma	CVCL_3156	Female, 45	primary	ovary
+RKO	Colorectal cancer	Adenocarcinoma	CVCL_0504		primary	colon
+RL	Lymphoma	B-cell, Non-Hodgkins	CVCL_1660	Male, 52		ascites
+RL95-2	Uterine cancer	Endometrial Adenosquamous Carcinoma	CVCL_0505	Female, 65	primary	endometrium
+RMG-I	Ovarian cancer	Adenocarcinoma, clear cell	CVCL_1662	Female, 34	metastasis	ascites
+RMUG-S	Ovarian cancer	Cystadenocarcinoma, mucinous	CVCL_3158	Female, 62	primary	ovary
+RPMI-2650	Head and Neck cancer	Squamous Cell Carcinoma	CVCL_1664	52	Metastasis	pleural_effusion
+RPMI-7951	Skin cancer	Melanoma	CVCL_1666	Female, 18	metastasis	lymph node
+RPMI-8226	Myeloma		CVCL_0014	Male, 61	primary	haematopoietic and lymphoid tissue
+RPMI-8402	Leukemia	Acute Lymphoblastic Leukemia (ALL), T-cell	CVCL_1667	Female, 16		haematopoietic and lymphoid tissue
+RPTEC/TERT1	Non-cancerous		CVCL_K278	Male		
+RS-5	Non-cancerous	Lung	CVCL_2182	Male, 78		fibroblast
+RS4;11	Leukemia	Acute Lymphoblastic Leukemia (ALL), B-cell	CVCL_0093	Female, 32	primary	bone marrow
+RT-112	Bladder cancer	Transitional Cell Carcinoma	CVCL_1670	Female	primary	urinary tract
+RT-4	Bladder cancer		CVCL_0036	Male, 63	primary	urinary tract
+RVH-421	Skin cancer	Melanoma	CVCL_1672	Male, 28	metastasis	central nervous system
+S-117	Sarcoma	Thyroid Sarcoma	CVCL_1674	Female, 47		soft tissue
+SALE	Non-cancerous		CVCL_WS60	Male		lung
+SaOS-2	Bone cancer	Osteosarcoma	CVCL_0548	Female, 11	primary	bone
+SBC-5	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1679	Male, 65	metastasis	pleural effusion
+Sc-1	Lymphoma	B-cell, Non-Hodgkins, Follicular	CVCL_1888	67		ascites
+SCaBER	Bladder cancer	Squamous Cell Carcinoma	CVCL_3599	Male, 58	primary	urinary tract
+SCC-15	Head and Neck cancer	Squamous Cell Carcinoma	CVCL_1681	Male, 55		upper aerodigestive tract
+SCC-25	Head and Neck cancer	Squamous Cell Carcinoma	CVCL_1682	Male, 70	primary	upper aerodigestive tract
+SCC-3	Lymphoma	B-cell, Non-Hodgkins	CVCL_1683	20	Primary	pleural_effusion
+SCC-4	Head and Neck cancer	Squamous Cell Carcinoma, oral	CVCL_1684	Male, 55	primary	upper aerodigestive tract
+SCC-9	Head and Neck cancer	Squamous Cell Carcinoma	CVCL_1685	Male, 25	primary	upper aerodigestive tract
+SCLC-21H	Lung cancer		CVCL_0024	Male, 46	metastasis	pleural effusion
+SCLC-22H	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_2186	46	Metastasis	pleural_effusion
+SEM	Leukemia	Acute Lymphoblastic Leukemia (ALL), B-cell	CVCL_0095	Female, 5	primary	haematopoietic and lymphoid tissue
+SET-2	Leukemia	Acute Myelogenous Leukemia (AML)	CVCL_2187	Female, 71		haematopoietic and lymphoid tissue
+SF126	Brain cancer	Astrocytoma	CVCL_1688	Female, 50	primary	central nervous system
+SF172	Brain cancer	Glioblastoma	CVCL_V613	Female, 36		central nervous system
+SF268	Brain cancer	Glioma	CVCL_1689	Male, 24	primary	central nervous system
+SF295	Brain cancer	Glioblastoma	CVCL_1690	Female, 67	primary	central nervous system
+SF539	Brain cancer	Glioma	CVCL_1691	Female, 34	primary	central nervous system
+SF767	Cervical cancer	Squamous Cell Carcinoma	CVCL_6950	Female, 66	metastasis	abdomen
+SH-10-TC	Gastric cancer	Adenocarcinoma, mucinous	CVCL_5167	Female	primary	stomach
+SH-4	Skin cancer	Melanoma	CVCL_1692	Female, 60	metastasis	pleural effusion
+SH-SY5Y	Neuroblastoma		CVCL_0019	Female, 4	metastasis	bone marrow
+SHP-77	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1693	Male, 54	primary	lung
+SIG-M5	Leukemia	Acute Myelogenous Leukemia (AML), M5 (Eosinophilic/Monocytic)	CVCL_1694	Male, 63		bone marrow
+SiHa	Cervical cancer		CVCL_0032	Female, 55		cervix
+SiMa	Neuroblastoma		CVCL_1695	Male, 1		autonomic ganglia
+SJSA-1	Bone cancer	Osteosarcoma	CVCL_1697	Male, 19	primary	bone
+SK-BR-3	Breast cancer		CVCL_0033	Female, 43	metastasis	pleural effusion
+SK-CO-1	Colorectal cancer	Adenocarcinoma	CVCL_0626	Male, 65	metastasis	ascites
+SK-ES-1	Bone cancer	Ewings Sarcoma	CVCL_0627	Male, 18	primary	bone
+SK-HEP-1	Liver cancer	Hepatocellular Carcinoma	CVCL_0525	Male, 52	metastasis	ascites
+SK-LMS-1	Sarcoma	Leiomyosarcoma	CVCL_0628	Female, 43	primary	soft tissue
+SK-LU-1	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_0629	Female, 60	primary	lung
+SK-MEL-1	Skin cancer	Melanoma	CVCL_0068	Male, 29	metastasis	haematopoietic and lymphoid tissue
+SK-MEL-2	Skin cancer	Melanoma	CVCL_0069	60	Metastasis	skin
+SK-MEL-23	Skin cancer		CVCL_6027			
+SK-MEL-24	Skin cancer	Melanoma	CVCL_0599	Male, 67	metastasis	lymph node
+SK-MEL-28	Skin cancer	Melanoma	CVCL_0526	Male, 51		skin
+SK-MEL-3	Skin cancer	Melanoma	CVCL_0550	Female, 42	metastasis	lymph node
+SK-MEL-30	Skin cancer		CVCL_0039	Male, 67	metastasis	skin
+SK-MEL-31	Skin cancer	Melanoma	CVCL_0600	Female, 33	primary	skin
+SK-MEL-5	Skin cancer	Melanoma	CVCL_0527	Female, 24	metastasis	lymph node
+SK-MES-1	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_0630	Male, 65	metastasis	pleural effusion
+SK-MM-2	Myeloma	Multiple Myeloma	CVCL_1699	Male, 54	primary	haematopoietic and lymphoid tissue
+SK-N-AS	Neuroblastoma		CVCL_1700	Female, 6	metastasis	bone marrow
+SK-N-BE(2)	Neuroblastoma		CVCL_0528	Male, 2	metastasis	bone marrow
+SK-N-DZ	Neuroblastoma		CVCL_1701	Female, 2	metastasis	bone marrow
+SK-N-FI	Neuroblastoma		CVCL_1702	Male, 11	metastasis	bone marrow
+SK-N-MC	Bone cancer	Ewings Sarcoma	CVCL_0530	Female, 14	metastasis	bone
+SK-N-SH	Neuroblastoma		CVCL_0531	Female, 4	metastasis	bone marrow
+SK-NEP-1	Bone cancer	Ewings Sarcoma	CVCL_0631	Female, 25	metastasis	pleural effusion
+SK-OV-3	Ovarian cancer	Cystadenocarcinoma, endometrioid	CVCL_0532	Female, 64	metastasis	ascites
+SK-PN-DW	Bone cancer	Ewings Sarcoma	CVCL_1703	Male, 17		embryonal
+SK-RC-20	Kidney cancer	Renal Cell Carcinoma	CVCL_V605	Male, 46		kidney
+SK-UT-1	Sarcoma	Leiomyosarcoma	CVCL_0533	Female, 75	primary	endometrium
+SKM-1	Leukemia	Acute Myelogenous Leukemia (AML)	CVCL_0098	Male, 76	primary	haematopoietic and lymphoid tissue
+SKNO-1	Leukemia	Acute Myelogenous Leukemia (AML)	CVCL_2196	Male, 22	metastasis	bone marrow
+SLR20	Bladder cancer	Carcinoma	CVCL_V606	Female, 81	primary	urinary tract
+SLR21	Kidney cancer	Renal Cell Carcinoma	CVCL_V607	Female	metastasis	kidney
+SLR23	Kidney cancer	Renal Cell Carcinoma	CVCL_V609	Female	metastasis	kidney
+SLR24	Kidney cancer	Renal Carcinoma, clear cell	CVCL_V610	Female	primary	kidney
+SLR25	Kidney cancer	Renal Cell Carcinoma	CVCL_V611	Female	metastasis	kidney
+SLR26	Kidney cancer	Renal Cell Carcinoma	CVCL_V612	Male	primary	kidney
+SNB-75	Brain cancer	Glioma	CVCL_1706	Female, 75	primary	central nervous system
+SNG-M	Uterine cancer	Endometrial Adenocarcinoma	CVCL_1707	Female, 52	metastasis	lymph node
+SNU-1	Gastric cancer	Adenocarcinoma	CVCL_0099	Male, 44	metastasis	stomach
+SNU-1033	Colorectal cancer	Adenocarcinoma	CVCL_5002	Female, 45	primary	large intestine
+SNU-1040	Colorectal cancer	Adenocarcinoma	CVCL_5003	Male, 34		colon
+SNU-1041	Head and Neck cancer	Squamous Cell Carcinoma, hypopharyngeal	CVCL_L085	Male, 58		upper aerodigestive tract
+SNU-1066	Head and Neck cancer	Squamous Cell Carcinoma	CVCL_5005	Male, 62		upper aerodigestive tract
+SNU-1076	Head and Neck cancer	Squamous Cell Carcinoma, laryngeal	CVCL_5006	Male, 60		upper aerodigestive tract
+SNU-1077	Uterine cancer	Mullerian Carcinoma	CVCL_5007	Female, 60	primary	endometrium
+SNU-1079	Bile duct cancer	Cholangiocarcinoma, intrahepatic	CVCL_5008	Male		biliary tract
+SNU-1105	Brain cancer	Glioblastoma	CVCL_5010	Male, 61	primary	central nervous system
+SNU-119	Ovarian cancer	Cystadenocarcinoma, high grade serous	CVCL_5014	Female, 50	metastasis	ascites
+SNU-1196	Bile duct cancer	Cholangiocarcinoma, extrahepatic	CVCL_5015	Female		biliary tract
+SNU-1197	Colorectal cancer	Adenocarcinoma	CVCL_5016	Male, 70	primary	colon
+SNU-1214	Head and Neck cancer	Squamous Cell Carcinoma, laryngeal	CVCL_5017	Male, 55		upper aerodigestive tract
+SNU-1272	Kidney cancer	Renal Carcinoma, clear cell	CVCL_8788	Female, 63		kidney
+SNU-16	Gastric cancer	Adenocarcinoma	CVCL_0076	Female, 33	metastasis	ascites
+SNU-175	Colorectal cancer	Adenocarcinoma, mucinous	CVCL_5031	Female, 56	metastasis	abdomen
+SNU-182	Liver cancer	Hepatocellular Carcinoma	CVCL_0090	Male, 24	primary	liver
+SNU-201	Brain cancer	Glioblastoma	CVCL_5033	Male, 58	primary	central nervous system
+SNU-213	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_5034	Male, 65		pancreas
+SNU-216	Gastric cancer	Adenocarcinoma, tubular	CVCL_3946	Female, 46	metastasis	lymph node
+SNU-245	Bile duct cancer	Cholangiocarcinoma, extrahepatic	CVCL_5038	Female		biliary tract
+SNU-283	Colorectal cancer	Adenocarcinoma	CVCL_5044	Female, 62	metastasis	abdomen
+SNU-308	Gallbladder cancer	Adenocarcinoma	CVCL_5048	Female		biliary tract
+SNU-324	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_5051	Male, 50		pancreas
+SNU-349	Kidney cancer	Renal Carcinoma, clear cell	CVCL_5054	Male, 68	primary	kidney
+SNU-387	Liver cancer	Hepatocellular Carcinoma	CVCL_0250	Female, 41	primary	liver
+SNU-398	Liver cancer	Hepatocellular Carcinoma	CVCL_0077	Male, 42	primary	liver
+SNU-407	Colorectal cancer	Adenocarcinoma	CVCL_5058	Male, 37	metastasis	soft tissue
+SNU-410	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_5059	Male, 53	metastasis	liver
+SNU-423	Liver cancer	Hepatocellular Carcinoma	CVCL_0366	Male, 40	primary	liver
+SNU-449	Liver cancer	Hepatocellular Carcinoma	CVCL_0454	Male, 52	primary	liver
+SNU-46	Head and Neck cancer	Squamous Cell Carcinoma, laryngeal	CVCL_5063	Male, 65		upper aerodigestive tract
+SNU-466	Brain cancer	Glioblastoma	CVCL_5064	Male, 61		central nervous system
+SNU-475	Liver cancer	Hepatocellular Carcinoma	CVCL_0497	Male, 43	primary	liver
+SNU-478	Bile duct cancer	Cholangiocarcinoma, extrahepatic	CVCL_5065	Female		biliary tract
+SNU-484	Gastric cancer	Adenocarcinoma	CVCL_0100		Primary	stomach
+SNU-489	Brain cancer	Glioblastoma	CVCL_5069	Male, 54		central nervous system
+SNU-5	Gastric cancer	Adenocarcinoma	CVCL_0078	Female, 33	metastasis	ascites
+SNU-503	Colorectal cancer	Adenocarcinoma	CVCL_5071	Male, 52	metastasis	abdomen
+SNU-520	Gastric cancer	Adenocarcinoma	CVCL_5072	Female, 60	primary	stomach
+SNU-601	Gastric cancer	Adenocarcinoma, signet ring cell	CVCL_0101	Male, 34	metastasis	ascites
+SNU-61	Colorectal cancer	Adenocarcinoma	CVCL_5078	Male, 48	metastasis	liver
+SNU-620	Gastric cancer	Adenocarcinoma	CVCL_5079	Female, 59	metastasis	ascites
+SNU-626	Brain cancer	Glioblastoma	CVCL_5080	Male, 65		central nervous system
+SNU-638	Gastric cancer	Adenocarcinoma	CVCL_0102	48	Metastasis	ascites
+SNU-668	Gastric cancer	Adenocarcinoma	CVCL_5081	Male, 63	metastasis	ascites
+SNU-685	Uterine cancer	Malignant Mixed Mullerian Tumor (MMMT)	CVCL_5083	Female, 70	primary	endometrium
+SNU-719	Gastric cancer	Adenocarcinoma, tubular	CVCL_5086	Male, 53	primary	stomach
+SNU-738	Brain cancer	Oligodendroglioma	CVCL_5087	Male, 40		central nervous system
+SNU-761	Liver cancer	Hepatocellular Carcinoma	CVCL_5089	Male, 49		liver
+SNU-8	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_5096	Female, 55	metastasis	ascites
+SNU-81	Colorectal cancer	Adenocarcinoma	CVCL_5098	Male, 53		colon
+SNU-840	Ovarian cancer	Carcinoma, brenner	CVCL_5100	Female, 45	primary	ovary
+SNU-869	Bile duct cancer	Cholangiocarcinoma, extrahepatic	CVCL_5101	Female		biliary tract
+SNU-878	Liver cancer	Hepatocellular Carcinoma	CVCL_5102	Female, 54	primary	liver
+SNU-886	Liver cancer	Hepatocellular Carcinoma	CVCL_5103	Male, 57		liver
+SNU-899	Head and Neck cancer	Squamous Cell Carcinoma, laryngeal	CVCL_5105	Male, 56	primary	upper aerodigestive tract
+SNU-C1	Colorectal cancer	Adenocarcinoma	CVCL_1708	Male, 71	metastasis	abdomen
+SNU-C2A	Colorectal cancer	Adenocarcinoma	CVCL_1709	Female, 43	primary	large intestine
+SNU-C4	Colorectal cancer	Adenocarcinoma	CVCL_5111	Male, 35		large intestine
+SNU-C5	Colorectal cancer	Adenocarcinoma	CVCL_5112	Female, 77		colon
+Sq-1	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_4900	Male	primary	lung
+SR	Lymphoma	T-cell, Non-Hodgkins, Anaplastic Large Cell (ALCL)	CVCL_1711	Male, 11	primary	pleural effusion
+ST486	Lymphoma	B-cell, Non-Hodgkins, Burkitts	CVCL_1712	Female		ascites
+STM91-01	Rhabdoid	Malignant Rhabdoid Tumor	CVCL_8000	Male, 0	metastasis	lung
+SU-DHL-1	Lymphoma	T-cell, Non-Hodgkins, Anaplastic Large Cell (ALCL)	CVCL_0538	Male, 10		pleural effusion
+SU-DHL-10	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_1889	Male, 25	metastasis	pleural effusion
+SU-DHL-16	Lymphoma	B-cell, Non-Hodgkins	CVCL_1890			pleural_effusion
+SU-DHL-4	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_0539	Male, 38	metastasis	pleural effusion
+SU-DHL-5	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_1735	Female, 17	primary	lymph node
+SU-DHL-6	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_2206	Male, 43	metastasis	ascites
+SU-DHL-8	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_2207	Male, 59	metastasis	pleural effusion
+SU.86.86	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_3881	Female, 57	metastasis	liver
+SUIT-2	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_3172	Male, 73	metastasis	liver
+SUM1315MO2	Breast cancer	Breast Ductal Carcinoma	CVCL_5589		Metastasis	skin
+SUM149PT	Breast cancer	Breast Ductal Carcinoma	CVCL_3422	40	Primary	breast
+SUM159PT	Breast cancer	Carcinoma	CVCL_5423	71	Primary	breast
+SUM52PE	Breast cancer	Carcinoma	CVCL_3425		Metastasis	pleural_effusion
+SUP-B15	Leukemia	Acute Lymphoblastic Leukemia (ALL), B-cell	CVCL_0103	Male, 9	primary	bone marrow
+SUP-M2	Lymphoma	T-cell, Non-Hodgkins, Anaplastic Large Cell (ALCL)	CVCL_2209	Female, 5		central nervous system
+SUP-T1	Leukemia	Acute Lymphoblastic Leukemia (ALL), T-cell	CVCL_1714	Male, 8	metastasis	pleural effusion
+SUP-T11	Leukemia	Acute Lymphoblastic Leukemia (ALL), T-cell	CVCL_2210	Male, 74		bone marrow
+SuSa	Testis cancer		CVCL_L280	Male, 30	primary	embryonal
+SW1088	Brain cancer	Astrocytoma	CVCL_1715	Male, 72	primary	central nervous system
+SW1116	Colorectal cancer	Adenocarcinoma	CVCL_0544	Male, 73	primary	colon
+SW1271	Lung cancer	Small Cell Lung Cancer (SCLC)	CVCL_1716	Male, 69	primary	lung
+SW1353	Bone cancer	Chondrosarcoma	CVCL_0543	Female, 72	primary	bone
+SW1417	Colorectal cancer	Adenocarcinoma	CVCL_1717	Female, 53	primary	colon
+SW1463	Colorectal cancer	Adenocarcinoma	CVCL_1718	Female, 66	primary	large intestine
+SW1573	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1720	Female, 44	primary	lung
+SW1710	Bladder cancer	Transitional Cell Carcinoma	CVCL_1721	Female, 84	primary	urinary tract
+SW1783	Brain cancer	Astrocytoma	CVCL_1722	Male, 68	primary	central nervous system
+SW1990	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_1723	Male, 56	primary	spleen
+SW403	Colorectal cancer	Adenocarcinoma	CVCL_0545	Female, 51	primary	colon
+SW48	Colorectal cancer	Adenocarcinoma	CVCL_1724	Female, 83	primary	colon
+SW480	Colorectal cancer	Adenocarcinoma	CVCL_0546	Male, 51	primary	lymph node
+SW579	Thyroid cancer	Squamous Cell Carcinoma	CVCL_3603	Male, 59	primary	thyroid
+SW620	Colorectal cancer	Adenocarcinoma	CVCL_0547	Male, 51	metastasis	lymph node
+SW780	Bladder cancer	Transitional Cell Carcinoma	CVCL_1728	Female, 80	primary	urinary tract
+SW837	Colorectal cancer	Adenocarcinoma	CVCL_1729	Male, 53	primary	large intestine
+SW900	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Squamous Cell Carcinoma	CVCL_1731	Male, 53	primary	lung
+SW948	Colorectal cancer	Adenocarcinoma	CVCL_0632	Female, 81	primary	colon
+SW982	Sarcoma	Synovial	CVCL_1734	25		soft_tissue
+T-47d	Breast cancer		CVCL_0553	Female, 54	metastasis	pleural effusion
+T.T	Esophageal cancer	Squamous Cell Carcinoma	CVCL_3174	Male, 67	metastasis	bone
+T1-73	Non-cancerous	Bone	CVCL_3605	Female		fibroblast
+T24	Bladder cancer	Carcinoma	CVCL_0554	Female, 82	primary	urinary tract
+T3M-10	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Large Cell Carcinoma	CVCL_8067	Male, 40	metastasis	lung
+T3M-4	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_4056	Male, 64	primary	lymph node
+T84	Colorectal cancer	Adenocarcinoma	CVCL_0555	Male, 72	metastasis	lung
+T98G	Brain cancer	Glioblastoma	CVCL_0556	Male, 61	primary	central nervous system
+TALL-1 [Human adult T-ALL]	Leukemia	Acute Lymphoblastic Leukemia (ALL), T-cell	CVCL_1736	Male, 28	primary	bone marrow
+TC-71	Bone cancer	Ewings Sarcoma	CVCL_2213	Male, 22	primary	bone
+TCC-Pan2	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_3178	Female, 47	metastasis	ascites
+TCCSUP	Bladder cancer	Transitional Cell Carcinoma	CVCL_1738	Female, 67	primary	urinary tract
+TE 125.T	Non-cancerous	Soft tissue	CVCL_1740	Female, 1		fibroblast
+TE 159.T	Non-cancerous	Soft tissue	CVCL_1743	Male, 6		fibroblast
+TE 441.T	Sarcoma	Rhabdomyosarcoma	CVCL_1754	Female, 14		soft tissue
+TE 617.T	Sarcoma	Rhabdomyosarcoma	CVCL_1755	Female, 1	primary	soft tissue
+TE-1	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1759	Male, 58	primary	oesophagus
+TE-10	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1760	Male, 58	primary	oesophagus
+TE-11	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1761	Male, 58	primary	oesophagus
+TE-14	Esophageal cancer	Squamous Cell Carcinoma	CVCL_3336	Male, 57		oesophagus
+TE-15	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1763	Female, 58	primary	oesophagus
+TE-4	Esophageal cancer	Squamous Cell Carcinoma	CVCL_3337	Male, 48		lymph node
+TE-5	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1764	Female, 73		oesophagus
+TE-6	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1765	Male, 71		oesophagus
+TE-8	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1766	Male, 63		oesophagus
+TE-9	Esophageal cancer	Squamous Cell Carcinoma	CVCL_1767	Male, 48	metastasis	pleural effusion
+TEN	Uterine cancer	Clear Cell Carcinoma	CVCL_E063	Female, 74	primary	endometrium
+TF-1	Leukemia	Acute Myelogenous Leukemia (AML)	CVCL_0559	Male, 35		bone marrow
+TGBC11TKB	Gastric cancer	Adenocarcinoma	CVCL_1768	Female, 72	metastasis	lymph node
+THP-1	Leukemia		CVCL_0006	Male, 1	primary	haematopoietic and lymphoid tissue
+TIG-3 TD	Non-cancerous	Lung	CVCL_V617	Male		fibroblast
+TIME	Non-cancerous		CVCL_0047	Male		
+TK [Human B-cell lymphoma]	Lymphoma	B-cell, Non-Hodgkins	CVCL_3216	80		haematopoietic_and_lymphoid_tissue
+TK-10	Kidney cancer		CVCL_1773	43		kidney
+TM-31	Brain cancer	Glioma	CVCL_6735	Female, 42		central nervous system
+Tm87-16	Rhabdoid	Malignant Rhabdoid Tumor	CVCL_8001	Male, 1	metastasis	pleural effusion
+TMD8	Lymphoma		CVCL_A442			bone_marrow
+TO 175.T	Non-cancerous	Lymphoma	CVCL_3806	Male, 29	metastasis	lymph node
+Toledo	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_3611	Female	primary	haematopoietic and lymphoid tissue
+TOV-112D	Ovarian cancer	Adenocarcinoma, endometrioid	CVCL_3612	Female, 42	primary	ovary
+TOV-21G	Ovarian cancer	Adenocarcinoma, clear cell	CVCL_3613	Female, 62	primary	ovary
+TT	Thyroid cancer	Squamous Cell Carcinoma	CVCL_1774	Female, 77	primary	thyroid
+TT2609-C02	Thyroid cancer	Carcinoma, follicular	CVCL_2218	Male, 57		thyroid
+TTC-1240	Rhabdoid	Malignant Rhabdoid Tumor	CVCL_8002	Female, 0	metastasis	central nervous system
+TTC-549	Rhabdoid	Malignant Rhabdoid Tumor	CVCL_8005	Female, 6		soft tissue
+TTC-642	Rhabdoid	Malignant Rhabdoid Tumor	CVCL_8006	Female, 1		soft tissue
+TTC-709	Rhabdoid	Malignant Rhabdoid Tumor	CVCL_8007	Male, 0		soft tissue
+TUHR10TKB	Kidney cancer	Renal Cell Carcinoma	CVCL_5952	Male, 69	primary	kidney
+TUHR14TKB	Kidney cancer	Renal Cell Carcinoma	CVCL_5953	Male	primary	kidney
+TUHR4TKB	Kidney cancer	Renal Cell Carcinoma	CVCL_5957	Male, 60	primary	kidney
+TYK-nu	Ovarian cancer	Adenocarcinoma, high grade serous	CVCL_1776	Female, 38	primary	ovary
+U-118MG	Brain cancer	Glioma	CVCL_0633	Male, 47	primary	central nervous system
+U-138MG	Brain cancer		CVCL_0020	Male, 47		central nervous system
+U-178MG	Brain cancer	Glioblastoma	CVCL_A758	Male, 56		central nervous system
+U-2197	Sarcoma		CVCL_0043	Male, 79		
+U-251MG	Brain cancer		CVCL_0021	Male	primary	central nervous system
+U-266/70	Myeloma		CVCL_0015	Male, 53		
+U-266/84	Myeloma		CVCL_0016	Male, 53		
+U-2932	Lymphoma		CVCL_1896		Metastasis	ascites
+U-343MGa	Brain cancer	Glioblastoma	CVCL_4773	Male, 64		central nervous system
+U-698-M	Lymphoma		CVCL_0017	Male, 7	metastasis	upper aerodigestive tract
+U-87MG ATCC	Brain cancer		CVCL_0022	Male, 44	primary	central nervous system
+U-937	Leukemia		CVCL_0007	Male, 37	metastasis	pleural effusion
+U-BLC1	Bladder cancer	Transitional Cell Carcinoma	CVCL_2738	Female, 84	primary	urinary tract
+U266B1	Myeloma	Multiple Myeloma, plasmacytoma	CVCL_0566	Male, 53		haematopoietic and lymphoid tissue
+U2OS	Bone cancer		CVCL_0042	Female, 15	primary	bone
+UACC-257	Skin cancer	Melanoma	CVCL_1779		primary	skin
+UACC-62	Skin cancer	Melanoma	CVCL_1780	Female		skin
+UACC-812	Breast cancer	Breast Ductal Carcinoma	CVCL_1781	Female, 43	primary	breast
+UACC-893	Breast cancer	Breast Ductal Carcinoma	CVCL_1782	Female, 57	primary	breast
+UCSD-242L	Skin cancer		CVCL_M009			
+UKE-1	Leukemia		CVCL_0104		Primary	haematopoietic_and_lymphoid_tissue
+UM-UC-1	Bladder cancer	Transitional Cell Carcinoma	CVCL_2743	Male, 26	metastasis	lymph node
+UM-UC-3	Bladder cancer	Transitional Cell Carcinoma	CVCL_1783	Male	primary	urinary tract
+UMC-11	Lung cancer	Carcinoid	CVCL_1784		Primary	lung
+UO-31	Kidney cancer	Renal Cell Carcinoma	CVCL_1911	Female		kidney
+UOK101	Kidney cancer	Renal Cell Carcinoma	CVCL_B076	Female		kidney
+VCaP	Prostate cancer	Adenocarcinoma	CVCL_2235	Male, 59	metastasis	bone
+VM-CUB-1	Bladder cancer	Transitional Cell Carcinoma	CVCL_1786	Male	primary	urinary tract
+VMRC-LCD	Lung cancer	Non-Small Cell Lung Cancer (NSCLC), Adenocarcinoma	CVCL_1787		Primary	lung
+VMRC-RCW	Kidney cancer	Renal Cell Carcinoma	CVCL_1790	Male	primary	kidney
+VMRC-RCZ	Kidney cancer	Renal Cell Carcinoma	CVCL_1791	Female	primary	kidney
+WM115	Skin cancer		CVCL_0040	Female, 58	metastasis	skin
+WM1799	Skin cancer	Melanoma	CVCL_A341	Male		skin
+WM266-4	Skin cancer	Melanoma	CVCL_2765	Female, 55	metastasis	skin
+WM793	Skin cancer	Melanoma	CVCL_8787	Male, 37		skin
+WM88	Skin cancer	Melanoma	CVCL_6805	Male	metastasis	skin
+WM983B	Skin cancer	Melanoma	CVCL_6809	Male, 54	metastasis	lymph node
+WSU-DLCL2	Lymphoma	Diffuse Large B-cell Lymphoma (DLBCL)	CVCL_1902	Male, 41	metastasis	pleural effusion
+WSU-FSCCL	Lymphoma		CVCL_1903		Primary	haematopoietic_and_lymphoid_tissue
+WSU-NHL	Lymphoma	B-cell	CVCL_1793	48	Primary	pleural_effusion
+YAPC	Pancreatic cancer	Ductal Adenocarcinoma, exocrine	CVCL_1794	Male, 43	metastasis	ascites
+YD-10B	Head and Neck cancer	Squamous Cell Carcinoma, tongue	CVCL_8929	Male, 67		upper aerodigestive tract
+YD-15	Head and Neck cancer	Squamous Cell Carcinoma, tongue	CVCL_8930	Male, 39		salivary gland
+YD-38	Head and Neck cancer	Squamous Cell Carcinoma	CVCL_L083	Male, 67		upper aerodigestive tract
+YD-8	Head and Neck cancer	Squamous Cell Carcinoma, tongue	CVCL_L079	Female, 46		upper aerodigestive tract
+YH-13	Brain cancer	Glioblastoma	CVCL_1795	Male, 40	primary	central nervous system
+YKG-1	Brain cancer	Glioblastoma	CVCL_1796	Female, 53	primary	central nervous system
+YMB-1	Breast cancer	Breast Ductal Carcinoma	CVCL_2814	63	Metastasis	ascites
+ZR-75-1	Breast cancer	Breast Ductal Carcinoma	CVCL_0588	Female, 63	metastasis	ascites
+ZR-75-30	Breast cancer	Breast Ductal Carcinoma	CVCL_1661	Female, 47	metastasis	ascites
