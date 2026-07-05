@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Exploration Reference — Files 7, 2, 9, 8</title>
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #222;
+    background: #fff;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  h2 { font-size: 17px; margin: 36px 0 10px; border-bottom: 2px solid #222; padding-bottom: 4px; }
+  h3 { font-size: 14px; font-weight: 600; margin: 20px 0 6px; color: #444; }
+
+  p { margin-bottom: 10px; color: #333; }
+
+  .subtitle { color: #666; font-size: 13px; margin-bottom: 32px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  th {
+    background: #f0f0f0;
+    text-align: left;
+    padding: 7px 10px;
+    font-weight: 600;
+    border: 1px solid #ddd;
+  }
+
+  td {
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    vertical-align: top;
+  }
+
+  tr:nth-child(even) td { background: #fafafa; }
+
+  code {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    background: #f4f4f4;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    padding: 1px 5px;
+  }
+
+  pre {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    background: #f4f4f4;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 12px 14px;
+    overflow-x: auto;
+    margin-bottom: 14px;
+    line-height: 1.6;
+    white-space: pre;
+  }
+
+  .warn {
+    background: #fff8e1;
+    border-left: 3px solid #f5a623;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    font-size: 13px;
+  }
+
+  .good {
+    background: #f0faf4;
+    border-left: 3px solid #34a853;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    font-size: 13px;
+  }
+
+  .note {
+    background: #f0f4ff;
+    border-left: 3px solid #4a6cf7;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    font-size: 13px;
+  }
+
+  ul { padding-left: 20px; margin-bottom: 12px; }
+  li { margin-bottom: 4px; font-size: 13px; color: #333; }
+
+  .file-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    background: #222;
+    color: #fff;
+    border-radius: 4px;
+    padding: 2px 8px;
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  hr { border: none; border-top: 1px solid #e0e0e0; margin: 40px 0; }
+</style>
+</head>
+<body>
+
+<h1>File Exploration Reference</h1>
+<div class="subtitle">Files 7, 2, 9, 8 &nbsp;·&nbsp; CellLineFinder &nbsp;·&nbsp; AstraZeneca MSc Dissertation &nbsp;·&nbsp; June 2026</div>
+
+
+<!-- ── FILE 7 ── -->
+<h2>File 7 — Cellosaurus</h2>
+<div class="file-tag">7_cellosaurus.csv</div>
+
+<h3>Basic structure</h3>
+<table>
+  <tr><th>Property</th><th>Value</th></tr>
+  <tr><td>Shape</td><td>152,231 rows × 17 columns</td></tr>
+  <tr><td>Role</td><td>Master cell line identity reference — golden key source for CVCL accessions</td></tr>
+  <tr><td>What one row represents</td><td>One unique cell line entry</td></tr>
+  <tr><td>Unique CVCL accessions</td><td>152,231 — zero duplicates, confirmed clean</td></tr>
+  <tr><td>Human cell lines</td><td>112,768 (74.1%)</td></tr>
+  <tr><td>Non-human cell lines</td><td>39,463 (25.9%)</td></tr>
+</table>
+
+<h3>Column inventory</h3>
+<table>
+  <tr><th>Column</th><th>Missing</th><th>Missing %</th><th>Notes</th></tr>
+  <tr><td>Identifier (cell line name)</td><td>1</td><td>0.0%</td><td>Primary name</td></tr>
+  <tr><td>Accession (CVCL_xxxx)</td><td>0</td><td>0.0%</td><td>Golden key — use this</td></tr>
+  <tr><td>Secondary accession number(s)</td><td>151,689</td><td>99.6%</td><td>Drop — essentially empty</td></tr>
+  <tr><td>Synonyms</td><td>79,845</td><td>52.4%</td><td>Critical for name matching — semicolon separated</td></tr>
+  <tr><td>Cross-references</td><td>1,801</td><td>1.2%</td><td>Contains DepMap ACH IDs — parse for bridge</td></tr>
+  <tr><td>Comments</td><td>1,747</td><td>1.1%</td><td>Semi-structured — contains fusion/mutation info</td></tr>
+  <tr><td>Diseases</td><td>81,241</td><td>53.4%</td><td>Use where present — fall back to Category</td></tr>
+  <tr><td>Species of origin</td><td>0</td><td>0.0%</td><td>Filter key — use NCBI TaxID 9606</td></tr>
+  <tr><td>Hierarchy</td><td>96,294</td><td>63.3%</td><td>Parent-child relationships — important for HeLa family</td></tr>
+  <tr><td>Category</td><td>0</td><td>0.0%</td><td>100% complete — fallback when Diseases missing</td></tr>
+  <tr><td>Web pages</td><td>140,601</td><td>92.4%</td><td>Drop</td></tr>
+  <tr><td>STR profile data</td><td>143,497</td><td>94.3%</td><td>Drop</td></tr>
+  <tr><td>Sex of cell</td><td>17,222</td><td>11.3%</td><td>UI display metadata</td></tr>
+  <tr><td>Age of donor at sampling</td><td>22,599</td><td>14.8%</td><td>UI display metadata</td></tr>
+</table>
+
+<h3>Synonyms — naming problem quantified</h3>
+<table>
+  <tr><th>Metric</th><th>Value</th></tr>
+  <tr><td>Lines with synonyms</td><td>72,386 (47.6%)</td></tr>
+  <tr><td>Lines without synonyms</td><td>79,845 (52.4%)</td></tr>
+  <tr><td>Average synonyms per line</td><td>1.55</td></tr>
+  <tr><td>Max synonyms (one line)</td><td>34 — P3X63Ag8.653</td></tr>
+</table>
+
+<h3>Species filter</h3>
+<p>Species of origin contains structured text like <code>NCBI_TaxID=9606; ! Homo sapiens (Human)</code> — filter on TaxID not string:</p>
+<pre>human = df[df['Species of origin'].str.contains('9606', na=False)]
+# Expected: ~112,768 rows</pre>
+
+<h3>HeLa family — critical finding</h3>
+<div class="warn">1,393 entries contain "HeLa" — these are NOT synonyms for one cell line. Each engineered variant (HeLa EGFR KO, HeLa S3, HeLa Kyoto etc.) has its own distinct CVCL accession. Never collapse all HeLa names to CVCL_0030.</div>
+
+<h3>Ground truth cell lines — verified present</h3>
+<table>
+  <tr><th>Cell Line</th><th>Canonical Name in File</th><th>CVCL Accession</th></tr>
+  <tr><td>A549</td><td>A-549</td><td>CVCL_0023</td></tr>
+  <tr><td>HeLa</td><td>HeLa</td><td>CVCL_0030</td></tr>
+  <tr><td>SKBR3</td><td>SK-BR-3</td><td>CVCL_0033</td></tr>
+  <tr><td>H1299</td><td>NCI-H1299</td><td>CVCL_0060</td></tr>
+  <tr><td>A431</td><td>A-431</td><td>CVCL_0037</td></tr>
+</table>
+<div class="note">A-549, SK-BR-3, A-431, NCI-H1299 all use hyphens or prefixes — text cleaning confirmed necessary. Strip hyphens, uppercase, strip known prefixes before lookup.</div>
+
+<h3>Cross-references — DepMap bridge</h3>
+<p>Format: <code>Database; ID || Database; ID</code>. Parse to extract DepMap ACH IDs:</p>
+<pre>df_human['depmap_id'] = df_human['Cross-references'].str.extract(r'DepMap;\s*(ACH-\d+)')</pre>
+
+<h3>Lookup table build</h3>
+<pre>records = []
+for _, row in df_human.iterrows():
+    cvcl = row['Accession (CVCL_xxxx)']
+    records.append({'raw_name': row['Identifier (cell line name)'], 'cvcl': cvcl})
+    if pd.notna(row['Synonyms']):
+        for syn in row['Synonyms'].split(';'):
+            records.append({'raw_name': syn.strip(), 'cvcl': cvcl})
+
+lookup = pd.DataFrame(records)
+lookup['clean_name'] = (lookup['raw_name']
+    .str.upper().str.replace('-', '').str.replace(' ', '').str.strip())</pre>
+
+<h3>Pitfalls</h3>
+<ul>
+  <li>Never collapse HeLa variants to CVCL_0030 — match specific accession</li>
+  <li>Filter on TaxID 9606, not string "Homo sapiens" — some rows have multiple TaxIDs</li>
+  <li>Secondary accessions column 99.6% missing — drop entirely</li>
+  <li>Always log unmapped names after every join — never silently drop</li>
+  <li>Comments column contains fusion info in free text — do not attempt systematic parsing now</li>
+</ul>
+
+<h3>Validation check</h3>
+<pre>test_names = ['A549', 'A-549', 'MCF7', 'MCF-7', 'HELA',
+              'HeLa', 'SKBR3', 'SK-BR-3', 'NCI-H1299', 'H1299']
+for name in test_names:
+    clean = name.upper().replace('-', '').replace(' ', '')
+    match = lookup[lookup['clean_name'] == clean]
+    print(f"{name} -> {match['cvcl'].values if len(match) > 0 else 'NOT FOUND'}")</pre>
+<p>All 10 must resolve before proceeding. If any return NOT FOUND, text cleaning is incomplete.</p>
+
+
+<hr>
+
+
+<!-- ── FILE 2 ── -->
+<h2>File 2 — DepMap Expression</h2>
+<div class="file-tag">2_DepMap_OmicsExpressionAllGenesTPMLogp1Profile.csv</div>
+
+<h3>Basic structure</h3>
+<table>
+  <tr><th>Property</th><th>Value</th></tr>
+  <tr><td>Shape</td><td>1,495 rows × 53,961 columns</td></tr>
+  <tr><td>Total cells</td><td>80,671,695</td></tr>
+  <tr><td>Row index format</td><td><code>PR-AdBjpG</code> — Profile IDs, NOT ACH- cell line IDs</td></tr>
+  <tr><td>Column header format</td><td><code>SYMBOL (ENSG...)</code> e.g. TSPAN6 (ENSG00000000003)</td></tr>
+  <tr><td>Value type</td><td>log2(TPM+1) — already transformed</td></tr>
+  <tr><td>Min value</td><td>0.0</td></tr>
+  <tr><td>Max value</td><td>17.78</td></tr>
+  <tr><td>Mean value</td><td>1.09</td></tr>
+  <tr><td>Median value</td><td>0.014</td></tr>
+  <tr><td>Missing (NaN)</td><td>0 — 0.0%</td></tr>
+  <tr><td>Zero values</td><td>40,209,561 — 49.8%</td></tr>
+</table>
+
+<h3>Critical finding — row IDs</h3>
+<div class="warn">Row indices are PR- Profile IDs, not ACH- cell line IDs. A direct join to sample_info returns zero matches. Must bridge via File 8 (OmicsProfiles) using ProfileID → ModelID before any downstream use.</div>
+
+<h3>Column header format</h3>
+<div class="good">Columns use Ensembl IDs, not Entrez IDs as the data dictionary stated. Format is SYMBOL (ENSG...) — Ensembl is already embedded. No conversion needed, just extract with regex.</div>
+<table>
+  <tr><th>Column type</th><th>Count</th><th>Example</th></tr>
+  <tr><td>Symbol + Ensembl</td><td>53,539</td><td><code>EGFR (ENSG00000146648)</code></td></tr>
+  <tr><td>Ensembl only (no symbol)</td><td>422</td><td><code>ENSG00000288721</code></td></tr>
+</table>
+<p>Extraction pattern confirmed working:</p>
+<pre>import re
+def extract_ensembl(col_name):
+    match = re.search(r'(ENSG\d+)', col_name)
+    return match.group(1) if match else col_name</pre>
+
+<h3>Transformation state</h3>
+<div class="good">Max 17.78 and median 0.014 confirm log2(TPM+1). Do NOT transform again — doing so corrupts values silently.</div>
+
+<h3>Missing vs zeros</h3>
+<p>No NaN values exist. Zero values (49.8%) are genuine zero expression — the gene was measured and found unexpressed. This is different from proteomics where missing means below detection limit. Do not impute zeros here.</p>
+
+<h3>EGFR as biological sanity check</h3>
+<table>
+  <tr><th>Statistic</th><th>Value</th></tr>
+  <tr><td>Mean</td><td>3.52</td></tr>
+  <tr><td>Std</td><td>2.37</td></tr>
+  <tr><td>Min</td><td>0.0</td></tr>
+  <tr><td>Median</td><td>4.15</td></tr>
+  <tr><td>Max</td><td>10.53</td></tr>
+</table>
+<p>A431 was not findable yet — requires PR- to ACH- bridge first.</p>
+
+<h3>Profile duplication</h3>
+<table>
+  <tr><th>Metric</th><th>Value</th></tr>
+  <tr><td>Total RNA profiles</td><td>1,495</td></tr>
+  <tr><td>Unique ACH IDs with RNA</td><td>1,479</td></tr>
+  <tr><td>Cell lines with 2 profiles</td><td>16</td></tr>
+</table>
+<div class="warn">16 cell lines have duplicate RNA profiles. Team decision required before preprocessing: take the mean, keep most recent, or keep highest coverage. Check ModelCondition in File 8 for these 16 to understand why they are duplicated.</div>
+
+<h3>Coverage gap</h3>
+<p>1,479 cell lines have RNA data. Sample_info has 1,840. This means 361 cell lines have metadata but no expression measurements. The system must handle these gracefully — show mutation/fusion evidence if available but flag missing expression clearly.</p>
+
+<h3>Data dictionary discrepancy</h3>
+<div class="warn">Data dictionary says column format is SYMBOL (ENTREZ_ID). Actual format is SYMBOL (ENSG...). Always use the actual file — not the data dictionary — when writing parsing code.</div>
+
+<h3>Team decisions still needed</h3>
+<ul>
+  <li>How to handle 16 duplicated RNA profiles</li>
+  <li>Whether to keep or drop 422 symbol-less Ensembl-only columns</li>
+  <li>Protein-coding filter — apply after ID mapping using HGNC gene_biotype</li>
+</ul>
+
+
+<hr>
+
+
+<!-- ── FILE 9 ── -->
+<h2>File 9 — DepMap Sample Info</h2>
+<div class="file-tag">9_DepMap_sample_info.csv</div>
+
+<h3>Basic structure</h3>
+<table>
+  <tr><th>Property</th><th>Value</th></tr>
+  <tr><td>Rows</td><td>1,840 cell lines</td></tr>
+  <tr><td>Role</td><td>Cell line metadata — disease, tissue, lineage, patient demographics</td></tr>
+  <tr><td>Primary key</td><td>DepMap_ID (ACH- format)</td></tr>
+</table>
+
+<h3>Actual column names — differ from data dictionary</h3>
+<div class="warn">The data dictionary uses different column names to what is actually in the file. Always use the actual names below when writing code.</div>
+<table>
+  <tr><th>Data Dictionary Name</th><th>Actual Column Name</th></tr>
+  <tr><td>ModelID</td><td>DepMap_ID</td></tr>
+  <tr><td>CellLineName</td><td>cell_line_name</td></tr>
+  <tr><td>StrippedCellLineName</td><td>stripped_cell_line_name</td></tr>
+  <tr><td>OncotreeCode</td><td>Not present — use lineage + primary_disease instead</td></tr>
+  <tr><td>PrimaryDisease</td><td>primary_disease</td></tr>
+  <tr><td>Sex</td><td>sex</td></tr>
+  <tr><td>Age</td><td>age</td></tr>
+  <tr><td>PrimaryOrMetastasis</td><td>primary_or_metastasis</td></tr>
+  <tr><td>SampleCollectionSite</td><td>sample_collection_site</td></tr>
+  <tr><td>EngineeredModel</td><td>model_manipulation</td></tr>
+</table>
+
+<h3>Full column list (actual)</h3>
+<pre>DepMap_ID, cell_line_name, stripped_cell_line_name, CCLE_Name,
+alias, COSMICID, sex, source, RRID, WTSI_Master_Cell_ID,
+sample_collection_site, primary_or_metastasis, primary_disease,
+Subtype, age, Sanger_Model_ID, depmap_public_comments,
+lineage, lineage_subtype, lineage_sub_subtype,
+lineage_molecular_subtype, default_growth_pattern,
+model_manipulation, model_manipulation_details, patient_id,
+parent_depmap_id, Cellosaurus_NCIt_disease, Cellosaurus_NCIt_id,
+Cellosaurus_issues</pre>
+
+<h3>Key notes</h3>
+<ul>
+  <li>OncotreeCode is not present — replaced by <code>lineage</code> and <code>primary_disease</code> for cancer type context</li>
+  <li><code>model_manipulation_details</code> is ~99% missing — drop</li>
+  <li><code>Cellosaurus_NCIt_disease</code> and <code>Cellosaurus_NCIt_id</code> columns give a direct link to disease ontology — useful for knowledge graph edges</li>
+  <li>1,840 rows vs 1,479 with RNA expression data — 361 cell lines have metadata but no expression</li>
+  <li>The file appears to be an older version of DepMap metadata — column naming convention changed in newer releases</li>
+</ul>
+
+<h3>Finding A431 (corrected code)</h3>
+<pre>a431_info = sample_info[sample_info['cell_line_name'].str.contains('A431', case=False, na=False)]
+print(a431_info[['DepMap_ID', 'cell_line_name', 'primary_disease', 'lineage']].head())</pre>
+
+
+<hr>
+
+
+<!-- ── FILE 8 ── -->
+<h2>File 8 — DepMap Omics Profiles</h2>
+<div class="file-tag">8_DepMap_OmicsProfiles.csv</div>
+
+<h3>Basic structure</h3>
+<table>
+  <tr><th>Property</th><th>Value</th></tr>
+  <tr><td>Shape</td><td>3,830 rows × 5 columns</td></tr>
+  <tr><td>Role</td><td>Bridge file — maps PR- Profile IDs to ACH- cell line IDs</td></tr>
+  <tr><td>Columns</td><td>ProfileID, ModelCondition, ModelID, Datatype, WESKit</td></tr>
+</table>
+
+<h3>Datatype breakdown</h3>
+<table>
+  <tr><th>Datatype</th><th>Count</th><th>Relevance</th></tr>
+  <tr><td>wes</td><td>1,860</td><td>Whole exome sequencing — mutation data, more cell lines than RNA</td></tr>
+  <tr><td>rna</td><td>1,495</td><td>RNA-seq — links to File 2 expression matrix</td></tr>
+  <tr><td>wgs</td><td>475</td><td>Whole genome sequencing — additional mutation context</td></tr>
+</table>
+
+<h3>Entity relationship</h3>
+<p>The full DepMap ID hierarchy is:</p>
+<pre>CVCL_xxxx (Cellosaurus golden key)
+    → ACH-000001 (DepMap cell line ID — ModelID in this file)
+        → MC-001131 (ModelCondition — experimental condition)
+            → PR-AdBjpG (ProfileID — one row in expression matrix)</pre>
+
+<h3>Key finding — WES has more coverage than RNA</h3>
+<div class="note">1,860 cell lines have WES (mutation) profiles but only 1,479 have RNA profiles. Some cell lines will have mutation/fusion flags available in your system but no expression confidence score. Handle this gracefully in the UI and confidence scoring logic.</div>
+
+<h3>Using this file as the bridge</h3>
+<pre># Filter to RNA profiles only
+rna_profiles = profiles[profiles['Datatype'] == 'rna'][['ProfileID', 'ModelID']]
+print("RNA profiles:", len(rna_profiles))
+print("Unique ACH IDs:", rna_profiles['ModelID'].nunique())
+
+# Check for duplicates — cell lines with more than one RNA profile
+dupes = rna_profiles['ModelID'].value_counts()
+print(dupes[dupes > 1])
+# Result: 16 cell lines have 2 RNA profiles each</pre>
+
+<h3>WESKit column</h3>
+<p>The WESKit column is 51.4% missing. It refers to the sequencing kit used for WES profiles. Not needed for preprocessing — note and move on.</p>
+
+<h3>Why this file matters</h3>
+<ul>
+  <li>Without this file, File 2 (expression) is not joinable to any cell line metadata</li>
+  <li>It also tells you which cell lines have WES data for mutation flagging even if they lack RNA</li>
+  <li>ModelCondition (MC- format) is the intermediate ID between cell line and profile — useful for understanding why duplicates exist</li>
+</ul>
+
+
+</body>
+</html>
