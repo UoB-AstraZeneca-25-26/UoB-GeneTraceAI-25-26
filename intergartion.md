@@ -13,7 +13,15 @@
 | ensg_id        | string | Bare ENSG, no version suffix — PRIMARY KEY       |
 | hgnc_symbol    | string | Current approved symbol                          |
 | prev_symbols   | string | Pipe-delimited list                              |
+<<<<<<< HEAD
+<<<<<<< HEAD
+| alias_symbols  | string | Pipe-delimited list                              |   
+=======
 | alias_symbols  | string | Pipe-delimited list                              |
+>>>>>>> a6ea596 (New Folder structure with requirements and readme files)
+=======
+| alias_symbols  | string | Pipe-delimited list                              |   
+>>>>>>> c2ee8d3 (updated the track A harmonization according to the integration file design system.)
 | hgnc_id        | string |                                                  |
 | biotype        | string | Always protein_coding                            |
 
