@@ -1,7 +1,0 @@
-primary_cvcl,canonical_name,n_model_ids,model_ids,cell_line_names,tissue,diseases,all_gap_false,known
-cvcl_0041,rh30,2,ACH-000833 | ACH-001189,rh-30 | ?,ncbi_taxid=9606; ! homo sapiens (human),ncit; c3749; alveolar rhabdomyosarcoma || ordo; orphanet_99756; alveolar rhabdom,True,discovered
-cvcl_1122,chl-1,2,ACH-001024 | ACH-001041,chl-1 | chl-1-dm,ncbi_taxid=9606; ! homo sapiens (human),ncit; c3224; melanoma,True,known (spec)
-cvcl_1150,ctv-1,2,ACH-001737 | ACH-002222,ctv-1-dm | ctv-1,ncbi_taxid=9606; ! homo sapiens (human),ncit; c9142; adult t acute lymphoblastic leukemia || ordo; orphanet_99861; precu,True,known (spec)
-cvcl_1337,kosc-2,2,ACH-001543 | ACH-002260,kosc-2 | ?,ncbi_taxid=9606; ! homo sapiens (human),ncit; c4041; floor of mouth squamous cell carcinoma || ordo; orphanet_502363; sq,True,discovered
-cvcl_1637,panc 05.04,2,ACH-000093 | ACH-002185,panc 05.04 | pl18,ncbi_taxid=9606; ! homo sapiens (human),ncit; c9120; pancreatic ductal adenocarcinoma,True,discovered
-cvcl_1658,ew-8,2,ACH-000499 | ACH-002194,ew8 | rh-1,ncbi_taxid=9606; ! homo sapiens (human),ncit; c4817; ewing sarcoma || ordo; orphanet_319; ewing sarcoma,True,discovered
