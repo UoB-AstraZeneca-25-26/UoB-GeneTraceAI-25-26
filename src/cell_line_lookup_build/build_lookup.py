@@ -201,16 +201,24 @@ gap_rows["gap_class"]           = True
 for col in attached:
     gap_rows[col] = None
 
-# Gap status classification
-def classify_gap(name):
-    if pd.isna(name):
-        return "disputed"
-    n = str(name).upper()
-    if any(tag in n for tag in ["KO", "DM", "GR", "STAG2", "OE", "KD"]):
+# Gap status classification — three-way: clean / confirmed_gone / disputed
+try:
+    dm_gap = pd.read_parquet(RAW / "8_DepMap_OmicsProfiles.parquet")
+    dm_gap["ModelID"] = dm_gap["ModelID"].str.strip().str.upper()
+    models_with_omics = set(dm_gap["ModelID"].unique())
+except Exception as e:
+    print(f"OmicsProfiles not available for gap classification: {e}")
+    models_with_omics = set()
+
+def classify_gap_full(row):
+    name = str(row["cell_line_name"]).upper() if pd.notna(row["cell_line_name"]) else ""
+    if any(tag in name for tag in ["KO", " DM", "GR", "OE", "KD", "STAG2"]):
         return "clean"
+    if row["model_id"] not in models_with_omics:
+        return "confirmed_gone"
     return "disputed"
 
-gap_rows["gap_status"] = gap_rows["cell_line_name"].apply(classify_gap)
+gap_rows["gap_status"] = gap_rows.apply(classify_gap_full, axis=1)
 anchor["gap_status"]   = None
 
 # Union
@@ -239,30 +247,13 @@ anchor.to_parquet(REF / "cell_line_lookup.parquet", engine="pyarrow", index=Fals
 print(f"Saved cell_line_lookup.parquet: {anchor.shape}")
 print(f"  gap_class rows     : {anchor['gap_class'].sum()}")
 print(f"  is_multi_model rows: {anchor['is_multi_model'].sum()}")
-print(f"  gap_status counts  :\n{anchor['gap_status'].value_counts(dropna=False).to_string()}")
+gap_counts = anchor.loc[anchor["gap_class"], "gap_status"].value_counts(dropna=False)
+print(f"  gap_status counts (clean / confirmed_gone / disputed):\n{gap_counts.to_string()}")
 print("TASK 4 PASSED\n")
 
 # ============================================================
-# TASK 5 — Summary + optional OmicsProfiles flags
-# ============================================================
-print("=" * 60)
-print("TASK 5 — Summary")
-print("=" * 60)
+# TASK 5 — optional OmicsProfiles flags
 
-print(f"""
-DECISIONS.md entry
-------------------
-Total rows in scoring anchor    : {len(anchor)}
-Resolved entities (class A)     : {len(class_A)}
-Gap class (class C, CVCL-unk.)  : {len(class_C)}
-Unresolved RRIDs (class B)      : {len(class_B)}
-Multi-model entities            : {entity['is_multi_model'].sum()}
-Annotation fields attached      : {attached}
-Accession case convention       : lowercase (cvcl_xxxx)
-model_id case convention        : uppercase (ACH-)
-Join key for downstream scoring : model_id only
-Name used as                    : display label only, never a join key
-""")
 
 # Optional — OmicsProfiles scoreability flags
 try:
@@ -290,4 +281,3 @@ for f in ["union_lookup_entity.parquet", "cell_line_lookup.parquet",
     p = REF / f
     print(f"  {p}  exists={p.exists()}")
 
-print("\nALL TASKS COMPLETE")
