@@ -120,15 +120,7 @@ Both datasets use identical `ach-` formatted IDs with identical lengths and zero
 |---|---|---|
 | Matched | 1,812 | 98.48% |
 | Lost — null `rrid` at source | 22 | 1.20% |
-<<<<<<< HEAD
-<<<<<<< HEAD
 | Lost — CVCL absent from dump (`CVCL_X507`, `CVCL_V618`) | 2 | 0.9% |
-=======
-| Lost — CVCL absent from dump (`CVCL_X507`, `CVCL_V618`) | 2 | 0.11% |
->>>>>>> 9ad337c (Findings from the data harmonization of track A.)
-=======
-| Lost — CVCL absent from dump (`CVCL_X507`, `CVCL_V618`) | 2 | 0.9% |
->>>>>>> 2fa224e (Data gathered on the Track A harmonization)
 | **Total lost** | **24** | **1.30%** |
 
 ### Join 2: sample_info ↔ depmap_profiles (inner join)
@@ -152,27 +144,11 @@ Both datasets use identical `ach-` formatted IDs with identical lengths and zero
 
 4. **Zero format-related losses** across all three joins — no case mismatches, no prefix pollution, no null keys in DepMap join, no length inconsistencies detected.
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 5. **Cumulative loss from sample_info anchor** → `24 (Cellosaurus) + 91 (DepMap) = 95 records` affected across both integrations (overlap unknown without three-way join).
 
 6. **Final harmonized coverage** → Cellosaurus join retains **98.48%** (1,812/1,840); DepMap join retains **95.05%** (1,749/1,840); three-way intersection is the effective working dataset.
 
 7. **Total irrecoverable loss** → **95 records maximum (6.25% of sample_info)** split between source nulls, snapshot version gaps, and deprecated registry entries; none resolvable within the provided data environment.
-=======
-5. **Cumulative loss from sample_info anchor** → `24 (Cellosaurus) + 91 (DepMap) = 115 records` affected across both integrations (overlap unknown without three-way join).
-
-6. **Final harmonized coverage** → Cellosaurus join retains **98.48%** (1,812/1,840); DepMap join retains **95.05%** (1,749/1,840); three-way intersection is the effective working dataset.
-
-7. **Total irrecoverable loss** → **115 records maximum (6.25% of sample_info)** split between source nulls, snapshot version gaps, and deprecated registry entries; none resolvable within the provided data environment.
->>>>>>> 9ad337c (Findings from the data harmonization of track A.)
-=======
-5. **Cumulative loss from sample_info anchor** → `24 (Cellosaurus) + 91 (DepMap) = 95 records` affected across both integrations (overlap unknown without three-way join).
-
-6. **Final harmonized coverage** → Cellosaurus join retains **98.48%** (1,812/1,840); DepMap join retains **95.05%** (1,749/1,840); three-way intersection is the effective working dataset.
-
-7. **Total irrecoverable loss** → **95 records maximum (6.25% of sample_info)** split between source nulls, snapshot version gaps, and deprecated registry entries; none resolvable within the provided data environment.
->>>>>>> 2fa224e (Data gathered on the Track A harmonization)
 
 ---
 
@@ -184,8 +160,6 @@ Both datasets use identical `ach-` formatted IDs with identical lengths and zero
 | sample_info ↔ depmap_profiles | `ach-` (len=10) | 95.05% (1,749/1,840) | Complete — loss documented |
 | Three-way intersection | Both | TBD | Pending final merge step |
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 ## 9. Insights From the Data Recovery Methods
 
 ### 9.1 Table 1 — Cellosaurus ↔ Sample_info
@@ -218,47 +192,3 @@ Both datasets use identical `ach-` formatted IDs with identical lengths and zero
 | Residual loss | 72 / 1,840 = 3.91% | cell lines present in sample_info but absent from both `depmap_profiles` and Cellosaurus xref; version gap irrecoverable without unified DepMap release |
 
 **Resolution summary:** Initial loss was 91 / 1,840 = 4.95% (91 unmatched from sample_info side). The Cellosaurus depmap xref bridge recovered +19 records = 20.88% of initial loss resolved. Final matching rate improved from 95.05% → 96.09% (1,768 / 1,840), with 72 irrecoverable records (3.91%) remaining due to the release version gap.
-=======
----
-=======
-## 9. Insights From the Data Recovery Methods
->>>>>>> 2fa224e (Data gathered on the Track A harmonization)
-
-### 9.1 Table 1 — Cellosaurus ↔ Sample_info
-
-*(via `cellosaurus_accession` ↔ `rrid` → `sanger_model_id`)*
-
-| Step | Result | Detail |
-|---|---|---|
-| Dataset sizes | Cellosaurus: 152,231 rows; Sample_info: 1,840 rows (anchor) | — |
-| Initial RRID exact match | 1,812 / 1,840 = 98.48% | via `rrid` ↔ `cellosaurus_accession` |
-| RRID null mapping | 22 / 1,840 = 1.20% | have null `rrid` at source — no accession recorded at data collection; unresolvable via RRID chain |
-| Deprecated/secondary accession | 2 valid-format RRIDs (`CVCL_X507`, `CVCL_V618`) absent from primary dump | secondary accession explode recovered +1 (`CVCL_X507`); 1 permanently lost |
-| Name-based fallback | recovered +8 / 22 null-rrid rows | safe exact name match (excluding 69 duplicate names in Cellosaurus) |
-| Sanger ID mapping | recovered 1,838 / 1,840 = 99.89% | `sanger_model_id` ↔ `cell_model_passport` xref; supersedes RRID as primary key |
-| Hard floor loss | 2 / 1,840 = 0.9% | both are NaN rows with no identifier; irrecoverable |
-
-**Resolution summary:** Initial loss was 28 / 1,840 = 1.52% (28 unmatched). Multi-tier recovery (secondary accession +1, name fallback +8, Sanger primary key +17) resolved 26 / 28 = 92.86% of initial loss. Final matching rate improved from 98.48% → 99.89% (1,838 / 1,840), with only 2 irrecoverable NaN rows (0.9%) remaining.
-
-<<<<<<< HEAD
-1. Perform **three-way inner join** across all three datasets to establish the final high-confidence working set.
-2. Document three-way intersection count and residual loss for the Integration Contract.
-3. Flag the DepMap version mismatch formally to the team — affects any track using `sample_info` as anchor.
-4. Confirm null-rrid row handling policy with supervisor before final pipeline run.
->>>>>>> 9ad337c (Findings from the data harmonization of track A.)
-=======
-### 9.2 Table 2 — Sample_info ↔ DepMap Profiles
-
-*(via `depmap_id` ↔ `modelid`)*
-
-| Step | Result | Detail |
-|---|---|---|
-| Dataset sizes | Sample_info: 1,840 rows; DepMap Profiles: 1,822 rows | — |
-| Initial depmap_id exact match | 1,749 / 1,840 = 95.05% | via `depmap_id` ↔ `modelid` |
-| Directional loss | 91 `depmap_id`s in sample_info absent from profiles (4.95%); 73 `modelid`s in profiles absent from sample_info | bidirectional gap |
-| Root cause | pure DepMap release version mismatch | zero format issues (identical `ach-` prefix, length = 10, zero nulls on both sides) |
-| Cellosaurus xref bridge | `depmap` field in Cellosaurus cross-references yielded 1,893 entries; direct Cellosaurus → DepMap match = 1,768 / 1,822 = 97.04% | recovers +19 over initial join |
-| Residual loss | 72 / 1,840 = 3.91% | cell lines present in sample_info but absent from both `depmap_profiles` and Cellosaurus xref; version gap irrecoverable without unified DepMap release |
-
-**Resolution summary:** Initial loss was 91 / 1,840 = 4.95% (91 unmatched from sample_info side). The Cellosaurus depmap xref bridge recovered +19 records = 20.88% of initial loss resolved. Final matching rate improved from 95.05% → 96.09% (1,768 / 1,840), with 72 irrecoverable records (3.91%) remaining due to the release version gap.
->>>>>>> 2fa224e (Data gathered on the Track A harmonization)
