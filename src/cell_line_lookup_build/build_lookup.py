@@ -252,7 +252,7 @@ print(f"  gap_status counts (clean / confirmed_gone / disputed):\n{gap_counts.to
 print("TASK 4 PASSED\n")
 
 # ============================================================
-# TASK 5 — optional OmicsProfiles flags
+# TASK 5 —g optional OmicsProfiles flags
 
 
 # Optional — OmicsProfiles scoreability flags
