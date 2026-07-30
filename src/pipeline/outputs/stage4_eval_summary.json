@@ -37,33 +37,33 @@
   ],
   "per_class": {
     "abundance_tracking": {
-      "hr_flat": 0.033184,
-      "hr_any_alt": 0.033184,
-      "hr_driver": 0.033184,
+      "hr_flat": 0.028176,
+      "hr_any_alt": 0.028176,
+      "hr_driver": 0.028176,
       "delta_driver": 0.0,
       "delta_driver_std": 0.0,
       "n_genes": 11
     },
     "activation_driven": {
-      "hr_flat": 0.01796,
-      "hr_any_alt": 0.023388,
-      "hr_driver": 0.019007,
-      "delta_driver": 0.001046,
-      "delta_driver_std": 0.010401,
-      "delta_any_std": 0.011666,
+      "hr_flat": 0.013347,
+      "hr_any_alt": 0.023351,
+      "hr_driver": 0.016675,
+      "delta_driver": 0.003327,
+      "delta_driver_std": 0.008157,
+      "delta_any_std": 0.014727,
       "n_genes": 17
     }
   },
   "overall": {
-    "hr_flat": 0.023941,
-    "hr_driver": 0.024576,
-    "hr_any_alt": 0.027237,
-    "driver_lift_pct": 2.65
+    "hr_flat": 0.019173,
+    "hr_driver": 0.021193,
+    "hr_any_alt": 0.025247,
+    "driver_lift_pct": 10.54
   },
   "variance_reduction": {
-    "delta_std_any_alt": 0.011666,
-    "delta_std_driver": 0.010401,
-    "reduction_pct": 10.8
+    "delta_std_any_alt": 0.014727,
+    "delta_std_driver": 0.008157,
+    "reduction_pct": 44.6
   },
   "spotlight": {
     "BCL2_ENSG00000171791": {
