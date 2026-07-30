@@ -72,6 +72,70 @@ def combine(E, P, method):
     return core, n_layers
 
 
+def combine_three(E, P, C, rho_ep=0.46, rho_ec=0.005, rho_pc=0.005):
+    """Combine three aligned (model x gene) matrices, all in [0,1] with NaN
+    marking absent layers. Uses correlation-penalised weighted sum for cells
+    with all three layers; falls back to two-layer weighted_sum or single
+    layer as appropriate.
+
+    Weights are derived from mean absolute pairwise correlation:
+        w_i = 1 / (1 + mean|rho with other layers|), then normalised.
+
+    Default rho values from empirical measurement:
+        rho_ep = 0.46  (expr-prot, from prior validation)
+        rho_ec = 0.005 (expr-chronos, measured in Improvement 2)
+        rho_pc = 0.005 (prot-chronos, estimated equal to rho_ec)
+    """
+    # Per-layer mean abs correlation with others
+    mean_rho_e = (abs(rho_ep) + abs(rho_ec)) / 2
+    mean_rho_p = (abs(rho_ep) + abs(rho_pc)) / 2
+    mean_rho_c = (abs(rho_ec) + abs(rho_pc)) / 2
+
+    w_e_raw = 1 / (1 + mean_rho_e)
+    w_p_raw = 1 / (1 + mean_rho_p)
+    w_c_raw = 1 / (1 + mean_rho_c)
+    total   = w_e_raw + w_p_raw + w_c_raw
+    w_e, w_p, w_c = w_e_raw / total, w_p_raw / total, w_c_raw / total
+
+    all_models = sorted(set(E.index) | set(P.index) | set(C.index))
+    all_genes  = sorted(set(E.columns) | set(P.columns) | set(C.columns))
+    E = E.reindex(index=all_models, columns=all_genes)
+    P = P.reindex(index=all_models, columns=all_genes)
+    C = C.reindex(index=all_models, columns=all_genes)
+
+    has_e = ~E.isna()
+    has_p = ~P.isna()
+    has_c = ~C.isna()
+    n_layers = has_e.astype(int) + has_p.astype(int) + has_c.astype(int)
+
+    core = pd.DataFrame(np.nan, index=E.index, columns=E.columns, dtype=float)
+
+    # 1-layer fallbacks
+    core[has_e & ~has_p & ~has_c] = E[has_e & ~has_p & ~has_c]
+    core[~has_e & has_p & ~has_c] = P[~has_e & has_p & ~has_c]
+    core[~has_e & ~has_p & has_c] = C[~has_e & ~has_p & has_c]
+
+    # 2-layer: equal-weight among present layers (re-normalise pair weights)
+    ep = has_e & has_p & ~has_c
+    ec = has_e & ~has_p & has_c
+    pc = ~has_e & has_p & has_c
+    w_ep_e = w_e_raw / (w_e_raw + w_p_raw)
+    w_ep_p = w_p_raw / (w_e_raw + w_p_raw)
+    w_ec_e = w_e_raw / (w_e_raw + w_c_raw)
+    w_ec_c = w_c_raw / (w_e_raw + w_c_raw)
+    w_pc_p = w_p_raw / (w_p_raw + w_c_raw)
+    w_pc_c = w_c_raw / (w_p_raw + w_c_raw)
+    core[ep] = w_ep_e * E[ep] + w_ep_p * P[ep]
+    core[ec] = w_ec_e * E[ec] + w_ec_c * C[ec]
+    core[pc] = w_pc_p * P[pc] + w_pc_c * C[pc]
+
+    # 3-layer: correlation-penalised weighted sum
+    all3 = has_e & has_p & has_c
+    core[all3] = w_e * E[all3] + w_p * P[all3] + w_c * C[all3]
+
+    return core, n_layers, (w_e, w_p, w_c)
+
+
 def score(expr_wide, prot_wide, normalisation, combination):
     """Full scoring pipeline for one (normalisation, combination) pair.
 

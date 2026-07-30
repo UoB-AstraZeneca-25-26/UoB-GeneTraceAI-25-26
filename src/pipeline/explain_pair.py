@@ -1,6 +1,15 @@
 import pandas as pd
 import numpy as np
 import json
+import sys
+sys.path.insert(0, "src/pipeline")
+from evidence_ledger import (
+    rna_covered_model_ids, derive_layers_present, derive_driver_alteration,
+    derive_cna_role_consistent, derive_essentiality_check, derive_census_role,
+    derive_validation_source, FIELD_TIERS,
+)
+
+_RNA_COVERED = None  # lazily built, cached module-level (cheap: ~1495 model_ids)
 
 
 def load_data(base="src/pipeline/outputs"):
@@ -9,12 +18,13 @@ def load_data(base="src/pipeline/outputs"):
     variants = pd.read_parquet("cleaned_track_data/mutations_variant_detail.parquet")
     harm     = pd.read_parquet(f"{base}/harmonised_enriched.parquet")
     gene_lookup = pd.read_parquet("reference/gene_lookup.parquet")
-    return pred, flags, variants, harm, gene_lookup
+    chronos_val = pd.read_parquet(f"{base}/chronos_validation.parquet")
+    return pred, flags, variants, harm, gene_lookup, chronos_val
 
 
 def _load_data_compat(base="src/pipeline/outputs"):
     """Back-compat wrapper that returns the original 4-tuple."""
-    pred, flags, variants, harm, _ = load_data(base)
+    pred, flags, variants, harm, _, _ = load_data(base)
     return pred, flags, variants, harm
 
 
@@ -50,10 +60,19 @@ def resolve_gene(gene_input, gene_lookup):
 
 
 def sort_gene_rows(gene_rows):
-    """Re-derive the correct ranked order at query time — never trust stored row order."""
+    """Re-derive the correct ranked order at query time — never trust stored row order.
+
+    core_score is already direction-adjusted for TSGs (inverted at build time),
+    so descending sort is always correct here.
+    """
     gene_class = gene_rows["class"].iloc[0]
     if gene_class == "abundance_tracking":
         sorted_rows = gene_rows.sort_values("core_score", ascending=False).reset_index(drop=True)
+    elif gene_class == "loss_of_function":
+        # core_score already inverted at build time; driver flag breaks ties
+        sorted_rows = gene_rows.sort_values(
+            ["has_driver_alteration", "core_score"], ascending=[False, False]
+        ).reset_index(drop=True)
     else:
         sorted_rows = gene_rows.sort_values(
             ["has_driver_alteration", "core_score"], ascending=[False, False]
@@ -62,7 +81,8 @@ def sort_gene_rows(gene_rows):
     return sorted_rows
 
 
-def explain_pair(ensg_id, model_id, pred, flags, variants, harm):
+def explain_pair(ensg_id, model_id, pred, flags, variants, harm, chronos_val=None):
+    global _RNA_COVERED
     model_id_upper = model_id.upper()
 
     gene_rows = pred[pred["ensg_id"] == ensg_id].copy()
@@ -84,11 +104,23 @@ def explain_pair(ensg_id, model_id, pred, flags, variants, harm):
         "gap_class":      meta_row["gap_class"].iloc[0]      if not meta_row.empty else None,
     }
 
+    gene_role = row.get("gene_role", "unknown") if "gene_role" in row.index else "unknown"
+    if gene_role == "tsg":
+        direction = "inverted (low abundance = high relevance) — tumour suppressor"
+    elif gene_role == "oncogene":
+        direction = "normal (high abundance = high relevance) — oncogene"
+    elif gene_role == "both":
+        direction = "normal (high abundance = high relevance) — oncogene/TSG dual role"
+    else:
+        direction = "normal (high abundance = high relevance) — role unknown"
+
     # RANKING tier (expression + proteomics via core_score/n_layers)
     ranking_tier = {
         "core_score":              float(row["core_score"]),
         "n_layers":                int(row["n_layers"]),
         "stratum_rank_percentile": float(row["stratum_rank"]),
+        "gene_role":               gene_role,
+        "direction":               direction,
         "tag": "RANKING",
         "note": ("core_score reflects expression and/or proteomics presence per n_layers; "
                  "individual expression/proteomics values not yet wired into explain_pair (TODO v1)."),
@@ -135,12 +167,49 @@ def explain_pair(ensg_id, model_id, pred, flags, variants, harm):
 
     absent.append("methylation [not wired in v0]")
 
+    # ── Evidence ledger — mechanical, not hand-written (see evidence_ledger.py) ──
+    # Same derivation functions as build_evidence_ledger.py's bulk pass, so a
+    # single pair's explanation and the 28.4M-row bulk table can never drift
+    # apart. Fields are NOT additive -- each is an independent fact, tagged
+    # with the tier that says whether it drove the ranking or only the label.
+    if _RNA_COVERED is None:
+        _RNA_COVERED = rna_covered_model_ids()
+
+    fr = flag_row.iloc[0] if not flag_row.empty else pd.Series(dtype=object)
+    chronos_check = row.get("chronos_check", "n/a")
+    rho = pval = None
+    if chronos_val is not None:
+        cv_row = chronos_val[chronos_val["ensg_id"] == ensg_id]
+        if not cv_row.empty:
+            rho, pval = float(cv_row.iloc[0]["rho"]), float(cv_row.iloc[0]["pval"])
+    contradicted = chronos_check == "inverted"
+
+    evidence_ledger = {
+        "layers_present":      derive_layers_present(int(row["n_layers"]), model_id_upper, _RNA_COVERED),
+        "n_layers":             int(row["n_layers"]),
+        "driver_alteration":    derive_driver_alteration(fr.get("mut_driver"), fr.get("fusion_driver")),
+        "cna_role_consistent":  derive_cna_role_consistent(
+            gene_role, row["class"], bool(row.get("has_cna_alteration", False)),
+            bool(fr.get("has_cna_context", False)) if not flag_row.empty else False,
+        ),
+        "essentiality_check":   derive_essentiality_check(chronos_check, rho, pval),
+        "census_role":          derive_census_role(gene_role),
+        "validation_source":    derive_validation_source(row.get("regime_source")),
+        "field_tiers":          FIELD_TIERS,
+    }
+
     # Self-check
     inconsistencies = []
-    expected_basis = (
-        "core_score" if row["class"] == "abundance_tracking"
-        else ("driver_flag+score" if row["has_driver_alteration"] else "score_only")
-    )
+    if row["class"] == "loss_of_function":
+        expected_basis = "lof_flag+inverted" if row["has_driver_alteration"] else "lof_inverted"
+    elif row["class"] == "unknown":
+        expected_basis = "unknown_dual"
+    elif row["class"] == "abundance_tracking":
+        expected_basis = "core_score"
+    elif row["has_driver_alteration"]:
+        expected_basis = "driver_flag+score"
+    else:
+        expected_basis = "score_only"
     if row["rank_basis"] != expected_basis:
         inconsistencies.append(
             f"rank_basis mismatch: stored='{row['rank_basis']}', expected='{expected_basis}' "
@@ -161,6 +230,7 @@ def explain_pair(ensg_id, model_id, pred, flags, variants, harm):
 
     return {
         "gene":       ensg_id,
+        "gene_role":  gene_role,
         "cell_line":  {"model_id": model_id_upper, **meta},
         "position": {
             "sorted_position":         int(row["sorted_position"]),
@@ -178,6 +248,8 @@ def explain_pair(ensg_id, model_id, pred, flags, variants, harm):
         "rank_basis":         row["rank_basis"],
         "confidence":         row["confidence"],
         "confidence_reason":  row["confidence_reason"],
+        "contradicted":       contradicted,
+        "evidence_ledger":    evidence_ledger,
         "ranking_tier":       ranking_tier,
         "confidence_modifier_tier": modifier_tier,
         "absent_layers":      absent,
@@ -186,6 +258,6 @@ def explain_pair(ensg_id, model_id, pred, flags, variants, harm):
 
 
 if __name__ == "__main__":
-    pred, flags, variants, harm = load_data()
-    result = explain_pair("ENSG00000157764", "ACH-000219", pred, flags, variants, harm)
+    pred, flags, variants, harm, gene_lookup, chronos_val = load_data()
+    result = explain_pair("ENSG00000157764", "ACH-000219", pred, flags, variants, harm, chronos_val)
     print(json.dumps(result, indent=2, default=str))
