@@ -1,0 +1,48 @@
+{
+  "question": "Would applying the mutation signature discount (m_mut) improve held-out hit@20?",
+  "read_only": true,
+  "structural_finding": "has_driver_alteration = mut_driver | fusion_driver is purely boolean and never reads p_mutation. p_mutation feeds only has_alteration (p>0.5), the REJECTED any-alteration gate. The discount therefore cannot move the production arm; only hr_any is affected.",
+  "rebuild_sanity_gate": {
+    "reproduces_shipped_p_mutation": true,
+    "rows_compared": 632919,
+    "exact_match_pct": 100.0,
+    "max_abs_diff": 0.0,
+    "mean_abs_diff": 0.0
+  },
+  "discount_application": {
+    "m_mut_min": 0.6507673919987307,
+    "m_mut_max": 0.9999928401633602,
+    "m_mut_mean": 0.9499587224998652,
+    "rows_without_signature_data": 0,
+    "mean_delta_p_mutation": -0.005911339776651792,
+    "rows_crossing_0.5_down": 5083,
+    "rows_crossing_0.5_up": 0
+  },
+  "harness": {
+    "seed": 42,
+    "n_curated_genes": 141,
+    "n_test_genes": 28,
+    "n_evaluable_genes": 28,
+    "denominator": "known = sensitive_in_GDSC intersect scored_in_core_score"
+  },
+  "hit_at_20": {
+    "flat": 0.019173,
+    "driver_gated_PRODUCTION": 0.021193,
+    "any_alteration_baseline": 0.025247,
+    "any_alteration_DISCOUNT": 0.025356
+  },
+  "activation_driven_delta_std": {
+    "any_alteration": 0.014727,
+    "any_alteration_discount": 0.014735,
+    "driver_gated": 0.008157
+  },
+  "paired_bootstrap_any_adj_minus_any": {
+    "n_resamples": 2000,
+    "point_estimate": 0.00011,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.000329,
+    "significant": false
+  },
+  "gate_rows_flipped": 13,
+  "verdict": "NO EFFECT -- CI includes 0. The discount does not change held-out hit@20 for the any-alteration arm, and cannot affect the production driver-gated arm at all. Do not wire it in on these grounds."
+}
