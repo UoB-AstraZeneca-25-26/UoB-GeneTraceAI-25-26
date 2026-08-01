@@ -1,0 +1,119 @@
+{
+  "fanout": {
+    "geo_expr": {
+      "n_lines": 612,
+      "max_per_line": 108,
+      "median_per_line": 2.0,
+      "pct_lines_multi": 62.908496732026144,
+      "pct_lines_ge10": 12.418300653594772,
+      "pct_lines_ge50": 3.758169934640523
+    },
+    "depmap_expr": {
+      "n_lines": 1412,
+      "max_per_line": 2,
+      "median_per_line": 1.0,
+      "pct_lines_multi": 1.13314447592068,
+      "pct_lines_ge10": 0.0,
+      "pct_lines_ge50": 0.0
+    }
+  },
+  "depmap_scale": {
+    "depmap_common_genes": {
+      "n": 5000000,
+      "min": 0.0,
+      "max": 16.55275914307968,
+      "mean": 2.356353766106504,
+      "median": 1.7004397181410922,
+      "q01": 0.0,
+      "q99": 8.617136828927844,
+      "pct_zero": 19.13824,
+      "pct_negative": 0.0,
+      "skew": 0.7694690199810466
+    },
+    "depmap_full_matrix": {
+      "n": 5000000,
+      "min": 0.0,
+      "max": 16.673985318388823,
+      "mean": 1.0899515282450534,
+      "median": 0.01435529297707,
+      "q01": 0.0,
+      "q99": 7.761551232444479,
+      "pct_zero": 49.84688,
+      "pct_negative": 0.0,
+      "skew": 2.021762158099117
+    }
+  },
+  "hpa_cost": {
+    "expr_long_sources": {
+      "geo": 93223284,
+      "depmap": 28408632
+    },
+    "expr_long_n_genes": 19894,
+    "expr_long_n_lines": 1486,
+    "depmap_only_genes_dropped": 34067,
+    "hpa_n_lines": 1105,
+    "hpa_lines_new": 1105,
+    "hpa_genes_ensg_comparable": 16060,
+    "hpa_genes_new_vs_common": 4102
+  },
+  "platform": {
+    "platform_counts": {
+      "gpl570": 2329,
+      "none": 938
+    },
+    "known_platform": {
+      "gpl570": "Affymetrix HG-U133 Plus 2.0 (MICROARRAY)"
+    },
+    "platform_x_type": [
+      {
+        "platform_id": "gpl570",
+        "type": "rna",
+        "n": 2329
+      },
+      {
+        "platform_id": "none",
+        "type": "none",
+        "n": 938
+      }
+    ]
+  },
+  "absence_floor": {
+    "depmap": {
+      "pct_zero": 19.121666666666666,
+      "min_nonzero": 0.01435529297707
+    },
+    "geo": {
+      "pct_zero": 0.0,
+      "min": 2.55502653121948,
+      "floor_q001": 4.719470219135281,
+      "floor_q01": 7.019878797531128,
+      "floor_q05": 10.875564146041825
+    }
+  },
+  "rank_agreement": {
+    "n_shared_lines": 538,
+    "per_line": {
+      "n": 538,
+      "median_spearman": 0.8217047604746547,
+      "q25": 0.8072457251800299,
+      "q75": 0.8341474299336037,
+      "pct_ge_0.5": 100.0,
+      "pct_ge_0.7": 99.25650557620817
+    },
+    "per_gene": {
+      "n": 2999,
+      "median_spearman": 0.4006993360050431,
+      "q25": 0.1370731690836064,
+      "q75": 0.573613019540197,
+      "pct_ge_0.5": 35.11170390130044,
+      "pct_ge_0.7": 11.770590196732245
+    },
+    "marker_spotlight": [
+      {
+        "marker": "VIM (mesenchymal)",
+        "n_lines": 538,
+        "spearman": 0.88
+      }
+    ]
+  }
+}
