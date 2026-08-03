@@ -18,6 +18,13 @@ probability integral transform, Kish's effective sample size, a hypergeometric
 null, a logistic MLE, Fréchet–Hoeffding bounds), it is named as such, because
 naming it imports its assumptions and error terms for free.
 
+**If a term or quantity here is unfamiliar, it is defined in
+[GLOSSARY.md](GLOSSARY.md)** — every biological term, assay and data column used
+in this project, defined from first principles with its measured range in this
+repository. This document assumes those definitions and concentrates on the
+estimators. [BIOLOGICAL_FIDELITY.md](BIOLOGICAL_FIDELITY.md) covers what the
+architecture claims biologically and where it falls short.
+
 Line numbers are approximate (notebooks renumber cells on edit); function and
 file names are exact. Paths are relative to the repo root
 (`C:\Disertation\UoB-GeneTraceAI-25-26`).
@@ -613,6 +620,33 @@ one-layer stratum. Comparing them directly is a distributional error, not a
 judgement call. Re-ranking within stratum maps both back to `U(0,1)` and makes
 them comparable, which is exactly what `stratum_rank` does.
 
+**Empirical confirmation on production data.** Measured directly from
+`src/pipeline/outputs/core_score.parquet` (28,403,110 rows):
+
+| stratum | rows | share | measured sd | predicted sd |
+|---|---|---|---|---|
+| 1-layer | 25,672,370 | 90.39% | **0.2751** | 0.2887 (uniform) |
+| 2-layer | 2,730,740 | 9.61% | **0.2418** | 0.2466 (at ρ = 0.46) |
+
+The measured shrinkage ratio is `s₂/s₁ = 0.879` against a predicted
+`√((1+ρ)/2) = 0.854`. Inverting the relation, the observed ratio implies
+
+```
+ρ̂ = 2·(s₂/s₁)² − 1 = 0.544
+```
+
+**an independent estimate of the mRNA–protein correlation recovered purely from
+the variance structure of the output**, with no reference to the literature value
+or to the `ρ_EP = 0.46` constant hard-coded in `combine_three()`. It falls inside
+the 0.46–0.58 range reported by Nusinow et al. (2020). This is a genuine
+out-of-sample validation of the derivation: the theory predicts a specific
+variance ratio, the data exhibits it, and the implied parameter matches an
+independently published quantity.
+
+The 1-layer sd falls slightly below the uniform ideal (0.2751 vs 0.2887) because
+ties compress the percentile transform (§0.1c) and because per-gene sample sizes
+vary.
+
 **Limits.** Within-stratum ranking makes the *marginals* comparable but does not
 make them *calibrated* against each other: a 0.9 in the one-layer stratum and a
 0.9 in the two-layer stratum are equally rare within their strata but rest on
@@ -1161,11 +1195,23 @@ biology. Because `p_burden` already encodes variant count explicitly, the
 pipeline counts burden twice: once as a modelled feature, once as an unmodelled
 extreme-value artefact.
 
+**Measured exposure — smaller than the range suggests.** From
+`cleaned_track_data/mutations_collapsed.parquet` (n = 632,919 gene × cell-line
+records): `variant_count` ranges 1–37, but **91.3% of records have exactly one
+variant** and only **1.65% have three or more**. For a single variant `E[max]`
+is exactly the underlying value, so the bias is inert on nine records in ten.
+The affected 8.7% tail is not negligible — it is concentrated in precisely the
+long, frequently-mutated genes where a spurious driver call is most costly — but
+the headline `E[max] = m/(m+1)` overstates the aggregate impact considerably,
+and the honest statement is that this is a tail problem, not a systematic one.
+
+The same measurement for fusions: `fusion_count` ranges 1–21 with **87.4% at
+exactly 1**, which is also the source of the tie-mass problem in §C.3.
+
 **Consequence.** This is currently harmless because `p_mutation` and `p_fusion`
-are display-only (see the Track C table above). It is a hard blocker on ever
-promoting this layer into ranking, since the bias correlates with gene length
-and mutation rate — exactly the confounds a driver score is supposed to control
-for. The bias-free alternatives are an explicit maximum-of-`m` correction
+are display-only (see the Track C table above). It is a blocker on promoting this
+layer into ranking, since the bias correlates with gene length and mutation rate
+— exactly the confounds a driver score is supposed to control for. The bias-free alternatives are an explicit maximum-of-`m` correction
 (compare against the `Beta(m,1)` null rather than the raw value), or aggregation
 by an idempotent operator such as the mean.
 
@@ -1199,7 +1245,7 @@ identical ρ can have very different hit@20 (§6.3). Reporting both, as this
 project does, is the right call; where they disagree the head/body distinction of
 §6.3 is the explanation.
 
-## C.6 Validated / Inverted / None classification — **uncorrected multiplicity**
+## C.6 Validated / Inverted / None classification — multiplicity, measured
 
 ```
 RHO_THRESHOLD = 0.1 ;  P_THRESHOLD = 0.05 ;  MIN_N = 30
@@ -1212,27 +1258,65 @@ RHO_THRESHOLD = 0.1 ;  P_THRESHOLD = 0.05 ;  MIN_N = 30
 effect size. `MIN_N = 30` is justified as the validity floor for the Spearman
 t-approximation (§0.4), not as a power calculation.
 
-**The multiplicity problem, quantified.** This rule is applied independently to
-every unknown-class gene. Under the global null, the expected number of genes
-called "validated" is
+**No multiple-testing correction is implemented anywhere in the repository**
+(verified by search over `src/` for `multipletests`, `benjamini`, `fdr_bh`,
+`bonferroni` — no matches), and the rule is applied independently to every gene.
+That is a genuine omission. However, running the analysis on the actual output
+shows the rule is **accidentally FDR-safe**, and the reason is worth stating
+precisely rather than relying on.
+
+**Measured** (`src/pipeline/outputs/chronos_validation.parquet`, m = 16,866 genes
+tested, median n = 823 cell lines per gene, minimum n = 247):
+
+| Quantity | Value |
+|---|---|
+| Genes with `p < 0.05` | 4,362 |
+| Expected under the global null (`0.05·m`) | 843 |
+| Storey `π̂₀` (λ = 0.5) | **0.630** |
+| Classified `validated` | 769 |
+| Classified `inverted` | 1,258 |
+| **Largest p-value among `validated`** | **4.03 × 10⁻³** |
+| Benjamini–Hochberg threshold at q = 0.05 | 6.92 × 10⁻³ |
+| `validated` genes surviving BH at q = 0.05 | **769 of 769 (all)** |
+
+Two conclusions.
+
+**(1) There is real signal.** 4,362 genes clear `p < 0.05` against 843 expected
+under the global null — a 5.2× excess — and Storey's estimator puts the null
+fraction at `π̂₀ ≈ 0.63`, i.e. roughly 37% of tested genes carry a genuine
+association with Chronos essentiality. This is not a set dominated by noise.
+
+**(2) The effect-size floor is the binding constraint, not the p-value floor.**
+The two thresholds cross where `ρ = 0.1` attains `p = 0.05`, i.e. where
+`0.1·√(n−1) = 1.96`, so at
 
 ```
-E[false validations] = m · α/2 ≈ 0.025·m      (one-sided, positive direction)
+n* = 385
 ```
 
-At `m ≈ 3000` unknown-class genes that is **≈ 75 spurious "validated" calls**,
-each of which is then promoted from `confidence = "low"/"unknown"` to
-`"moderate"` in Stage 5. The `ρ > 0.1` effect-size floor removes some of these
-but is not a substitute for error control: at `n = 900`, `ρ = 0.1` has
-`p ≈ 0.003`, so the effect floor and the p-floor are close to redundant and the
-binding constraint is `p < 0.05` alone.
+Above `n*` the `ρ > 0.1` floor is stricter than `p < 0.05`; below it, the
+p-value floor binds. Since the median gene here has `n = 823` and the minimum is
+`n = 247`, most genes sit in the ρ-binding regime: at `n = 823`, `ρ = 0.1`
+corresponds to `p ≈ 0.0041`, roughly **twelve times stricter** than the nominal
+0.05. Consequently 2,335 genes clear `p < 0.05` but are excluded by the effect
+floor, and every surviving `validated` gene has `p ≤ 4.03 × 10⁻³` — comfortably
+below the BH threshold.
 
-**No correction is implemented** (verified by search over `src/` for
-`multipletests`, `benjamini`, `fdr_bh`, `bonferroni` — no matches). The
-appropriate procedure is Benjamini–Hochberg at a stated FDR `q` (§0.6): the
-per-gene tests share a ground-truth vector and are therefore positively
-dependent, satisfying PRDS, so plain BH is valid. Reporting `π̂₀` alongside would
-directly estimate what fraction of the current "validated" set is null.
+**Correction to an earlier version of this document.** A previous draft asserted
+that "the binding constraint is `p < 0.05` alone" and projected ≈75 spurious
+validated calls at `m ≈ 3000`. Both are wrong: `m` is 16,866, and the ρ-floor
+binds for the large majority of genes. The multiplicity exposure is materially
+smaller than stated, and the `validated` set survives FDR control intact.
+
+**What should still change.** The rule is safe by arithmetic coincidence, not by
+design — it depends on `n` being large, and it is not safe for the low-`n` tail
+(`n < 385`, where `ρ = 0.1` does not imply `p < 0.05`). Implementing BH at a
+stated `q` and reporting `π̂₀` would make the guarantee explicit and would extend
+it to genes the current rule cannot protect.
+
+*Downstream note:* `validated` genes are promoted from
+`confidence = "low"/"unknown"` to `"moderate"` in Stage 5, so this rule has
+user-facing consequences.
 
 *Provenance:* `build_chronos_validation.py:41-43, 89-92`; identical thresholds in
 `test_run_metabolomics_mirna.classify():43-45, 100-105`. Written to
@@ -1552,20 +1636,25 @@ statistical account above of *why* the null result was structurally likely.
 
 Recorded honestly, in rough order of how much they affect conclusions.
 
-1. **No multiple-testing correction anywhere** (§0.6, §C.6). At `m ≈ 3000`
-   unknown-class genes, ~75 spurious "validated" calls are expected under the
-   global null, each promoting a gene's confidence tier in Stage 5. Fix: BH at a
-   stated FDR; report `π̂₀`.
-2. **No null model for hit@k** (§6.3). Raw hit rates are reported without the
-   hypergeometric baseline `k/N ≈ 2.2%` or an enrichment ratio. Fix: report
-   observed/expected and an exact hypergeometric p-value.
-3. **Noisy-OR is still used in Track C** (§C.2, §C.3) on features that are
+1. **No null model for hit@k** (§6.3). Raw hit rates are reported without the
+   hypergeometric baseline `k/N ≈ 2.2%` or an enrichment ratio, so the headline
+   metric of the whole project is quoted without the number needed to read it.
+   Fix: report observed/expected and an exact hypergeometric p-value.
+2. **Noisy-OR is still used in Track C** (§C.2, §C.3) on features that are
    demonstrably dependent (VEP consequence and computed pathogenicity), despite
    the same failure having been diagnosed and fixed in Stage 2. Currently masked
    by those scores being display-only.
+3. **No multiple-testing correction implemented** (§0.6, §C.6) — though measured
+   analysis shows the `validated` set survives BH at q = 0.05 intact, because the
+   `ρ > 0.1` effect floor is ~12× stricter than the nominal `p < 0.05` at typical
+   `n`. The guarantee holds by arithmetic coincidence rather than by design, and
+   does not extend to genes with `n < 385`. Fix: implement BH explicitly and
+   report `π̂₀` (currently ≈ 0.63).
 4. **Max-aggregation extreme-value bias** (§C.4) — `E[max] = m/(m+1)` makes
-   multi-variant genes score higher mechanically. Blocks promotion of Track C
-   scores into ranking.
+   multi-variant genes score higher mechanically. Measured exposure is a 8.7%
+   tail (91.3% of records carry a single variant), so this is a tail problem
+   rather than a systematic one, but it still blocks promotion of Track C scores
+   into ranking.
 5. **Per-layer variances never estimated** (§2.4). The GLS argument assumes equal
    variance across layers; if proteomics is noisier than expression, `(½,½)` is
    not optimal and the correct weights follow from `Σ⁻¹𝟙` with unequal diagonal.

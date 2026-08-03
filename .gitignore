@@ -4,6 +4,11 @@ data/
 # all generated outputs
 outputs/
 
+# ── DuckDB catalog ───────────────────────────────────────────────
+# rebuilt from the parquet files on demand — never a source of truth
+*.duckdb
+*.duckdb.wal
+
 # ── Parquet files ────────────────────────────────────────────────
 *.parquet
 !reference/*.parquet
@@ -27,6 +32,9 @@ outputs/
 .DS_Store
 Thumbs.db
 *.swp
+
+# ── Claude Code ──────────────────────────────────────────────────
+.claude/settings.local.json
 
 # ── What IS tracked ─────────────────────────────────────────────
 # src/           → all notebooks and scripts
