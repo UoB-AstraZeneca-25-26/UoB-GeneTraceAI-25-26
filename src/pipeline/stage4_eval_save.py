@@ -8,9 +8,10 @@ flags  = pd.read_parquet("src/pipeline/outputs/flags_with_driver.parquet",
 gdsc   = pd.read_parquet("validation/prepared/gdsc_scored_ready.parquet",
                          columns=["model_id","target_ensg","sensitive"])
 
-core["model_id"]  = core["model_id"].str.upper()
-flags["model_id"] = flags["model_id"].str.upper()
-gdsc["model_id"]  = gdsc["model_id"].str.upper()
+core["model_id"]  = core["model_id"].str.lower()
+flags["model_id"] = flags["model_id"].str.lower()
+gdsc["model_id"]  = gdsc["model_id"].str.lower()
+gdsc["target_ensg"] = gdsc["target_ensg"].astype("string").str.lower()
 
 # Sorted before sampling — deterministic across Python runs
 curated_genes = sorted(set(regime.ensg_id) & set(gdsc.target_ensg))
@@ -19,8 +20,8 @@ test_genes  = set(rng.choice(curated_genes, size=max(1, len(curated_genes)//5), 
 train_genes = [g for g in curated_genes if g not in test_genes]
 
 print(f"curated: {len(curated_genes)}, test: {len(test_genes)}, train: {len(train_genes)}")
-print("BCL2 in test:", "ENSG00000171791" in test_genes)
-print("BRAF in test:", "ENSG00000157764" in test_genes)
+print("BCL2 in test:", "ensg00000171791" in test_genes)
+print("BRAF in test:", "ensg00000157764" in test_genes)
 
 core_t  = core[core.ensg_id.isin(test_genes)].copy()
 flags_t = flags[flags.ensg_id.isin(test_genes)].copy()
@@ -80,7 +81,7 @@ print(f"  pct:      {(1-activ.delta_driver.std()/activ.delta_any.std())*100:.1f}
 print()
 
 # Spotlight: BCL2 and BRAF — evaluate from full data regardless of split
-for name, ensg in [("BCL2","ENSG00000171791"), ("BRAF","ENSG00000157764")]:
+for name, ensg in [("BCL2","ensg00000171791"), ("BRAF","ensg00000157764")]:
     in_test = ensg in test_genes
     gdsc_g  = gdsc[gdsc.target_ensg == ensg]
     core_g  = core[core.ensg_id == ensg]
@@ -141,8 +142,8 @@ summary = {
         "reduction_pct":     round((1-activ.delta_driver.std()/activ.delta_any.std())*100, 1),
     },
     "spotlight": {
-        "BCL2_ENSG00000171791": {"class": "abundance_tracking", "in_test_set": "ENSG00000171791" in test_genes},
-        "BRAF_ENSG00000157764": {"class": "activation_driven",  "in_test_set": "ENSG00000157764" in test_genes},
+        "BCL2_ENSG00000171791": {"class": "abundance_tracking", "in_test_set": "ensg00000171791" in test_genes},
+        "BRAF_ENSG00000157764": {"class": "activation_driven",  "in_test_set": "ensg00000157764" in test_genes},
     },
 }
 with open("src/pipeline/outputs/stage4_eval_summary.json", "w") as f:

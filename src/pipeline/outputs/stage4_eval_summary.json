@@ -6,73 +6,63 @@
   "n_test": 28,
   "n_train": 113,
   "test_genes": [
-    "ENSG00000066468",
-    "ENSG00000067900",
-    "ENSG00000080503",
-    "ENSG00000097007",
-    "ENSG00000115548",
-    "ENSG00000116478",
-    "ENSG00000123612",
-    "ENSG00000127616",
-    "ENSG00000132510",
-    "ENSG00000134318",
-    "ENSG00000134853",
-    "ENSG00000137193",
-    "ENSG00000141867",
-    "ENSG00000146648",
-    "ENSG00000147133",
-    "ENSG00000148053",
-    "ENSG00000156983",
-    "ENSG00000162434",
-    "ENSG00000162607",
-    "ENSG00000165731",
-    "ENSG00000169032",
-    "ENSG00000170836",
-    "ENSG00000171094",
-    "ENSG00000171720",
-    "ENSG00000173846",
-    "ENSG00000181090",
-    "ENSG00000198400",
-    "ENSG00000204256"
+    "ensg00000066468",
+    "ensg00000067900",
+    "ensg00000080503",
+    "ensg00000097007",
+    "ensg00000115548",
+    "ensg00000116478",
+    "ensg00000123612",
+    "ensg00000127616",
+    "ensg00000132510",
+    "ensg00000134318",
+    "ensg00000134853",
+    "ensg00000137193",
+    "ensg00000141867",
+    "ensg00000146648",
+    "ensg00000147133",
+    "ensg00000148053",
+    "ensg00000156983",
+    "ensg00000162434",
+    "ensg00000162607",
+    "ensg00000165731",
+    "ensg00000169032",
+    "ensg00000170836",
+    "ensg00000171094",
+    "ensg00000171720",
+    "ensg00000173846",
+    "ensg00000181090",
+    "ensg00000198400",
+    "ensg00000204256"
   ],
   "per_class": {
     "abundance_tracking": {
-      "hr_flat": 0.028176,
-      "hr_any_alt": 0.028176,
-      "hr_driver": 0.028176,
+      "hr_flat": 0.046717,
+      "hr_any_alt": 0.046717,
+      "hr_driver": 0.046717,
       "delta_driver": 0.0,
       "delta_driver_std": 0.0,
-      "n_genes": 11
+      "n_genes": 2
     },
     "activation_driven": {
-      "hr_flat": 0.013347,
-      "hr_any_alt": 0.023351,
-      "hr_driver": 0.016675,
-      "delta_driver": 0.003327,
-      "delta_driver_std": 0.008157,
-      "delta_any_std": 0.014727,
-      "n_genes": 17
+      "hr_flat": 0.01151,
+      "hr_any_alt": 0.018056,
+      "hr_driver": 0.015505,
+      "delta_driver": 0.003996,
+      "delta_driver_std": 0.009249,
+      "delta_any_std": 0.012618,
+      "n_genes": 26
     }
   },
   "overall": {
-    "hr_flat": 0.019173,
-    "hr_driver": 0.021193,
-    "hr_any_alt": 0.025247,
-    "driver_lift_pct": 10.54
+    "hr_flat": 0.014025,
+    "hr_driver": 0.017735,
+    "hr_any_alt": 0.020103,
+    "driver_lift_pct": 26.45
   },
   "variance_reduction": {
-    "delta_std_any_alt": 0.014727,
-    "delta_std_driver": 0.008157,
-    "reduction_pct": 44.6
-  },
-  "spotlight": {
-    "BCL2_ENSG00000171791": {
-      "class": "abundance_tracking",
-      "in_test_set": false
-    },
-    "BRAF_ENSG00000157764": {
-      "class": "activation_driven",
-      "in_test_set": false
-    }
+    "delta_std_any_alt": 0.012618,
+    "delta_std_driver": 0.009249,
+    "reduction_pct": 26.7
   }
 }

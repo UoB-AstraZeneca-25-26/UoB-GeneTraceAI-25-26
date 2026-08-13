@@ -21,11 +21,11 @@ DATA_CLEAN = Path("data/parquet/data_clean")
 OUT = Path("src/pipeline/outputs")
 VAL = Path("validation/prepared")
 
-GENE_SYMBOL_TO_ENSG = {"BCL2": "ENSG00000171791", "MET": "ENSG00000105976"}
+GENE_SYMBOL_TO_ENSG = {"BCL2": "ensg00000171791", "MET": "ensg00000105976"}
 
 # ── Step 1: per-line mean z-score across all miRNAs ──────────────────────
 mirna = pd.read_parquet(CLEANED / "mirna_model_level.parquet")
-mirna["model_id"] = mirna["model_id"].str.upper()
+mirna["model_id"] = mirna["model_id"].str.lower()
 n_mirnas = mirna["mirna_symbol"].nunique()
 n_lines = mirna["model_id"].nunique()
 print(f"Step 1: {n_mirnas} miRNAs, {n_lines} cell lines, {len(mirna):,} long rows")
@@ -41,7 +41,7 @@ print(f"mirna_z: mean={per_line.mirna_z.mean():.4f} std={per_line.mirna_z.std():
 
 # ── Step 2: ANOVA against lineage ────────────────────────────────────────
 si = pd.read_parquet(DATA_CLEAN / "sample_info_clean.parquet")
-si["model_id"] = si["depmap_id"].str.upper()
+si["model_id"] = si["depmap_id"].str.lower()
 per_line = per_line.merge(si[["model_id", "lineage"]], on="model_id", how="left")
 missing_lineage = per_line["lineage"].isna().sum()
 print(f"\nStep 2: {missing_lineage}/{len(per_line)} lines missing lineage (dropped)")
@@ -72,15 +72,15 @@ print("STEP 3 -- constant-term blend into 2-layer core_score (BCL2, MET)")
 print("=" * 70)
 
 curated = pd.read_parquet(VAL / "curated_validation_pairs.parquet")
-curated["model_id"] = curated["model_id"].str.upper()
-curated["ensg_id"] = curated["ensg_id"].str.upper()
+curated["model_id"] = curated["model_id"].str.lower()
+curated["ensg_id"] = curated["ensg_id"].str.lower()
 
 global_pct = per_line.set_index("model_id")["mirna_z"].rank(pct=True)
 
 results_b = {}
 for gene, ensg in GENE_SYMBOL_TO_ENSG.items():
     base = pd.read_parquet(OUT / "core_score.parquet")
-    base["model_id"] = base["model_id"].str.upper()
+    base["model_id"] = base["model_id"].str.lower()
     base = base[base.ensg_id == ensg][["model_id", "core_score"]].rename(columns={"core_score": "baseline"})
     base["global_pct"] = base["model_id"].map(global_pct)
     base = base.dropna(subset=["global_pct"])

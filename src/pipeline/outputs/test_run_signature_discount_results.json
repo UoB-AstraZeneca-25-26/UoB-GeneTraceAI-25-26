@@ -26,23 +26,23 @@
     "denominator": "known = sensitive_in_GDSC intersect scored_in_core_score"
   },
   "hit_at_20": {
-    "flat": 0.019173,
-    "driver_gated_PRODUCTION": 0.021193,
-    "any_alteration_baseline": 0.025247,
-    "any_alteration_DISCOUNT": 0.025356
+    "flat": 0.014025,
+    "driver_gated_PRODUCTION": 0.017735,
+    "any_alteration_baseline": 0.016201,
+    "any_alteration_DISCOUNT": 0.016201
   },
   "activation_driven_delta_std": {
-    "any_alteration": 0.014727,
-    "any_alteration_discount": 0.014735,
-    "driver_gated": 0.008157
+    "any_alteration": 0.007684,
+    "any_alteration_discount": 0.007684,
+    "driver_gated": 0.009249
   },
   "paired_bootstrap_any_adj_minus_any": {
     "n_resamples": 2000,
-    "point_estimate": 0.00011,
+    "point_estimate": 0.0,
     "ci_95_low": 0.0,
-    "ci_95_high": 0.000329,
+    "ci_95_high": 0.0,
     "significant": false
   },
-  "gate_rows_flipped": 13,
+  "gate_rows_flipped": 0,
   "verdict": "NO EFFECT -- CI includes 0. The discount does not change held-out hit@20 for the any-alteration arm, and cannot affect the production driver-gated arm at all. Do not wire it in on these grounds."
 }

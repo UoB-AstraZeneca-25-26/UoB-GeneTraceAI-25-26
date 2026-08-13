@@ -6,7 +6,7 @@ sys.path.insert(0, "src/pipeline")
 from evidence_ledger import (
     rna_covered_model_ids, derive_layers_present, derive_driver_alteration,
     derive_cna_role_consistent, derive_essentiality_check, derive_census_role,
-    derive_validation_source, FIELD_TIERS,
+    derive_validation_source, derive_signal_spread, FIELD_TIERS,
 )
 
 _RNA_COVERED = None  # lazily built, cached module-level (cheap: ~1495 model_ids)
@@ -19,6 +19,20 @@ def load_data(base="src/pipeline/outputs"):
     harm     = pd.read_parquet(f"{base}/harmonised_enriched.parquet")
     gene_lookup = pd.read_parquet("reference/gene_lookup.parquet")
     chronos_val = pd.read_parquet(f"{base}/chronos_validation.parquet")
+
+    # Canonical key case is LOWERCASE, matching the harmonisation warehouse.
+    # Normalising here rather than at each use makes this idempotent: it is a
+    # no-op on files already written lowercase, and it silently upgrades the
+    # legacy UPPERCASE artefacts (predictions_with_confidence, chronos_validation)
+    # that predate the convention and cannot currently be rebuilt.
+    for _df, _cols in [(pred, ("model_id", "ensg_id")), (flags, ("model_id", "ensg_id")),
+                       (variants, ("model_id", "ensg_id")), (harm, ("model_id",)),
+                       (chronos_val, ("model_id", "ensg_id")),
+                       (gene_lookup, ("ensg_id", "hgnc_symbol", "alias_symbols"))]:
+        for _c in _cols:
+            if _c in _df.columns:
+                _df[_c] = _df[_c].astype("string").str.lower()
+
     return pred, flags, variants, harm, gene_lookup, chronos_val
 
 
@@ -34,17 +48,17 @@ def resolve_gene(gene_input, gene_lookup):
     Returns (ensg_id, hgnc_symbol) or raises ValueError with a clear message.
     """
     g = gene_input.strip()
-    if g.upper().startswith("ENSG"):
-        row = gene_lookup[gene_lookup["ensg_id"] == g.upper()]
+    if g.lower().startswith("ensg"):
+        row = gene_lookup[gene_lookup["ensg_id"] == g.lower()]
         symbol = row["hgnc_symbol"].iloc[0] if not row.empty else g
-        return g.upper(), symbol
+        return g.lower(), symbol
 
     # Try exact symbol match first, then alias
-    row = gene_lookup[gene_lookup["hgnc_symbol"].str.upper() == g.upper()]
+    row = gene_lookup[gene_lookup["hgnc_symbol"].str.lower() == g.lower()]
     if row.empty:
         # Search in alias_symbols (pipe-separated strings); avoid regex groups warning
-        pattern = r"(?:^|[|])" + g.upper() + r"(?:$|[|])"
-        alias_mask = gene_lookup["alias_symbols"].fillna("").str.upper().str.contains(
+        pattern = r"(?:^|[|])" + g.lower() + r"(?:$|[|])"
+        alias_mask = gene_lookup["alias_symbols"].fillna("").str.lower().str.contains(
             pattern, regex=True
         )
         row = gene_lookup[alias_mask]
@@ -55,8 +69,31 @@ def resolve_gene(gene_input, gene_lookup):
     return ensg, symbol
     # normalise model_id case
     for df in (pred, flags, variants):
-        df["model_id"] = df["model_id"].str.upper()
+        df["model_id"] = df["model_id"].str.lower()
     return pred, flags, variants, harm
+
+
+# Classes for which a driver alteration is allowed to OUTRANK core_score
+# (a hard gate: every driver-positive line sorts above every driver-negative one).
+#
+# The gate is only defensible where the gene has an established role that makes
+# the flag interpretable — a mutation in a census oncogene/TSG is mechanistic
+# evidence, a mutation in a gene with no known role is just a mutation. Genes
+# with class 'unknown' have neither a measured GDSC regime nor a COSMIC census
+# role, so for them the flag drops to a tiebreaker *after* core_score.
+#
+# Why this matters: 18,514 of 19,176 scored genes are class 'unknown'. Under the
+# previous rule they were hard-gated too, which promoted single flagged lines
+# above the entire scored ranking — e.g. MUC1 ranked a uveal melanoma line at
+# core_score 0.284 above pancreatic/cholangio/breast lines at 1.000-0.995, and
+# ASGR1 ranked a bladder line at 0.574 above hepatoblastoma/HCC lines at 1.000.
+# In both cases the score itself already had the biology right.
+DRIVER_GATED_CLASSES = frozenset({"activation_driven", "loss_of_function"})
+
+
+def driver_is_primary_sort_key(gene_class):
+    """True where has_driver_alteration may outrank core_score for this class."""
+    return gene_class in DRIVER_GATED_CLASSES
 
 
 def sort_gene_rows(gene_rows):
@@ -67,23 +104,27 @@ def sort_gene_rows(gene_rows):
     """
     gene_class = gene_rows["class"].iloc[0]
     if gene_class == "abundance_tracking":
-        sorted_rows = gene_rows.sort_values("core_score", ascending=False).reset_index(drop=True)
-    elif gene_class == "loss_of_function":
-        # core_score already inverted at build time; driver flag breaks ties
-        sorted_rows = gene_rows.sort_values(
-            ["has_driver_alteration", "core_score"], ascending=[False, False]
-        ).reset_index(drop=True)
+        # Empirically validated to rank on abundance alone; flag plays no part.
+        sort_keys = ["core_score"]
+    elif driver_is_primary_sort_key(gene_class):
+        # Established role: driver alteration is mechanistic evidence and gates.
+        # (core_score already inverted at build time for loss_of_function.)
+        sort_keys = ["has_driver_alteration", "core_score"]
     else:
-        sorted_rows = gene_rows.sort_values(
-            ["has_driver_alteration", "core_score"], ascending=[False, False]
-        ).reset_index(drop=True)
+        # No established role: the flag cannot outrank measured abundance, but it
+        # is still evidence, so it breaks ties between equal scores.
+        sort_keys = ["core_score", "has_driver_alteration"]
+
+    sorted_rows = gene_rows.sort_values(
+        sort_keys, ascending=[False] * len(sort_keys)
+    ).reset_index(drop=True)
     sorted_rows["sorted_position"] = sorted_rows.index + 1
     return sorted_rows
 
 
 def explain_pair(ensg_id, model_id, pred, flags, variants, harm, chronos_val=None):
     global _RNA_COVERED
-    model_id_upper = model_id.upper()
+    model_id_lc = model_id.lower()
 
     gene_rows = pred[pred["ensg_id"] == ensg_id].copy()
     if gene_rows.empty:
@@ -92,13 +133,13 @@ def explain_pair(ensg_id, model_id, pred, flags, variants, harm, chronos_val=Non
     sorted_rows = sort_gene_rows(gene_rows)
     total_n = len(sorted_rows)
 
-    row = sorted_rows[sorted_rows["model_id"] == model_id_upper]
+    row = sorted_rows[sorted_rows["model_id"] == model_id_lc]
     if row.empty:
-        return {"error": f"No prediction found for pair ({ensg_id}, {model_id_upper})"}
+        return {"error": f"No prediction found for pair ({ensg_id}, {model_id_lc})"}
     row = row.iloc[0]
 
-    # Cell-line metadata (harmonised_enriched uses lowercase model_id)
-    meta_row = harm[harm["model_id"] == model_id.lower()]
+    # Cell-line metadata (every key in the chain is lowercase)
+    meta_row = harm[harm["model_id"] == model_id_lc]
     meta = {
         "canonical_name": meta_row["canonical_name"].iloc[0] if not meta_row.empty else None,
         "gap_class":      meta_row["gap_class"].iloc[0]      if not meta_row.empty else None,
@@ -127,7 +168,7 @@ def explain_pair(ensg_id, model_id, pred, flags, variants, harm, chronos_val=Non
     }
 
     # CONFIDENCE MODIFIER tier (mutation, fusion)
-    flag_row = flags[(flags["ensg_id"] == ensg_id) & (flags["model_id"] == model_id_upper)]
+    flag_row = flags[(flags["ensg_id"] == ensg_id) & (flags["model_id"] == model_id_lc)]
     modifier_tier = {}
     absent = []
 
@@ -141,7 +182,7 @@ def explain_pair(ensg_id, model_id, pred, flags, variants, harm, chronos_val=Non
                 "tag": "CONFIDENCE MODIFIER — does not affect stratum_rank",
             }
             vrows = variants[
-                (variants["ensg_id"] == ensg_id) & (variants["model_id"] == model_id_upper)
+                (variants["ensg_id"] == ensg_id) & (variants["model_id"] == model_id_lc)
             ]
             if not vrows.empty:
                 v = vrows.iloc[0]
@@ -185,8 +226,10 @@ def explain_pair(ensg_id, model_id, pred, flags, variants, harm, chronos_val=Non
     contradicted = chronos_check == "inverted"
 
     evidence_ledger = {
-        "layers_present":      derive_layers_present(int(row["n_layers"]), model_id_upper, _RNA_COVERED),
+        "layers_present":      derive_layers_present(int(row["n_layers"]), model_id_lc, _RNA_COVERED),
         "n_layers":             int(row["n_layers"]),
+        "signal_spread":        derive_signal_spread(
+            row.get("signal_spread"), row.get("gene_top_vs_median_fold")),
         "driver_alteration":    derive_driver_alteration(fr.get("mut_driver"), fr.get("fusion_driver")),
         "cna_role_consistent":  derive_cna_role_consistent(
             gene_role, row["class"], bool(row.get("has_cna_alteration", False)),
@@ -203,7 +246,7 @@ def explain_pair(ensg_id, model_id, pred, flags, variants, harm, chronos_val=Non
     if row["class"] == "loss_of_function":
         expected_basis = "lof_flag+inverted" if row["has_driver_alteration"] else "lof_inverted"
     elif row["class"] == "unknown":
-        expected_basis = "unknown_dual"
+        expected_basis = "score+driver_tiebreak"
     elif row["class"] == "abundance_tracking":
         expected_basis = "core_score"
     elif row["has_driver_alteration"]:
@@ -231,15 +274,18 @@ def explain_pair(ensg_id, model_id, pred, flags, variants, harm, chronos_val=Non
     return {
         "gene":       ensg_id,
         "gene_role":  gene_role,
-        "cell_line":  {"model_id": model_id_upper, **meta},
+        "cell_line":  {"model_id": model_id_lc, **meta},
         "position": {
             "sorted_position":         int(row["sorted_position"]),
             "total_candidates":        total_n,
             "stratum_rank_percentile": float(row["stratum_rank"]),
             "note": (
                 "sorted_position is query-time re-derived rank "
-                "([has_driver_alteration, core_score] desc for activation_driven; "
-                "core_score desc for abundance_tracking). "
+                "([has_driver_alteration, core_score] desc for activation_driven and "
+                "loss_of_function, where the census/GDSC role makes the driver flag "
+                "mechanistic evidence; core_score desc for abundance_tracking; "
+                "[core_score, has_driver_alteration] desc for unknown-class genes, "
+                "where the flag breaks ties but cannot outrank measured abundance). "
                 "stratum_rank_percentile is a separate fact: percentile of core_score "
                 "within the (gene, n_layers) stratum. These are NOT the same measurement."
             ),
@@ -259,5 +305,5 @@ def explain_pair(ensg_id, model_id, pred, flags, variants, harm, chronos_val=Non
 
 if __name__ == "__main__":
     pred, flags, variants, harm, gene_lookup, chronos_val = load_data()
-    result = explain_pair("ENSG00000157764", "ACH-000219", pred, flags, variants, harm, chronos_val)
+    result = explain_pair("ensg00000157764", "ach-000219", pred, flags, variants, harm, chronos_val)
     print(json.dumps(result, indent=2, default=str))

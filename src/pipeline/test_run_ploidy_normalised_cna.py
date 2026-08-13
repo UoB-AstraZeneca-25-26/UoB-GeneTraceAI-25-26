@@ -72,7 +72,7 @@ cna = pd.read_csv(CNA_FILE, sep="\t",
 print(f"  raw CNA rows: {len(cna):,}")
 
 model = pd.read_csv(MODEL_LIST, usecols=["model_name", "BROAD_ID"]).dropna(subset=["BROAD_ID"])
-model["model_id"]    = model["BROAD_ID"].str.upper()
+model["model_id"]    = model["BROAD_ID"].str.lower()
 model["sample_name"] = model["model_name"].str.strip()
 model = model.drop_duplicates(subset="sample_name", keep="first")
 
@@ -94,7 +94,7 @@ cna["gene_role"]    = cna["gene_role"].fillna("unknown")
 
 # attach ploidy
 sig = pd.read_parquet(SIGNATURES)
-sig["model_id"] = sig["model_id"].str.upper()
+sig["model_id"] = sig["model_id"].str.lower()
 cna = cna.merge(sig[["model_id", "ploidy", "wgd"]], on="model_id", how="left")
 n_no_ploidy = int(cna["ploidy"].isna().sum())
 cna["ploidy_used"] = cna["ploidy"].fillna(DIPLOID)
@@ -181,7 +181,7 @@ print("=" * 72)
 changed = flags[flags.alt_abs != flags.alt_rel][["model_id", "ensg_id", "alt_abs", "alt_rel"]]
 pred = pd.read_parquet(OUTPUTS / "predictions_with_confidence.parquet",
                        columns=["model_id", "ensg_id", "confidence", "class"])
-pred["model_id"] = pred["model_id"].str.upper()
+pred["model_id"] = pred["model_id"].str.lower()
 hit = changed.merge(pred, on=["model_id", "ensg_id"], how="inner")
 
 print(f"  pairs whose CNA call changes           : {len(changed):,}")

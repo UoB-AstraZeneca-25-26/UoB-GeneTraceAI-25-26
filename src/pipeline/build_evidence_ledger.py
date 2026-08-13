@@ -24,7 +24,7 @@ sys.path.insert(0, "src/pipeline")
 from evidence_ledger import (
     rna_covered_model_ids, derive_layers_present, derive_driver_alteration,
     derive_cna_role_consistent, derive_essentiality_check, derive_census_role,
-    derive_validation_source, LEDGER_FIELD_ORDER,
+    derive_validation_source, derive_signal_spread, LEDGER_FIELD_ORDER,
 )
 
 OUTPUTS = Path("src/pipeline/outputs")
@@ -51,7 +51,8 @@ for batch_start in range(0, len(gene_list), BATCH):
     pred_b = pd.read_parquet(
         OUTPUTS / "predictions_with_confidence.parquet",
         columns=["model_id", "ensg_id", "confidence", "n_layers", "class",
-                 "regime_source", "has_cna_alteration", "gene_role", "chronos_check"],
+                 "regime_source", "has_cna_alteration", "gene_role", "chronos_check",
+                 "signal_spread", "gene_top_vs_median_fold"],
         filters=[("ensg_id", "in", batch_genes_list)],
     )
 
@@ -69,6 +70,11 @@ for batch_start in range(0, len(gene_list), BATCH):
     c["layers_present"] = [
         derive_layers_present(nl, mid, rna_covered)
         for nl, mid in zip(c["n_layers"], c["model_id"])
+    ]
+    # Overwrites the raw band with its explained form (same field name, ledger text)
+    c["signal_spread"] = [
+        derive_signal_spread(sp, fold)
+        for sp, fold in zip(c["signal_spread"], c["gene_top_vs_median_fold"])
     ]
     c["driver_alteration"] = [
         derive_driver_alteration(m, f) for m, f in zip(c["mut_driver"], c["fusion_driver"])
@@ -113,7 +119,7 @@ print("\nlayers_present distribution:")
 print(led["layers_present"].value_counts().to_string())
 print("\nconfidence x contradicted cross-tab:")
 print(pd.crosstab(led["confidence"], led["contradicted"]).to_string())
-braf = led[led.ensg_id == "ENSG00000157764"].head(3)
+braf = led[led.ensg_id == "ensg00000157764"].head(3)
 print("\nBRAF sample rows:")
 print(braf.to_string(index=False))
 print("Done.")

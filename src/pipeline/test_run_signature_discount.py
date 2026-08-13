@@ -80,7 +80,7 @@ print("STEP 1 -- rebuild p_mutation with quality/burden split")
 print("=" * 72)
 
 mut = pd.read_parquet("cleaned_track_data/mutations_collapsed.parquet")
-mut["model_id"] = mut["model_id"].str.upper()
+mut["model_id"] = mut["model_id"].str.lower()
 
 p_vep    = hill(mut["max_vep_rank"],      VEP_P0,    VEP_K).fillna(0.0)
 p_path   = hill(mut["max_pathogenicity"], PATH_P0,   PATH_K).fillna(0.0)
@@ -106,7 +106,7 @@ print("STEP 2 -- SANITY GATE: does the rebuild reproduce the shipped file?")
 print("=" * 72)
 
 shipped = pd.read_parquet("cleaned_track_data/mutations_scores.parquet")
-shipped["model_id"] = shipped["model_id"].str.upper()
+shipped["model_id"] = shipped["model_id"].str.lower()
 chk = shipped.merge(rebuilt[["ensg_id", "model_id", "p_mutation"]],
                     on=["ensg_id", "model_id"], how="inner",
                     suffixes=("_shipped", "_rebuilt"))
@@ -135,7 +135,7 @@ print("STEP 3 -- apply signature discount")
 print("=" * 72)
 
 sig = pd.read_parquet(TRACKC / "signature_discount.parquet")
-sig["model_id"] = sig["model_id"].str.upper()
+sig["model_id"] = sig["model_id"].str.lower()
 rebuilt = rebuilt.merge(sig[["model_id", "m_mut"]], on="model_id", how="left")
 
 n_no_sig = int(rebuilt["m_mut"].isna().sum())
@@ -170,9 +170,10 @@ flags = pd.read_parquet(OUTPUTS / "flags_with_driver.parquet",
 gdsc = pd.read_parquet("validation/prepared/gdsc_scored_ready.parquet",
                        columns=["model_id", "target_ensg", "sensitive"])
 
-core["model_id"]  = core["model_id"].str.upper()
-flags["model_id"] = flags["model_id"].str.upper()
-gdsc["model_id"]  = gdsc["model_id"].str.upper()
+core["model_id"]  = core["model_id"].str.lower()
+flags["model_id"] = flags["model_id"].str.lower()
+gdsc["model_id"]  = gdsc["model_id"].str.lower()
+gdsc["target_ensg"] = gdsc["target_ensg"].astype("string").str.lower()
 
 curated_genes = sorted(set(regime.ensg_id) & set(gdsc.target_ensg))
 rng = np.random.default_rng(SEED)

@@ -73,12 +73,12 @@ sym = gl.drop_duplicates("ensg_id").set_index("ensg_id")["hgnc_symbol"].to_dict(
 print(f"  TSG/both genes in lookup: {len(tsg_genes):,}")
 
 mut = pd.read_parquet("cleaned_track_data/mutations_collapsed.parquet")
-mut["model_id"] = mut["model_id"].str.upper()
+mut["model_id"] = mut["model_id"].str.lower()
 mut = mut[mut.ensg_id.isin(tsg_genes)].copy()
 
 cna = pd.read_parquet(OUTPUTS / "cna_flags.parquet",
                       columns=["model_id", "ensg_id", "min_cn"])
-cna["model_id"] = cna["model_id"].str.upper()
+cna["model_id"] = cna["model_id"].str.lower()
 
 mut = mut.merge(cna, on=["model_id", "ensg_id"], how="left")
 
@@ -105,16 +105,17 @@ print("=" * 72)
 
 core = pd.read_parquet(OUTPUTS / "core_score.parquet",
                        columns=["model_id", "ensg_id", "core_score"])
-core["model_id"] = core["model_id"].str.upper()
+core["model_id"] = core["model_id"].str.lower()
 core = core[core.ensg_id.isin(tsg_genes)].copy()
 
 flags = pd.read_parquet(OUTPUTS / "flags_with_driver.parquet",
                         columns=["model_id", "ensg_id", "has_driver_alteration"])
-flags["model_id"] = flags["model_id"].str.upper()
+flags["model_id"] = flags["model_id"].str.lower()
 
 gdsc = pd.read_parquet("validation/prepared/gdsc_scored_ready.parquet",
                        columns=["model_id", "target_ensg", "sensitive"])
-gdsc["model_id"] = gdsc["model_id"].str.upper()
+gdsc["model_id"] = gdsc["model_id"].str.lower()
+gdsc["target_ensg"] = gdsc["target_ensg"].astype("string").str.lower()
 sens = (gdsc[gdsc.sensitive & gdsc.target_ensg.isin(tsg_genes)]
         .rename(columns={"target_ensg": "ensg_id"})[["ensg_id", "model_id"]]
         .drop_duplicates())

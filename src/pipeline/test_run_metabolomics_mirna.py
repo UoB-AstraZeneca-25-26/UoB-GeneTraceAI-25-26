@@ -73,12 +73,12 @@ MIRNA_MAP = {
 }
 
 GENE_SYMBOL_TO_ENSG = {
-    "NAMPT": "ENSG00000105835", "EGLN1": "ENSG00000135766",
-    "KDM3A": "ENSG00000115548", "KDM4A": "ENSG00000066135",
-    "KDM4C": "ENSG00000107077", "KDM4E": "ENSG00000235268",
-    "KDM6B": "ENSG00000132510", "PARP1": "ENSG00000143799",
-    "PARP2": "ENSG00000129484", "BCL2": "ENSG00000171791",
-    "MET": "ENSG00000105976",
+    "NAMPT": "ensg00000105835", "EGLN1": "ensg00000135766",
+    "KDM3A": "ensg00000115548", "KDM4A": "ensg00000066135",
+    "KDM4C": "ensg00000107077", "KDM4E": "ensg00000235268",
+    "KDM6B": "ensg00000132510", "PARP1": "ensg00000143799",
+    "PARP2": "ensg00000129484", "BCL2": "ensg00000171791",
+    "MET": "ensg00000105976",
 }
 
 
@@ -124,12 +124,12 @@ ensg_a = [GENE_SYMBOL_TO_ENSG[g] for g in genes_a]
 # -- rebuild expression, restricted to the 2 target genes (mirrors 02_core_score.ipynb) --
 prof = pd.read_parquet(REF / "depmap_profiles.parquet")
 rna_prof = prof[prof["datatype"] == "rna"][["profileid", "modelid"]].copy()
-rna_prof["model_id"] = rna_prof["modelid"].str.upper()
+rna_prof["model_id"] = rna_prof["modelid"].str.lower()
 rna_prof = rna_prof.drop(columns=["modelid"])
 
 expr_raw = pd.read_parquet(DATA_CLEAN / "depmap_expr_clean.parquet")
 expr_raw.index.name = "profileid"
-expr_raw.columns = expr_raw.columns.str.upper()
+expr_raw.columns = expr_raw.columns.str.lower()
 keep_cols = [c for c in expr_raw.columns if c in ensg_a]
 expr_raw = expr_raw[keep_cols]
 expr = expr_raw.reset_index().merge(rna_prof, on="profileid", how="inner")
@@ -141,7 +141,7 @@ print(f"expr (raw log2 TPM) restricted shape: {expr.shape}")
 gene_lookup = pd.read_parquet(REF / "gene_lookup.parquet")
 universe = gene_lookup[(gene_lookup["biotype"] == "protein_coding") &
                         (gene_lookup["hgnc_status"] == "Approved")][["ensg_id", "uniprot_ids"]].copy()
-universe["ensg_id"] = universe["ensg_id"].astype("string").str.split(".").str[0].str.upper()
+universe["ensg_id"] = universe["ensg_id"].astype("string").str.split(".").str[0].str.lower()
 uniprot_to_ensg = (universe.dropna(subset=["uniprot_ids"])
                    .assign(uniprot_id=lambda x: x["uniprot_ids"].str.strip().str.lower())
                    .drop_duplicates(subset=["uniprot_id"])[["uniprot_id", "ensg_id"]])
@@ -149,7 +149,7 @@ uniprot_to_ensg = (universe.dropna(subset=["uniprot_ids"])
 prot_raw = pd.read_parquet(CLEANED / "proteomics.parquet")
 key_col = "model_id" if "model_id" in prot_raw.columns else "depmap_id"
 prot_long = prot_raw.melt(id_vars=[key_col], var_name="uniprot_id", value_name="log_ratio").dropna(subset=["log_ratio"])
-prot_long["model_id"] = prot_long[key_col].str.upper()
+prot_long["model_id"] = prot_long[key_col].str.lower()
 prot_mapped = prot_long.merge(uniprot_to_ensg, on="uniprot_id", how="inner")
 prot_mapped = prot_mapped[prot_mapped["ensg_id"].isin(ensg_a)]
 prot = prot_mapped.pivot_table(index="model_id", columns="ensg_id", values="log_ratio", aggfunc="mean")
@@ -169,7 +169,7 @@ core_baseline_long.columns = ["model_id", "ensg_id", "core_score"]
 
 # -- miRNA inhibitor: per gene, per model, percentile of curated miRNA expression --
 mirna = pd.read_parquet(CLEANED / "mirna_model_level.parquet")
-mirna["model_id"] = mirna["model_id"].str.upper()
+mirna["model_id"] = mirna["model_id"].str.lower()
 
 ALPHA = 1.0  # full dampening at max miRNA percentile
 E_eff = expr.copy()
@@ -194,12 +194,12 @@ core_candidate_long.columns = ["model_id", "ensg_id", "core_score"]
 
 # -- production reference (exact current pipeline output, for sanity anchoring) --
 prod = pd.read_parquet(OUT / "core_score.parquet")
-prod["model_id"] = prod["model_id"].str.upper()
+prod["model_id"] = prod["model_id"].str.lower()
 prod = prod[prod["ensg_id"].isin(ensg_a)]
 
 curated = pd.read_parquet(VAL / "curated_validation_pairs.parquet")
-curated["model_id"] = curated["model_id"].str.upper()
-curated["ensg_id"] = curated["ensg_id"].str.upper()
+curated["model_id"] = curated["model_id"].str.lower()
+curated["ensg_id"] = curated["ensg_id"].str.lower()
 
 print(f"\n{'Gene':<8}{'N sens':<8}{'Prod hit@20':<14}{'Baseline hit@20':<18}{'miRNA-cand hit@20':<20}{'Delta':<8}")
 results_a = {}
@@ -238,7 +238,7 @@ print("PART B -- metabolomics-as-enzyme-activity vs Chronos essentiality")
 print("=" * 70)
 
 metab = pd.read_parquet(CLEANED / "metabolomics.parquet")
-metab["model_id"] = metab["model_id"].str.upper()
+metab["model_id"] = metab["model_id"].str.lower()
 metab = metab.set_index("model_id")
 
 metab_proxy = pd.DataFrame(index=metab.index)
@@ -252,8 +252,8 @@ metab_proxy_pct = (metab_proxy.rank(pct=True) + 1) / 2  # re-centre to [0,1]-ish
 ch = pd.read_parquet(VAL / "chronos_long.parquet")
 ib = pd.read_parquet(VAL / "id_bridge.parquet")
 ch = ch.merge(ib, on="sanger_model_id", how="inner")
-ch["model_id"] = ch["model_id"].str.upper()
-ch["ensg_id"] = ch["ensg_id"].str.upper()
+ch["model_id"] = ch["model_id"].str.lower()
+ch["ensg_id"] = ch["ensg_id"].str.lower()
 ch["chronos_pct"] = 1.0 - ch.groupby("ensg_id")["essentiality"].rank(pct=True, method="average")
 
 print(f"\n{'Gene':<8}{'N pairs':<10}{'rho':<10}{'p-value':<12}{'classification'}")

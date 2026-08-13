@@ -412,6 +412,49 @@ matrix and the proteomics matrix (both `model_id × ensg_id` wide) before
 combination. An internal audit found min-max scaling (§2.5) weakest by
 comparison.
 
+**A monotone-invariance corollary that constrains every evaluation of this
+layer.** Within one gene the percentile is a strictly increasing transform of the
+raw `log2(TPM+1)` value, and every rank-based metric is invariant under such a
+transform (§0.1a). Therefore
+
+```
+AUROC(percentile) = AUROC(raw)      pAUC(percentile) = pAUC(raw)      exactly
+```
+
+The percentile can neither gain nor lose against raw expression on any ROC-type
+readout. Its *only* claim over the raw value is cross-gene comparability. Any
+experiment that appears to compare "percentile vs expression" on AUROC is
+comparing a quantity against itself; the only meaningful contrast is against a
+score computed on a **different axis** — per-sample rather than per-gene (§C.16).
+
+**Empirical status — BOTH FINDINGS BELOW ARE WITHDRAWN.** They were measured
+before `gate_audit/` ran. §C.15 and §C.16 have been moved to
+[MATH_TRIAL_AND_ERROR.md](MATH_TRIAL_AND_ERROR.md); the numbers are retained
+there with the reason for retirement. A placebo with the dependency labels
+randomised reproduces 98% of the depletion, and the residual is CRISPR-specific
+(flat on drug, opposite on RNAi). Do not cite the pAUC figures below.
+
+~~Two findings now bear directly on this section and are recorded in full at
+§C.15 and §C.16:~~
+
+1. The layer functions as a **gate, not a ranker**. Against three independent
+   label sources the gate region (FPR 0.8–1.0) is well above chance while the
+   ranker region (FPR 0.0–0.2) is at chance: `0.596 / 0.500` (Chronos),
+   `0.593 / 0.501` (Project Score), `0.601 / 0.518` (GDSC). Dependencies are
+   depleted at the bottom of the score and *not* enriched at the top. This does
+   not change the formula; it changes what the formula is entitled to claim
+   (§C.15).
+2. The percentile is **not** an expensive encoding of a detection boolean. Among
+   cell lines that an absolute per-line detection call rates *expressed*, the
+   bottom decile of the percentile still carries a dependency ratio of
+   **0.810–0.827** (spread 0.017 across six calibration rules; 0.790–0.799 on
+   paralog-singleton genes only). It clears a 10% effect floor in 6/6 rules. So
+   the percentile carries graded information beyond "on or off" (§C.16).
+
+The corresponding negative result also belongs here: a per-sample absolute score
+does **not** beat the percentile. Its apparent +0.030 pAUC advantage was entirely
+selection optimism, and vanishes under half-sample cross-validation (§C.16).
+
 ## 2.2 Duplicate-profile deduplication
 
 ```
@@ -434,60 +477,6 @@ same units).
 
 *Provenance:* `dedup_mean()`, `02_core_score.ipynb`. 16 ACH cell lines have two
 RNA profiles each.
-
-## 2.3 Noisy-OR combination (superseded — retained because its failure motivates §2.4)
-
-```
-core_score = 1 − (1−E)(1−P)     both layers present
-core_score = E                   E only
-core_score = P                   P only
-core_score = NaN                 neither
-```
-
-**Model — derivation.** Let `A` be the latent event "the gene product is
-functionally abundant in this cell line." Model each layer as an independent
-noisy channel that fires with probability equal to its normalised score. `A`
-occurs iff at least one channel fires, so
-
-```
-P(A) = 1 − P(no channel fires) = 1 − ∏ᵢ (1 − pᵢ)
-```
-
-The independence assumption enters at exactly one step: factorising
-`P(no channel fires)` into a product.
-
-**Assumptions.** (i) `E` and `P` are calibrated probabilities of `A`, not merely
-scores in [0,1]. (ii) The channels are conditionally independent. (iii) `A` is
-binary, i.e. abundance is a presence/absence event rather than a continuum.
-
-**Failure — stated as a theorem.** Assumption (ii) is false: mRNA and protein
-abundance correlate at ρ ≈ 0.46–0.58 (Nusinow et al. 2020). Two independent
-consequences follow.
-
-*Non-idempotence.* From §0.2, when the layers agree (`E = P = x`):
-
-```
-N(x,x) − x = 2x − x² − x = x(1−x)  >  0   for all x ∈ (0,1),   max 0.25 at x = ½
-```
-
-So the operator inflates *most* precisely where the score is least informative,
-and inflates *nothing* at the endpoints. Agreement between correlated layers is
-rewarded as though it were corroboration from independent sources.
-
-*Fréchet position.* From §0.2, the true `P(A∪B)` under positive dependence lies
-below the independence point and toward `max(p,q)`. Noisy-OR is stuck at the
-independence point, so its bias is upward and grows with dependence.
-
-**Observed on production data, matching the prediction.** 22.5% of two-layer
-rows scored > 0.95; **379 rows pinned at exactly 1.0**. The pinning at exactly
-1.0 is the boundary case of the same theorem: any cell with `E = 1` or `P = 1`
-(the top-ranked cell line for that gene in either assay) is mapped to 1
-regardless of the other layer, because `1 − (1−1)(1−P) = 1`. Noisy-OR is
-absorbing at 1.
-
-*Provenance:* `scoring_variants.combine(method="noisy_or")`
-([scoring_variants.py:59-60](../src/pipeline/scoring_variants.py)); original
-`02_core_score.ipynb` cell. Superseded by §2.4; retained in the validation grid.
 
 ## 2.4 Correlation-penalised weighted sum (production formula)
 
@@ -564,25 +553,6 @@ One-layer fallback cells are untouched (nothing to weight). This is the value
 written to `outputs/core_score.parquet` and consumed by driver-gated routing,
 confidence tiers, held-out evaluation, and the explain/rank/CLI layer.
 
-## 2.5 Alternative normalisation / combination variants (validation harness only)
-
-`scoring_variants.py` implements a 4×3 grid (12 variants) used *only* to compare
-empirically against GDSC ground truth. Only percentile + idempotent-mean (§2.1 +
-§2.4) is in production.
-
-| Normalisation | Formula | Mathematical character |
-|---|---|---|
-| `minmax` | `(x − min)/(max − min)`, span 0 → NaN | Affine, **not** outlier-robust: a single extreme value compresses all others toward 0. Sensitivity to the extremes is unbounded as the span shrinks. Flagged weakest by audit — this is why. |
-| `percentile` | `rank(pct=True)` | PIT; see §2.1 |
-| `zscore` | `z = (x−μ)/σ`, then `σ(z) = 1/(1+e^{−z})` | Standardisation is affine (so location/scale-invariant but not monotone-transform-invariant); the logistic squash is a smooth monotone bijection ℝ→(0,1) with maximum slope ¼ at `z=0`. Preserves magnitude information that percentile discards, at the cost of assuming a roughly symmetric input. |
-| `hill` | percentile, then `pct^k/(pct^k + p₀^k)`, `k=2, p₀=0.5` | A logistic in `ln(pct)` — see §C.1. Marked uncalibrated in-source. |
-
-| Combination | Formula | Mathematical character |
-|---|---|---|
-| `noisy_or` | `1 − (1−E)(1−P)` | Probabilistic-sum t-conorm; independence point of the Fréchet interval; non-idempotent (§2.3) |
-| `weighted_sum` | `½E + ½P` | Idempotent; equals the production formula (§2.4) |
-| `product_floor` | `max(E·P, ½·min(E,P))` | Monotone (pointwise max of two monotone functions) and satisfies the identity `T(a,1) = max(a, ½a) = a`, but **not** idempotent (`T(x,x) = max(x², ½x) < x` for `x<1`) and **not** associative, so it is not a t-norm. It has a kink where `E·P = ½·min(E,P)`, i.e. at `max(E,P) = ½`: below that the floor binds, above it the product does. Its position in the Fréchet interval — and hence the dependence structure it implicitly assumes — is unanalysed. |
-
 ## 2.6 Stratum-aware rank
 
 ```
@@ -658,43 +628,6 @@ explicitly deferred pending a held-out regression against CRISPR/GDSC anchors.
 Surfaced to end users as `stratum_rank_percentile` in `explain_pair.py` /
 `rank_cell_lines.py` — the safe metric for comparing cell lines with differing
 coverage.
-
-## 2.7 Chronos three-layer blend (tested, rejected)
-
-```
-chronos_pct   = 1 − rank(chronos_raw, pct=True)      # invert: more negative raw = more essential
-core_score_3  = w_EP · core_score_2layer + w_C · chronos_pct
-```
-
-Built only on a 50/50 train split of cell lines (to avoid circularity), gated per
-gene by `ρ(chronos_pct, ground_truth) > 0.05` (§C.4).
-
-**Note on the inversion.** `1 − F̂ₙ(x)` is the survival function, and equals
-`F̂ₙ` of the negated variable up to tie handling — so inverting the percentile is
-identical to ranking `−chronos_raw`, and is an order-reversing involution
-(§5.1).
-
-**Note on the split.** The 50/50 split over *cell lines* controls circularity
-only for cell-line-level leakage. Gene-level information (which genes were
-inspected when choosing the blend) is not controlled by it.
-
-**What the measurement showed.** `ρ_EC = ρ_PC = 0.005` — Chronos is essentially
-uncorrelated with the abundance layers. By §0.3 this is exactly the condition
-under which a third layer is *most* informative (it raises `n_eff` from 1.37 to
-2.28 and cuts variance from 0.73σ² to 0.42σ²), which is why the blend was worth
-testing and why the GLS optimum up-weights it to 0.42.
-
-**Outcome: rejected.** BCL2's hit@20 collapsed to 0 when Chronos was blended as
-a third layer. Note the tension this creates: variance reduction and predictive
-accuracy point in opposite directions here, which means the equal-variance
-unbiasedness assumption of §0.3 fails — Chronos is *not* an unbiased estimator
-of the same latent quantity as E and P. It measures dependency, not abundance.
-Not used in production.
-
-*Provenance:* `src/pipeline/build_chronos_layer.py:113-137`; re-derived in
-`validate_chronos.py:54-77`.
-
----
 
 # Stage 3 — Cell-line Name Resolution Audit
 
@@ -1323,20 +1256,6 @@ user-facing consequences.
 `chronos_validation.parquet` (`ensg_id, n, rho, pval, chronos_check`), consumed by
 `build_full_predictions.py` (lines 82-89, 127-133, 158-168).
 
-## C.7 Chronos correlation gate
-
-```
-use_chronos = ( ρ(chronos_pct, ground_truth) > 0.05 )      # per gene
-```
-
-A per-gene safety gate: only add Chronos where it aligns with drug sensitivity.
-Note this is an *unthresholded-in-p* gate — it uses effect size only, so at
-typical `n` a substantial fraction of genes pass by chance (`P(ρ > 0.05) ≈ 0.07`
-at `n = 900` under H₀ using `√(n−1)ρ ~ N(0,1)`). It is a filter, not a test, and
-should be described as such.
-
-*Provenance:* `validate_chronos.chronos_correlation_gate():121-128`.
-
 ## C.8 Bootstrap confidence interval on ρ
 
 ```
@@ -1388,28 +1307,6 @@ stated δ would convert "not significant" into "demonstrably negligible."
 *Provenance:* `test_run_metabolomics_lineage_confound.py:100-114`;
 `test_run_mirna_lineage_confound.py:95-113`.
 `candidate = 0.5·baseline_core_score + 0.5·global_pct` (see §C.10).
-
-## C.10 Constant-term global-scalar blend (rejected candidate layers)
-
-```
-global_pct = rank(mean_z_across_all_metabolites_or_mirnas, pct=True)     # per cell line
-candidate  = 0.5·baseline_core_score + 0.5·global_pct
-```
-
-**Model.** Adding a *gene-agnostic* term to a gene-specific score. Note the
-structural consequence: because `global_pct` is constant across genes within a
-cell line, it cannot change the within-cell-line ordering of genes at all, and it
-shifts every gene's score for that cell line by the same amount. Its only effect
-is on the *across-cell-line* ranking that the pipeline actually uses — which is
-precisely why it is a lineage-confound risk rather than a biological signal: a
-scalar that predicts drug response identically for every gene is, by
-construction, not a gene-specific mechanism.
-
-**The confound being probed.** A scalar can look predictive purely by proxying
-tissue-of-origin, which is itself strongly linked to certain drug responses
-(e.g. BCL2 inhibitors in blood/lymphoid lineages). §C.12 tests exactly this.
-
-*Outcome:* rejected for both modalities.
 
 ## C.11 Z-score standardisation before averaging
 
@@ -1492,60 +1389,6 @@ either way.
 `test_run_mirna_lineage_confound.py:52-59`. Results recorded in
 [DECISIONS.md](../DECISIONS.md).
 
-## C.13 Metabolomics enzyme-flux proxy (tested, null)
-
-```
-proxy = product_metabolite_percentile − substrate_metabolite_percentile
-```
-
-**Model.** A difference of two percentiles as a proxy for net flux through an
-enzyme — a steady-state argument: at higher enzyme activity, product accumulates
-relative to substrate.
-
-**Why the difference of percentiles is a weak construction.** The difference of
-two uniform variables is *triangular* on [−1,1], symmetric about 0, with variance
-`(1 + 1 − 2ρ)/12 = (1−ρ)/6`. Two consequences: (i) the proxy is not on the same
-[0,1] scale as everything else in the pipeline, and (ii) when substrate and
-product are positively correlated (which they are, being co-measured metabolites
-in the same pathway), the variance collapses toward 0 and the proxy becomes
-mostly noise. This predicts a null result on statistical grounds independent of
-the biology.
-
-*Outcome:* null — no gene cleared `ρ > 0.1, p < 0.05`. Not used in production.
-
-*Provenance:* `test_run_metabolomics_mirna.py:244-250` (`METABOLITE_MAP`);
-literature-curated substrate/product pairs per gene (e.g. NAMPT:
-niacinamide → NAD⁺), tested against Chronos essentiality via the §C.6 rule.
-
-## C.14 miRNA-as-inhibitor dampening (tested, mixed/weak)
-
-```
-burden      = mean(expression of curated inhibitory miRNAs)     # per cell line
-burden_pct  = rank(burden, pct=True)
-dampener    = 1.0 − ALPHA · fillna(burden_pct, 0.0)             # ALPHA = 1.0
-E_effective = E_raw · dampener
-```
-
-**Model.** Multiplicative repression — the mass-action form for a competitive
-inhibitor, where available message scales by the fraction not bound.
-
-**Properties and a boundary problem.** With `ALPHA = 1.0` the dampener spans
-`[0, 1]` and *reaches exactly 0* for the top-ranked cell line (`burden_pct = 1`),
-annihilating its expression signal entirely regardless of `E_raw`. The
-multiplicative form also means `E_effective` is no longer marginally uniform —
-it is a product of two dependent uniforms, concentrated toward 0, so it is no
-longer on the same scale as the untreated `E` it is compared against. Re-ranking
-after dampening (or `ALPHA < 1`) would avoid both issues.
-
-*Outcome:* mixed/weak — MET improved slightly, BCL2's already-odd baseline
-direction shrank toward zero. Not adopted.
-
-*Provenance:* `test_run_metabolomics_mirna.py:174-187`. Models curated,
-experimentally-known miRNA regulators (e.g. BCL2 ← miR-34a/15a/16) for the two
-genes (BCL2, MET) with both a curated miRNA map and GDSC ground truth.
-
----
-
 # `new-arch` — Continuous vs Discrete Diagnostic
 
 `src/new-arch/01_long_form_gene_axis_diagnostic.ipynb`
@@ -1624,11 +1467,35 @@ be named as such)*
 - `ALPHA = 1.0` in the miRNA dampener — the value at which the dampener reaches
   exactly 0 (§C.14).
 
+**Measured against held-out data, not in-sample** *(added after the §C.15–C.18
+validation round)*
+- The gate/ranker split — gate pAUC 0.593–0.601 vs ranker pAUC 0.500–0.518 —
+  replicated on two independent CRISPR screens, `p = 0.19` for the difference
+  between them (§C.15).
+- The percentile's incremental depletion over absolute detection, 0.810–0.827,
+  spread 0.017 across six calibration rules and 6/6 clearing a 10% effect floor
+  (§C.16).
+- The detection threshold in §C.16 is calibrated as a *false-positive rate on a
+  curated negative control set* (438 OR\*/TAS2R\*/VN1R\* genes, 7.690 log₂ units
+  below the transcriptome median), not chosen as a free parameter.
+
 **Tested and explicitly rejected**
 Chronos as a third core_score layer (§2.7), metabolomics global scalar, miRNA
 global scalar, metabolomics enzyme-flux proxy, miRNA-inhibitor dampening —
 all documented with reasoning in [DECISIONS.md](../DECISIONS.md), and each with a
 statistical account above of *why* the null result was structurally likely.
+
+Added by the §C.15–C.18 round:
+- **Absolute detection thresholds as a replacement for the percentile** (§C.16).
+  Apparent +0.030 pAUC advantage was selection optimism (measured optimism
+  `+0.0302`); held-out delta `−0.0050`, wins 10/20 reps. Also inert for the
+  majority of genes (excludes nothing for 393–591 of 778).
+- **Lineage-conditioned percentiles** — Δ = 0.0, `p = 0.54` (§C.15).
+- **Conformal exclusion** — valid but `ratio_vs_random` 0.93–0.99 (§C.15).
+- **Stratum centring** — `centring_gain` negative at `p = 1.5e-17` / `2.4e-67`;
+  RNA alone beats every Stouffer variant (§C.18).
+- **HGNC gene groups as a paralog proxy** — failed its own validity check,
+  `p = 0.7766` in the wrong direction (§C.17).
 
 ---
 
@@ -1678,3 +1545,200 @@ Recorded honestly, in rough order of how much they affect conclusions.
 12. **Single-anchor regression tests** (§7) — the BRAF/A375 0.767 → 0.814 check
     is within the ±0.044 DKW band, so it guards against regression rather than
     demonstrating improvement.
+
+*Added by the §C.15–C.18 validation round, in the same order of consequence:*
+
+13. **The floor effect is not separable from a profiling confound** (§C.15). At
+    the bottom of the score, dependency depletion among profiled vs unprofiled
+    lines differs by ratio 1.07 at `Fisher p = 0.246` — indistinguishable. The
+    gate result is real in the mid-range (ratio 1.62, `p = 0`) but the extreme
+    floor cannot be attributed to biology rather than missingness. This is the
+    most serious open gap in the current evidence base and must be quoted
+    alongside the gate result. Fix: a measurement model that separates "not
+    expressed" from "not measured", which the coverage matrix can support.
+14. **`n_layers == 2 → "high"` is contradicted by measurement** (§C.18, §5).
+    RNA alone outperforms every two-layer Stouffer variant, so the tier rule at
+    [build_full_predictions.py:151](../src/pipeline/build_full_predictions.py)
+    and [05_confidence_tiers.ipynb:117](../src/pipeline/05_confidence_tiers.ipynb)
+    promotes rows on a basis the project's own test rejects. Not yet changed in
+    code. Fix: demote the rule, or re-derive the layer weights with unequal
+    variances (gap 5 above is the same gap seen from the other side).
+15. **The sort key is unsupported by any measurement** (§C.15, §7).
+    `explain_pair.sort_gene_rows` uses `core_score` as primary key for
+    `abundance_tracking` and as a tiebreak elsewhere, but ranker-region pAUC is
+    0.500–0.518. There is no evidence for any *ordering* within the retained set.
+    Fix: present the retained set as a set, or find a ranking signal that
+    replicates.
+16. **Paralog buffering is unaddressed, not cleared** (§C.17). The only available
+    annotation failed validation in the wrong direction (`p = 0.7766`). The
+    finding survives restriction to HGNC-singleton genes, but that is not the same
+    as controlling for paralogy. Fix: obtain Ensembl Compara paralog pairs with
+    % sequence identity, or the DepMap / Dede / Ito paralog sets.
+17. **Half-sample splits are unstratified** (§C.16). Lineage composition varies
+    freely between halves, so the percentile's lower held-out variance (range
+    0.078 vs 0.170) is a real observation but not lineage-controlled. This is the
+    same clustering issue as gap 7, in the cross-validation rather than the
+    bootstrap. Fix: lineage-stratified splitting.
+18. **Label reliability bounds every ranking claim** (§C.15). Broad and Sanger
+    agree with each other at median `ρ = 0.172`; only 1.9% of genes exceed 0.5.
+    No AUROC against these labels can be interpreted without that ceiling, and
+    the project currently quotes AUROC figures without it. Fix: report every
+    ranking metric against the label-label agreement ceiling for the same gene
+    set.
+19. **CNA residual exceeds the label noise floor** (§C.18). Deleted-line
+    dependency runs 3.04% above the Chronos FPR of 0.93%, flagged
+    `residual_above_noise__check_calls`, and recurrence stratification shows the
+    residual concentrated in 1–2-line ("likely mis-call") genes at 4.70%. Either
+    the deletion calls carry error or deletion does not fully abolish
+    dependency; the test cannot currently distinguish these.
+
+
+---
+
+## Retired mathematics
+
+Eleven sections have been moved to
+[MATH_TRIAL_AND_ERROR.md](MATH_TRIAL_AND_ERROR.md): formulas that were
+superseded, tested and rejected, or built on a claim that has since been
+retracted. They are kept in full, with the reason for retirement stated on
+each, because the failures are part of the record — most of this project's
+findings are negative ones and the derivations that produced them are worth
+keeping.
+
+Most consequential: **§C.15, the partial-AUROC gate/ranker mathematics.** The
+machinery is sound and still used in `gate_audit/`; the claim it supported is
+withdrawn.
+
+---
+
+# §10 — Mathematics of the current components
+
+Added after `gate_audit/`, `cell_similarity/` and the Kleene layer. These are the
+formulas the live pipeline actually computes.
+
+## 10.1 Kleene strong three-valued logic
+
+Truth set `{T, F, U}` with
+
+```
+AND  | T  F  U          NOT
+-----|---------         ---------
+ T   | T  F  U          T -> F
+ F   | F  F  F          F -> T
+ U   | U  F  U          U -> U
+```
+
+`AND` is the minimum under the order `F < U < T`; `NOT` is the order-reversing
+involution fixing `U`. The two properties that matter operationally:
+
+- `T ∧ U = U` — an unresolved clause cannot produce a confident conjunction, so
+  an UNKNOWN line can never enter Matches.
+- `F ∧ U = F` — one definitive exclusion is sufficient regardless of what else is
+  unknown, so Excluded is not weakened by missing data elsewhere.
+
+Implementation `src/pipeline/multi_gene_kleene.py`. Spec
+[MULTIGENE_SPEC.md](MULTIGENE_SPEC.md).
+
+## 10.2 Measurement band on a detection threshold
+
+For a threshold `τ` on a measured quantity `x` with single-measurement standard
+deviation `σ`, a call is unresolvable when `|x − τ| ≤ 1.96 σ`.
+
+`σ` is estimated from technical replicates. With `n` models carrying two
+independent profiles, the paired difference `d = x₁ − x₂` has `Var(d) = 2σ²`, so
+
+```
+σ = SD(d) / √2
+```
+
+Measured: `SD(d) = 0.5042` log2 units over 64,000 paired gene observations from
+16 models, giving `σ = 0.3565` and a band of `±0.699`. Both profiles of a model
+share a library-prep batch, so this is a **lower bound** on σ — the band errs
+toward abstention, which is the safe direction.
+
+## 10.3 Similarity between cell lines
+
+For a line × feature matrix, features are standardised to z and similarity is
+
+```
+S(a, b) = ⟨ẑₐ, ẑ_b⟩ / (‖ẑₐ‖ ‖ẑ_b‖)
+```
+
+i.e. Pearson between lines, equivalently cosine on centred data. The
+top-variance feature restriction is a signal-to-noise choice: invariant features
+add a constant to every pair and compress the dynamic range of the whole matrix.
+
+## 10.4 Cluster bootstrap over the correct unit
+
+For a statistic computed on **pairs** drawn from `n` items, the resampling unit
+is the **item**, not the pair. Draw `i₁…iₙ` with replacement from the items,
+rebuild the pair set, and **discard pairs formed between two draws of the same
+item** — those have similarity and outcome correlation 1 by construction and
+bias every replicate upward.
+
+Motivation: with 1,673 lines each line appears in ~1,672 pairs, so a pair-level
+interval treats one line's idiosyncrasies as ~1,672 independent observations.
+Measured design effect on the gate: **2.4×** the nominal standard error
+(`gate_audit/04`).
+
+Kish effective sample size under exchangeable within-cluster correlation:
+
+```
+n_eff = (Σ mⱼ)² / Σ mⱼ²
+```
+
+for cluster sizes `mⱼ`. Measured 8.7 effective clusters from 45 lineages.
+
+## 10.5 Attenuation and disattenuation
+
+An observed correlation between two noisy measurements is attenuated by their
+reliabilities. For a difference of correlations `Δ` measured against a readout of
+reliability `r_xx`,
+
+```
+Δ_true ≈ Δ_observed / r_xx
+```
+
+Reliability is estimated by test–retest between two independent measurements of
+the same quantity, then projected to a `k`-measurement composite by
+**Spearman–Brown**:
+
+```
+r_k = k·r₁ / (1 + (k−1)·r₁)
+```
+
+Measured: CRISPR `r₁ = 0.371`, RNAi `r₁ = 0.144` (`r₂ = 0.252`), GDSC2 drug
+`r₁ = 0.547` (`r₂ = 0.707`).
+
+**Both arms must be corrected or neither.** Disattenuating one side of a
+comparison inverted a conclusion here — the CRISPR/RNAi ratio moved from 0.99×
+to 0.37× once CRISPR's own reliability was included. Report observed values as
+primary; the correction is secondary and is only needed where reliability is low.
+
+## 10.6 Split-half reliability — the non-circular stability test
+
+For a graph built from features, randomly halve the feature set, build twice, and
+compare the top-`k` neighbour lists:
+
+```
+reliability = mean over items of |N_A(i) ∩ N_B(i)| / k
+```
+
+This measures whether the graph is a property of the **data** rather than of the
+metric. Metric-agreement checks (Pearson vs Spearman) are **circular** for a rank
+transform — ranking twice is near-idempotent, so a rank-transformed axis scores
+84.2% on metric agreement and gains nothing on split-half. Measured: RNA 83.7%,
+miRNA-log1p 58.8%, metabolomics 42.9%.
+
+## 10.7 Participation ratio — effective dimensionality
+
+For a variance spectrum `v₁…v_p`,
+
+```
+PR = (Σ vⱼ)² / Σ vⱼ²
+```
+
+the number of features effectively carrying the geometry. Measured: RNA 1,648 of
+2,000; metabolomics 115 of 225; **miRNA 13 of 734** — the diagnosis for miRNA's
+instability, and the reason a transform fixed it while no transform fixes
+metabolomics (which is underdetermined rather than skewed).

@@ -31,6 +31,7 @@ REF = Path("reference")
 FIELD_TIERS = {
     "layers_present":      "RANKING",
     "n_layers":             "RANKING",
+    "signal_spread":        "RANKING",
     "driver_alteration":    "CONFIDENCE_MODIFIER",
     "cna_role_consistent":  "CONFIDENCE_MODIFIER",
     "essentiality_check":   "CONFIDENCE_MODIFIER",
@@ -50,7 +51,7 @@ def rna_covered_model_ids():
     layers_present without an expensive per-pair presence join."""
     prof = pd.read_parquet(REF / "depmap_profiles.parquet")
     rna = prof[prof["datatype"] == "rna"]
-    return set(rna["modelid"].str.upper())
+    return set(rna["modelid"].str.lower())
 
 
 def derive_layers_present(n_layers, model_id, rna_covered):
@@ -59,6 +60,36 @@ def derive_layers_present(n_layers, model_id, rna_covered):
     if n_layers == 1:
         return "RNA only" if model_id in rna_covered else "Protein only"
     return "none"  # shouldn't occur -- rows with 0 layers are dropped upstream
+
+
+def derive_signal_spread(signal_spread, top_vs_median_fold=None):
+    """How far the top of this gene's abundance distribution sits above a typical
+    cell line, measured on the RAW pre-percentile values (02_core_score Cell 7c).
+
+    core_score is a within-gene percentile, so every gene is rescaled onto the
+    same uniform 0-1 range. That makes a near-flat gene's top-10 look exactly as
+    confident as a sharply tissue-restricted gene's -- GAPDH's best line scores
+    0.9993 against ERBB2's 1.0000. This field is the missing context: the
+    ordering is still real, but 'narrow' says the differences behind it are
+    small enough that acting on the top of the list may not be meaningful.
+
+    Gene-level fact, identical for every cell line of the gene. It does not
+    enter core_score and does not reorder anything.
+    """
+    if signal_spread is None or (isinstance(signal_spread, float) and pd.isna(signal_spread)):
+        signal_spread = "unmeasured"
+    if signal_spread in ("unmeasured", ""):
+        return "unmeasured (no RNA layer for this gene)"
+
+    fold = ("n/a" if top_vs_median_fold is None or pd.isna(top_vs_median_fold)
+            else f"{float(top_vs_median_fold):.1f}x")
+    if signal_spread == "narrow":
+        return (f"NARROW ({fold} top-vs-median) — abundance is close to flat across "
+                "cell lines; ranking is valid but the differences behind it are small")
+    if signal_spread == "wide":
+        return (f"wide ({fold} top-vs-median) — abundance strongly differentiates "
+                "cell lines")
+    return f"moderate ({fold} top-vs-median)"
 
 
 def derive_driver_alteration(mut_driver, fusion_driver):
@@ -92,14 +123,21 @@ def derive_essentiality_check(chronos_check, rho=None, pval=None):
         return "not applicable (class already empirically validated)"
     if chronos_check == "untested":
         return "untested (no coverage)"
+    stat = (f" (rho={rho:.3f}, p={pval:.3g})"
+            if rho is not None and pd.notna(rho) else "")
     if chronos_check == "validated":
-        if rho is not None and pd.notna(rho):
-            return f"validated (rho={rho:.3f}, p={pval:.3g})"
-        return "validated"
+        return f"validated{stat}"
     if chronos_check == "inverted":
-        if rho is not None and pd.notna(rho):
-            return f"CONTRADICTED (rho={rho:.3f}, p={pval:.3g}) — ranking may be backwards for this gene"
-        return "CONTRADICTED — ranking may be backwards for this gene"
+        return f"CONTRADICTED{stat} — ranking may be backwards for this gene"
+    # Weak bands: direction agrees but the effect is below the floor that would
+    # justify a confidence upgrade or a contradiction warning (see
+    # build_chronos_validation.py for why the floor is |rho| >= 0.30).
+    if chronos_check == "weak_positive":
+        return (f"weak agreement{stat} — direction matches real CRISPR essentiality "
+                "but the effect is too small to treat as validation")
+    if chronos_check == "weak_negative":
+        return (f"weak disagreement{stat} — direction is opposite to real CRISPR "
+                "essentiality but the effect is too small to treat as a contradiction")
     if chronos_check == "none":
         return "tested, no significant relationship"
     return "unknown"

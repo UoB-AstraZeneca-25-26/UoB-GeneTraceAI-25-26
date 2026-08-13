@@ -43,7 +43,7 @@ print(f"  MUT_TYPE values: {cna.MUT_TYPE.value_counts().to_dict()}")
 print("\nBridging SAMPLE_NAME → ACH...")
 model = pd.read_csv(MODEL_LIST, usecols=["model_name", "BROAD_ID"])
 model = model.dropna(subset=["BROAD_ID"])
-model["model_id"]    = model["BROAD_ID"].str.upper()
+model["model_id"]    = model["BROAD_ID"].str.lower()
 model["sample_name"] = model["model_name"].str.strip()
 # Drop duplicate model_names (e.g. MS-1 maps to two ACH IDs — keep first)
 dupes = model.sample_name.duplicated(keep=False).sum()
@@ -65,12 +65,20 @@ cna = cna[cna["model_id"].notna()].copy()
 # ── 3. Join GENE_SYMBOL → ensg_id ──────────────────────────────────────────
 print("\nJoining gene symbols → ENSG...")
 gl = pd.read_parquet(GENE_LOOKUP, columns=["ensg_id", "hgnc_symbol", "gene_role"])
-gl["ensg_id"] = gl["ensg_id"].str.split(".").str[0]
+gl["ensg_id"] = gl["ensg_id"].str.split(".").str[0].str.lower()   # canonical case
+gl["hgnc_symbol"] = gl["hgnc_symbol"].astype("string").str.lower()
+
+# COSMIC writes GENE_SYMBOL uppercase; gene_lookup is normalised to lowercase
+# above. Both sides must be lowered or the join matches nothing -- and because
+# this is a LEFT join, that failure produces 0 mapped rows rather than an error.
+cna["GENE_SYMBOL"] = cna["GENE_SYMBOL"].astype("string").str.strip().str.lower()
 
 before = len(cna)
 cna = cna.merge(gl, left_on="GENE_SYMBOL", right_on="hgnc_symbol", how="left")
 assert len(cna) == before, f"Left join changed row count: {before} → {len(cna)}"
 mapped = cna["ensg_id"].notna().sum()
+assert mapped > 0, ("gene symbol join matched 0 rows -- GENE_SYMBOL/hgnc_symbol "
+                    "case mismatch")
 print(f"  Gene mapped: {mapped:,}/{before:,} ({mapped/before*100:.1f}%)")
 cna = cna[cna["ensg_id"].notna()].copy()
 
@@ -78,7 +86,7 @@ cna = cna[cna["ensg_id"].notna()].copy()
 print("\nLoading gene regime...")
 regime = pd.read_parquet(GENE_REGIME, columns=["ensg_id", "class"])
 regime = regime.rename(columns={"class": "regime_class"})
-regime["ensg_id"] = regime["ensg_id"].str.split(".").str[0]
+regime["ensg_id"] = regime["ensg_id"].str.split(".").str[0].str.lower()
 cna = cna.merge(regime, on="ensg_id", how="left")
 cna["regime_class"] = cna["regime_class"].fillna("unknown_dual")
 cna["gene_role"]    = cna["gene_role"].fillna("unknown")
@@ -127,7 +135,7 @@ print(f"  Unique genes:      {flags.ensg_id.nunique():,}")
 # ── 7. Spot-check key genes ────────────────────────────────────────────────
 print("\nSpot checks:")
 gl_sym = gl.set_index("hgnc_symbol")["ensg_id"].to_dict()
-for symbol in ["ERBB2", "MYC", "PTEN", "RB1", "BRAF", "KRAS", "TP53"]:
+for symbol in ["erbb2", "myc", "pten", "rb1", "braf", "kras", "tp53"]:
     ensg = gl_sym.get(symbol, "not found")
     if ensg == "not found":
         print(f"  {symbol}: not in gene_lookup")

@@ -20,7 +20,7 @@ def _cell_line_context():
     if _cell_line_lookup_cache is None:
         cll = pd.read_parquet("reference/cell_line_lookup.parquet")
         cll = cll.copy()
-        cll["model_id"] = cll["model_id"].str.upper()
+        cll["model_id"] = cll["model_id"].str.lower()
         _cell_line_lookup_cache = cll[_CELL_LINE_CONTEXT_COLS]
     return _cell_line_lookup_cache
 
@@ -68,10 +68,22 @@ def rank_cell_lines(ensg_id, pred=None, chronos_val=None):
 
     result = result.merge(_cell_line_context(), on="model_id", how="left")
 
+    # Gene-level facts live at the top of the result, not repeated per row.
+    # signal_spread says whether the ordering below is worth acting on: core_score
+    # is a within-gene percentile, so a near-flat gene still produces a full 0-1
+    # spread and a confident-looking top-10. 'unmeasured' until the gene_dispersion
+    # layer has been rebuilt (02_core_score.ipynb Cell 7c).
+    spread = (sorted_rows["signal_spread"].iloc[0]
+              if "signal_spread" in sorted_rows.columns else "unmeasured")
+    fold = (sorted_rows["gene_top_vs_median_fold"].iloc[0]
+            if "gene_top_vs_median_fold" in sorted_rows.columns else None)
+
     return {
         "gene": ensg_id,
         "class": sorted_rows["class"].iloc[0],
         "contradicted": contradicted,
+        "signal_spread": spread,
+        "top_vs_median_fold": fold,
         "total_candidates": len(sorted_rows),
         "ranking": result.to_dict(orient="records"),
     }
@@ -97,7 +109,7 @@ if __name__ == "__main__":
     # near the top of the full candidate list (top 5%), not just among driver-positive
     # lines. A genuine regression (e.g. A375 falling to the middle of the pack) would
     # still fail this.
-    braf_result = rank_cell_lines("ENSG00000157764", pred, chronos_val)
+    braf_result = rank_cell_lines("ensg00000157764", pred, chronos_val)
     print("=== BRAF ranking — top 15 ===")
     for row in braf_result["ranking"][:15]:
         print(f"  #{row['sorted_position']:>4}  {row['model_id']}  "
@@ -105,7 +117,7 @@ if __name__ == "__main__":
               f"basis={row['rank_basis']}  conf={row['confidence']}  "
               f"layers={row['layers_present']}  diseases={row.get('diseases')}")
 
-    a375 = [r for r in braf_result["ranking"] if r["model_id"] == "ACH-000219"]
+    a375 = [r for r in braf_result["ranking"] if r["model_id"] == "ach-000219"]
     total_n = braf_result["total_candidates"]
     top5pct = max(1, round(total_n * 0.05))
     print(f"\nA375 entry: position={a375[0]['sorted_position']} of {total_n}, "
@@ -133,7 +145,7 @@ if __name__ == "__main__":
     print("PASS  Correct sort behaviour for abundance_tracking class")
 
     # --- Test 3: rank_cell_lines and explain_pair must agree on position ---
-    ep_result = explain_pair("ENSG00000157764", "ACH-000219", pred, flags, variants, harm, chronos_val)
+    ep_result = explain_pair("ensg00000157764", "ach-000219", pred, flags, variants, harm, chronos_val)
     rcl_pos = a375[0]["sorted_position"]
     ep_pos  = ep_result["position"]["sorted_position"]
     print(f"\nrank_cell_lines position: {rcl_pos},  explain_pair position: {ep_pos}")
@@ -147,5 +159,44 @@ if __name__ == "__main__":
     assert braf_result["contradicted"] == ep_result["contradicted"], \
         "MISMATCH — contradicted flag disagrees between rank_cell_lines and explain_pair"
     print("PASS  contradicted flag agrees")
+
+    # --- Test 5: unknown-class genes must NOT hard-gate on the driver flag ---
+    # A gene with no measured GDSC regime and no COSMIC census role has no basis
+    # for letting a single alteration flag outrank the whole scored ranking. The
+    # flag may only break ties between equal core_scores. Checked structurally
+    # across a sample of unknown-class genes, not on any named gene, so the test
+    # keeps meaning as the gene set changes.
+    # One mask + one groupby per class group -- NOT one full-table mask per gene
+    # (pred is 28.4M rows; per-gene masking here used to thrash for many minutes).
+    def _sample_genes(mask, n=25):
+        return pred.loc[mask, "ensg_id"].drop_duplicates().head(n).tolist()
+
+    unknown_genes = _sample_genes(pred["class"] == "unknown")
+    subset = pred[pred["ensg_id"].isin(unknown_genes)]
+    print(f"\n=== Unknown-class sort check over {len(unknown_genes)} genes ===")
+    violations = []
+    for g, rows in subset.groupby("ensg_id", sort=False):
+        sc = sort_gene_rows(rows.copy())["core_score"].to_numpy()
+        # core_score must be non-increasing: nothing outranks a higher score
+        bad = int((sc[:-1] < sc[1:]).sum())
+        if bad:
+            violations.append((g, bad))
+    print(f"  genes where a lower core_score outranked a higher one: {len(violations)}")
+    assert not violations, \
+        f"driver flag is still outranking core_score for unknown-class genes: {violations[:5]}"
+    print("PASS  Unknown-class genes rank on core_score; driver flag is tiebreak only")
+
+    # --- Test 6: the driver gate is still live where it IS validated ---
+    gated_genes = _sample_genes(pred["class"].isin(["activation_driven", "loss_of_function"]))
+    subset = pred[pred["ensg_id"].isin(gated_genes)]
+    print(f"\n=== Driver-gate retained check over {len(gated_genes)} gated-class genes ===")
+    lost = []
+    for g, rows in subset.groupby("ensg_id", sort=False):
+        drv = sort_gene_rows(rows.copy())["has_driver_alteration"].to_numpy().astype(int)
+        if (drv[:-1] < drv[1:]).sum():
+            lost.append(g)
+    print(f"  genes where a driver-positive line fell below a driver-negative one: {len(lost)}")
+    assert not lost, f"driver gate was lost for classes that should keep it: {lost[:5]}"
+    print("PASS  activation_driven / loss_of_function still hard-gate on the driver flag")
 
     print("\nAll tests passed.")

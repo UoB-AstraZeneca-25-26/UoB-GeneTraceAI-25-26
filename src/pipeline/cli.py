@@ -11,6 +11,12 @@ import json
 sys.path.append("src/pipeline")
 from explain_pair import explain_pair, load_data, resolve_gene
 from rank_cell_lines import rank_cell_lines
+from evidence_state import gene_verdict, pair_verdict, load_dispersion, render
+from multi_gene import co_select, format_result
+from metadata import (load_cell_lines, load_genes, cell_line_meta, gene_meta,
+                      format_block, modality_line)
+
+_DISPERSION = None
 
 
 def print_ranking(gene_input, pred, gene_lookup, chronos_val):
@@ -22,20 +28,52 @@ def print_ranking(gene_input, pred, gene_lookup, chronos_val):
 
     result = rank_cell_lines(ensg_id, pred, chronos_val)
     if "error" in result:
-        # Gene known to lookup but not in scored set — give a useful message
-        print(f"{symbol} ({ensg_id}): {result['error']}")
-        print("Note: only the 141 curated GDSC-targeted genes have predictions in v0.")
+        # Gene known to the lookup but never scored. Say so as a state, in the
+        # same voice as every other "cannot answer" case, rather than as an
+        # incidental error string.
+        print()
+        print(render(gene_verdict(ensg_id, symbol, 0)))
+        print("  Predictions cover the 19,176 genes with at least one scored omics "
+              "layer.\n  This gene is in the reference lookup but no layer measures it.")
         return
 
-    warn = "  *** CONTRADICTED: abundance ranking correlates NEGATIVELY with real CRISPR essentiality for this gene ***" \
-        if result["contradicted"] else ""
-    print(f"\nGene: {symbol} ({ensg_id}) | class: {result['class']} | {result['total_candidates']} candidates{warn}\n")
-    print(f"{'Pos':<5}{'model_id':<14}{'core_score':<12}{'n_layers':<10}{'stratum_pct':<13}"
-          f"{'confidence':<12}{'layers_present':<16}{'diseases'}")
+    print(f"\nGene: {symbol} ({ensg_id}) | class: {result['class']} | "
+          f"{result['total_candidates']} candidates")
+
+    # The verdict comes BEFORE the table and can suppress it entirely. core_score
+    # is a within-gene percentile, so a gene that barely varies still yields a
+    # full 0-1 spread and a top-10 that reads as confidently as a truly
+    # differential gene's. A footnote under a confident-looking table does not
+    # correct that impression; a headline that refuses to rank does.
+    # States and thresholds: evidence_state.py.
+    global _DISPERSION
+    if _DISPERSION is None:
+        _DISPERSION = load_dispersion()
+    disp = (_DISPERSION.loc[[ensg_id]]
+            if _DISPERSION is not None and ensg_id in _DISPERSION.index else None)
+
+    v = gene_verdict(ensg_id, symbol, result["total_candidates"], disp,
+                     contradicted=result["contradicted"],
+                     gene_class=result.get("class"))
+    text = render(v)
+    if text:
+        print(text)
+    if not v.show_ranking:
+        return
+    if v.qualify_ranking:
+        print("  (unranked)")
+    print()
+    cells = load_cell_lines()
+    print(f"{'Pos':<4}{'model_id':<13}{'name':<14}{'score':<8}{'lay':<5}{'conf':<10}"
+          f"{'mods':<6}{'lineage':<14}{'disease'}")
     for row in result["ranking"][:10]:
-        print(f"{row['sorted_position']:<5}{row['model_id']:<14}{row['core_score']:<12.4f}"
-              f"{row['n_layers']:<10}{row['stratum_rank_percentile']:<13.4f}"
-              f"{row['confidence']:<12}{row['layers_present']:<16}{row.get('diseases') or ''}")
+        cm = cell_line_meta(row["model_id"], cells)
+        print(f"{row['sorted_position']:<4}{row['model_id']:<13}"
+              f"{str(cm.get('name') or '-')[:13]:<14}{row['core_score']:<8.4f}"
+              f"{row['n_layers']:<5}{row['confidence'][:9]:<10}"
+              f"{str(cm.get('_n_modalities') or '-'):<6}"
+              f"{str(cm.get('lineage') or '-')[:13]:<14}"
+              f"{str(cm.get('disease') or cm.get('cancer type (Sanger)') or '-')[:34]}")
     if result["total_candidates"] > 10:
         print(f"... ({result['total_candidates'] - 10} more)")
 
@@ -49,7 +87,10 @@ def print_explanation(gene_input, model_id, pred, flags, variants, harm, gene_lo
 
     result = explain_pair(ensg_id, model_id, pred, flags, variants, harm, chronos_val)
     if "error" in result:
-        print(result["error"])
+        # Absence is reported as absence, never as a weak result (Design Record §5:
+        # "missing != against").
+        print()
+        print(render(pair_verdict(symbol, model_id, row=None)))
         return
 
     print(f"\nGene: {symbol} ({result['gene']}) | Cell line: {result['cell_line']['model_id']} "
@@ -58,6 +99,16 @@ def print_explanation(gene_input, model_id, pred, flags, variants, harm, gene_lo
           f"  |  Stratum percentile: {result['position']['stratum_rank_percentile']:.4f}")
     print(f"Confidence: {result['confidence']}  |  rank_basis: {result['rank_basis']}")
     print(f"Reason: {result['confidence_reason']}")
+
+    gmeta = gene_meta(ensg_id, load_genes())
+    if gmeta:
+        print("\nGENE METADATA")
+        print(format_block(gmeta))
+    cmeta = cell_line_meta(result["cell_line"]["model_id"], load_cell_lines())
+    if cmeta:
+        print("\nCELL LINE METADATA")
+        print(format_block(cmeta))
+        print(modality_line(cmeta))
     if result["contradicted"]:
         print("*** CONTRADICTED: abundance ranking correlates NEGATIVELY with real CRISPR "
               "essentiality for this gene — treat with particular caution ***")
@@ -100,11 +151,23 @@ def print_explanation(gene_input, model_id, pred, flags, variants, harm, gene_lo
         print("\nNo inconsistencies flagged.")
 
 
+def print_co_selection(gene_inputs, pred, gene_lookup, chronos_val):
+    """Cell lines that satisfy SEVERAL genes jointly — weakest-link bound."""
+    global _DISPERSION
+    if _DISPERSION is None:
+        _DISPERSION = load_dispersion()
+    res = co_select(gene_inputs, pred, gene_lookup, resolve_gene,
+                    dispersion=_DISPERSION, chronos_val=chronos_val)
+    print(f"\nJOINT QUERY: {' + '.join(g.upper() for g in gene_inputs)}")
+    print(format_result(res))
+
+
 def main():
     pred, flags, variants, harm, gene_lookup, chronos_val = load_data()
 
     print("GeneTraceAI v0 — CLI")
-    print("Commands: 'gene <ENSG_ID|symbol>' | 'pair <ENSG_ID|symbol> <MODEL_ID>' | 'quit'\n")
+    print("Commands: 'gene <ENSG_ID|symbol>' | 'pair <ENSG_ID|symbol> <MODEL_ID>'")
+    print("          'genes <A> <B> [C ...]'  — cell lines suiting ALL of them | 'quit'\n")
 
     while True:
         try:
@@ -119,8 +182,11 @@ def main():
             print_ranking(parts[1], pred, gene_lookup, chronos_val)
         elif parts[0] == "pair" and len(parts) == 3:
             print_explanation(parts[1], parts[2], pred, flags, variants, harm, gene_lookup, chronos_val)
+        elif parts[0] == "genes" and len(parts) >= 3:
+            print_co_selection(parts[1:], pred, gene_lookup, chronos_val)
         else:
-            print("Usage: gene <ENSG_ID|symbol>  |  pair <ENSG_ID|symbol> <MODEL_ID>")
+            print("Usage: gene <ENSG_ID|symbol>  |  pair <ENSG_ID|symbol> <MODEL_ID>"
+                  "  |  genes <A> <B> [C ...]")
 
 
 if __name__ == "__main__":

@@ -19,7 +19,7 @@ gl = pd.read_parquet(REF / "gene_lookup.parquet")
 # ── Load COSMIC CGC ──────────────────────────────────────────────────────────
 cgc = pd.read_csv(COSMIC_CGC, sep="\t", usecols=["GENE_SYMBOL", "ROLE_IN_CANCER", "SYNONYMS"])
 cgc.columns = ["hgnc_symbol", "role_raw", "synonyms"]
-cgc["hgnc_symbol"] = cgc["hgnc_symbol"].str.upper()
+cgc["hgnc_symbol"] = cgc["hgnc_symbol"].str.lower()
 
 def normalise_role(r):
     if pd.isna(r):
@@ -40,7 +40,7 @@ cgc = cgc[cgc["gene_role"] != "unknown"]
 
 # Primary join: COSMIC GENE_SYMBOL → gene_lookup hgnc_symbol (case-normalised)
 gl_upper = gl[["ensg_id", "hgnc_symbol"]].copy()
-gl_upper["_sym_upper"] = gl_upper["hgnc_symbol"].str.upper()
+gl_upper["_sym_upper"] = gl_upper["hgnc_symbol"].str.lower()
 
 role_dedup = cgc[["hgnc_symbol", "gene_role"]].drop_duplicates("hgnc_symbol")
 
@@ -58,7 +58,7 @@ if len(unmatched):
     syn = syn.dropna(subset=["synonyms"])
     syn = syn.assign(syn_token=syn["synonyms"].str.split(",")).explode("syn_token")
     syn["syn_token"] = syn["syn_token"].str.strip()
-    # strip version (e.g. ENSG00000148584.14 → ENSG00000148584)
+    # strip version (e.g. ensg00000148584.14 -> ensg00000148584)
     syn["ensg_bare"] = syn["syn_token"].str.extract(r"^(ENSG\d+)")
     ensg_hits = syn.dropna(subset=["ensg_bare"]).merge(
         gl_upper[["ensg_id"]], left_on="ensg_bare", right_on="ensg_id", how="inner"

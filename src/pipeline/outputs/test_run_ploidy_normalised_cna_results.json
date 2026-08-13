@@ -14,53 +14,50 @@
     "amp_relative": 65909,
     "del_absolute": 63354,
     "del_relative": 63544,
-    "gated_alteration_absolute": 3374,
-    "gated_alteration_relative": 3259,
+    "gated_alteration_absolute": 3084,
+    "gated_alteration_relative": 2990,
     "pairs_total": 117540,
     "pairs_gained": 3,
-    "pairs_lost": 117
+    "pairs_lost": 96
   },
   "PRIMARY_wgd_bias": {
     "absolute (current)": {
-      "wgd_mean": 0.025018176308048038,
-      "non_wgd_mean": 0.01745836083068026,
-      "ratio": 1.4330197749196831,
-      "mannwhitney_p": 3.040481908359006e-08,
+      "wgd_mean": 0.023653726659273348,
+      "non_wgd_mean": 0.016977239467619927,
+      "ratio": 1.3932610601615911,
+      "mannwhitney_p": 6.577016727189015e-07,
       "n_wgd": 564,
       "n_non_wgd": 215
     },
     "ploidy-relative": {
-      "wgd_mean": 0.024427062996364952,
-      "non_wgd_mean": 0.01745836083068026,
-      "ratio": 1.3991613092013953,
-      "mannwhitney_p": 4.5775715070332447e-07,
+      "wgd_mean": 0.0231709306538268,
+      "non_wgd_mean": 0.016977239467619927,
+      "ratio": 1.3648232209965512,
+      "mannwhitney_p": 5.563499639887594e-06,
       "n_wgd": 564,
       "n_non_wgd": 215
     }
   },
   "PRIMARY_ploidy_correlation": {
     "absolute (current)": {
-      "rho": 0.08998848797408288,
-      "p": 0.011981237547649442,
+      "rho": 0.08945947852913393,
+      "p": 0.012494357444336855,
       "n": 779
     },
     "ploidy-relative": {
-      "rho": 0.044795238842107,
-      "p": 0.2117089762200732,
+      "rho": 0.049855551415928755,
+      "p": 0.16449031827194086,
       "n": 779
     }
   },
   "wgd_bias_reduced": true,
   "SECONDARY_confidence_blast_radius": {
-    "pairs_changed": 120,
-    "predictions_affected": 95,
-    "current_confidence_distribution": {
-      "high": 93,
-      "prior": 2
-    },
-    "would_gain_cna": 2,
-    "would_lose_cna": 93,
-    "losses_currently_high_confidence": 93
+    "pairs_changed": 99,
+    "predictions_affected": 0,
+    "current_confidence_distribution": {},
+    "would_gain_cna": 0,
+    "would_lose_cna": 0,
+    "losses_currently_high_confidence": 0
   },
   "CONTROL_ranking_invariance": {
     "driver_gate_excludes_cna": true,

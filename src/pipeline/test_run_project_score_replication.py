@@ -76,7 +76,7 @@ ps = pd.read_csv(PS_FILE, sep="\t", skiprows=5, header=None,
 print(f"  genes: {len(ps):,}")
 
 ps = ps.dropna(subset=["ensembl_gene_id"])
-ps["ensg_id"] = ps["ensembl_gene_id"].astype(str).str.split(".").str[0]
+ps["ensg_id"] = ps["ensembl_gene_id"].astype(str).str.split(".").str[0].str.lower()  # canonical case
 
 vals = ps[list(range(len(sidm_ids)))].astype("float32")
 vals.columns = sidm_ids
@@ -93,7 +93,7 @@ print("=" * 72)
 
 gd = pd.read_parquet("validation/prepared/gdsc_scored_ready.parquet",
                      columns=["sidm_id", "model_id"]).drop_duplicates()
-bridge = dict(zip(gd.sidm_id, gd.model_id.str.upper()))
+bridge = dict(zip(gd.sidm_id, gd.model_id.str.lower()))
 mapped = [bridge.get(c) for c in vals.columns]
 keep = [i for i, m in enumerate(mapped) if m is not None]
 vals = vals.iloc[:, keep]
@@ -108,7 +108,8 @@ print("STEP 3 -- sanity check: are core-essential genes flagged essential?")
 print("=" * 72)
 
 gl = pd.read_parquet("reference/gene_lookup.parquet", columns=["ensg_id", "hgnc_symbol"])
-gl["ensg_id"] = gl["ensg_id"].str.split(".").str[0]
+gl["ensg_id"] = gl["ensg_id"].str.split(".").str[0].str.lower()  # canonical case
+gl["hgnc_symbol"] = gl["hgnc_symbol"].astype("string").str.upper()  # symbol keys below are uppercase literals
 sym2ensg = dict(zip(gl.hgnc_symbol, gl.ensg_id))
 
 core_ess = ["RPL13A", "RPL5", "RPS6", "RPS3", "POLR2A", "EIF4A3"]
@@ -135,7 +136,7 @@ print("=" * 72)
 
 core = pd.read_parquet(OUTPUTS / "core_score.parquet",
                        columns=["model_id", "ensg_id", "core_score"])
-core["model_id"] = core["model_id"].str.upper()
+core["model_id"] = core["model_id"].str.lower()
 
 shared_lines = sorted(set(core.model_id) & set(vals.columns))
 shared_genes = sorted(set(core.ensg_id) & set(vals.index))
