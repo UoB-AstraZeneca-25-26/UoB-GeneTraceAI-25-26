@@ -1,1320 +1,517 @@
-<title>GeneTraceAI — Pipeline Data Flow & Statistical Audit</title>
+<title>GeneTraceAI — Pipeline Architecture v1 (Pre-registration)</title>
 <style>
-/* ── tokens ──────────────────────────────────────────────────────────── */
 :root {
-  --bg:           #F2F5FA;
-  --surface:      #FFFFFF;
-  --surface-2:    #EEF2F9;
-  --border:       #D4DAE8;
-  --border-2:     #B8C2D8;
-  --text:         #182040;
-  --text-2:       #4E5C7A;
-  --text-3:       #8A96B2;
-
-  --rna:          #1D62D8;
-  --rna-soft:     #E8EFFC;
-  --rna-mid:      #9AB8F0;
-
-  --prot:         #7128CC;
-  --prot-soft:    #F0E9FB;
-  --prot-mid:     #C4A0E8;
-
-  --combo:        #0891B2;
-  --combo-soft:   #E0F5F9;
-  --combo-mid:    #76CAD8;
-
-  --gain:         #047857;
-  --gain-soft:    #D1FAE5;
-  --loss:         #B91C1C;
-  --loss-soft:    #FEE2E2;
-  --warn:         #B45309;
-  --warn-soft:    #FEF3C7;
-
-  --mono: 'Courier New', 'Lucida Console', monospace;
-  --sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --bg:#F8FAFC; --surface:#FFFFFF; --surface2:#F1F5F9; --border:#E2E8F0;
+  --text:#0F172A; --text2:#475569; --text3:#94A3B8;
+  --rna:#2563EB; --rna-bg:#EFF6FF; --rna-border:#BFDBFE;
+  --prot:#7C3AED; --prot-bg:#F5F3FF; --prot-border:#DDD6FE;
+  --alt:#D97706; --alt-bg:#FFFBEB; --alt-border:#FDE68A;
+  --score:#0F766E; --score-bg:#F0FDFA; --score-border:#99F6E4;
+  --query:#BE185D; --query-bg:#FFF1F2; --query-border:#FECDD3;
+  --warn:#7F1D1D; --warn-bg:#FEF2F2; --warn-border:#FCA5A5;
+  --mono:'JetBrains Mono','Fira Code','Cascadia Code','Consolas',monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
 }
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg:           #0A1020;
-    --surface:      #111827;
-    --surface-2:    #1A2438;
-    --border:       #253047;
-    --border-2:     #344060;
-    --text:         #E4EAF8;
-    --text-2:       #8A96B4;
-    --text-3:       #505A70;
-
-    --rna:          #5B9BF5;
-    --rna-soft:     #0F1E3D;
-    --rna-mid:      #2A4A80;
-
-    --prot:         #A970F0;
-    --prot-soft:    #1A0E30;
-    --prot-mid:     #4A2470;
-
-    --combo:        #22C0DC;
-    --combo-soft:   #071E26;
-    --combo-mid:    #0A3D4D;
-
-    --gain:         #34D399;
-    --gain-soft:    #022C1E;
-    --loss:         #F87171;
-    --loss-soft:    #2C0A0A;
-    --warn:         #FBBF24;
-    --warn-soft:    #271E06;
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1117; --surface:#161B22; --surface2:#1C2128; --border:#30363D;
+    --text:#E6EDF3; --text2:#8D96A0; --text3:#484F58;
+    --rna:#60A5FA; --rna-bg:#0C1832; --rna-border:#1E3A6B;
+    --prot:#A78BFA; --prot-bg:#120D2B; --prot-border:#2E1F66;
+    --alt:#FCD34D; --alt-bg:#1C1400; --alt-border:#3D2E00;
+    --score:#2DD4BF; --score-bg:#031814; --score-border:#0D4038;
+    --query:#FB7185; --query-bg:#1C0812; --query-border:#4A1020;
+    --warn:#FCA5A5; --warn-bg:#2D0808; --warn-border:#7F1D1D;
   }
 }
+:root[data-theme="dark"]{
+  --bg:#0D1117; --surface:#161B22; --surface2:#1C2128; --border:#30363D;
+  --text:#E6EDF3; --text2:#8D96A0; --text3:#484F58;
+  --rna:#60A5FA; --rna-bg:#0C1832; --rna-border:#1E3A6B;
+  --prot:#A78BFA; --prot-bg:#120D2B; --prot-border:#2E1F66;
+  --alt:#FCD34D; --alt-bg:#1C1400; --alt-border:#3D2E00;
+  --score:#2DD4BF; --score-bg:#031814; --score-border:#0D4038;
+  --query:#FB7185; --query-bg:#1C0812; --query-border:#4A1020;
+  --warn:#FCA5A5; --warn-bg:#2D0808; --warn-border:#7F1D1D;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;padding:2rem 1rem 4rem}
+.page{max-width:900px;margin:0 auto}
 
-:root[data-theme="dark"] {
-  --bg:           #0A1020;
-  --surface:      #111827;
-  --surface-2:    #1A2438;
-  --border:       #253047;
-  --border-2:     #344060;
-  --text:         #E4EAF8;
-  --text-2:       #8A96B4;
-  --text-3:       #505A70;
-  --rna:          #5B9BF5;
-  --rna-soft:     #0F1E3D;
-  --rna-mid:      #2A4A80;
-  --prot:         #A970F0;
-  --prot-soft:    #1A0E30;
-  --prot-mid:     #4A2470;
-  --combo:        #22C0DC;
-  --combo-soft:   #071E26;
-  --combo-mid:    #0A3D4D;
-  --gain:         #34D399;
-  --gain-soft:    #022C1E;
-  --loss:         #F87171;
-  --loss-soft:    #2C0A0A;
-  --warn:         #FBBF24;
-  --warn-soft:    #271E06;
-}
+/* ── v1 banner ── */
+.v1-banner{background:var(--surface2);border:2px solid var(--border);border-radius:6px;padding:1rem 1.25rem;margin-bottom:2rem}
+.v1-banner-head{display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem}
+.v1-tag{font-family:var(--mono);font-size:11px;font-weight:700;padding:3px 9px;border-radius:3px;background:#DBEAFE;color:#1E3A8A;border:1px solid #93C5FD}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .v1-tag{background:#0C1832;color:#60A5FA;border-color:#1E3A6B}}
+:root[data-theme="dark"] .v1-tag{background:#0C1832;color:#60A5FA;border-color:#1E3A6B}
+.v1-title{font-weight:600;font-size:13px;color:var(--text)}
+.v1-body p{font-size:12.5px;color:var(--text2);margin:.25rem 0}
+.v1-body strong{color:var(--text)}
 
-/* ── reset & base ────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: var(--sans);
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--text);
-  background: var(--bg);
-  padding: 40px 20px 80px;
-}
-
-/* ── layout ──────────────────────────────────────────────────────────── */
-.page {
-  max-width: 1080px;
-  margin: 0 auto;
-}
-
-/* ── header ──────────────────────────────────────────────────────────── */
-.page-header {
-  margin-bottom: 48px;
-  border-bottom: 2px solid var(--border);
-  padding-bottom: 24px;
-}
-.eyebrow {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-3);
-  margin-bottom: 10px;
-}
-.page-title {
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--text);
-  line-height: 1.2;
-  text-wrap: balance;
-  margin-bottom: 8px;
-}
-.page-sub {
-  font-size: 14px;
-  color: var(--text-2);
-  max-width: 680px;
-}
-
-/* ── section labels ──────────────────────────────────────────────────── */
-.stage-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-3);
-  margin-bottom: 10px;
-}
-
-/* ── source cards ────────────────────────────────────────────────────── */
-.sources-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr) 8px repeat(2, 1fr);
-  gap: 8px;
-  margin-bottom: 6px;
-  align-items: start;
-}
-.sources-divider {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--border-2);
-  font-size: 20px;
-  padding-top: 20px;
-  font-family: var(--mono);
-}
-
-.source-card {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  padding: 14px 14px 12px;
-  position: relative;
-  overflow: hidden;
-}
-.source-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-}
-.source-card.rna::before { background: var(--rna); }
-.source-card.prot::before { background: var(--prot); }
-
-.source-tag {
-  display: inline-block;
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 2px 6px;
-  border-radius: 3px;
-  margin-bottom: 8px;
-  font-weight: 600;
-}
-.rna .source-tag  { background: var(--rna-soft); color: var(--rna); }
-.prot .source-tag { background: var(--prot-soft); color: var(--prot); }
-
-.source-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 4px;
-}
-.source-desc {
-  font-size: 11px;
-  color: var(--text-2);
-  margin-bottom: 10px;
-  line-height: 1.4;
-}
-
-.stat-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 3px;
-}
-.stat-label {
-  font-size: 10px;
-  color: var(--text-3);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.stat-val {
-  font-family: var(--mono);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-  font-weight: 600;
-}
-.scale-chip {
-  display: inline-block;
-  font-family: var(--mono);
-  font-size: 9px;
-  padding: 1px 5px;
-  border-radius: 2px;
-  border: 1px solid var(--border);
-  color: var(--text-2);
-  margin-top: 6px;
-}
-
-/* ── arrows ──────────────────────────────────────────────────────────── */
-.arrow-row {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  padding: 4px 0;
-}
-.arrow-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-.arrow-stem {
-  width: 2px;
-  height: 18px;
-  background: var(--border-2);
-}
-.arrow-head {
-  width: 0; height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 7px solid var(--border-2);
-}
-.arrow-stem.rna  { background: var(--rna-mid); }
-.arrow-head.rna  { border-top-color: var(--rna-mid); }
-.arrow-stem.prot { background: var(--prot-mid); }
-.arrow-head.prot { border-top-color: var(--prot-mid); }
-.arrow-stem.combo { background: var(--combo-mid); }
-.arrow-head.combo { border-top-color: var(--combo-mid); }
-
-/* ── transform block ─────────────────────────────────────────────────── */
-.transform-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-.transform-block {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface-2);
-  padding: 14px;
-}
-.transform-block.rna  { border-color: var(--rna-mid);  background: var(--rna-soft); }
-.transform-block.prot { border-color: var(--prot-mid); background: var(--prot-soft); }
-.transform-block.full {
-  grid-column: 1 / -1;
-  border-color: var(--border-2);
-}
-
-.tx-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 6px;
-  letter-spacing: -0.01em;
-}
-.tx-formula {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text-2);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 6px 10px;
-  margin: 6px 0;
-  line-height: 1.8;
-}
-.tx-note {
-  font-size: 11px;
-  color: var(--text-2);
-  line-height: 1.4;
-}
-em { font-style: normal; color: var(--text); font-weight: 600; }
-
-/* ── intermediate outputs ────────────────────────────────────────────── */
-.output-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-.output-card {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  padding: 14px;
-}
-.output-card.rna  { border-left: 3px solid var(--rna); }
-.output-card.prot { border-left: 3px solid var(--prot); }
-
-.output-name {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 8px;
-}
-.dim-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-.dim-x { color: var(--text-3); font-size: 10px; font-weight: 400; }
-
-.nsrc-bar {
-  display: flex;
-  height: 8px;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 4px;
-}
-.nsrc-seg { height: 100%; }
-
-.nsrc-legend {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.nsrc-item {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-2);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.nsrc-dot {
-  width: 8px; height: 8px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-/* ── combination section ─────────────────────────────────────────────── */
-.combo-section {
-  border: 1px solid var(--combo-mid);
-  border-radius: 8px;
-  background: var(--combo-soft);
-  padding: 18px;
-  margin-bottom: 6px;
-}
-.combo-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--combo);
-  margin-bottom: 12px;
-  letter-spacing: -0.01em;
-}
-
-.combo-steps {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-.combo-step {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 10px 12px;
-}
-.step-num {
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-3);
-  margin-bottom: 4px;
-  letter-spacing: 0.06em;
-}
-.step-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 4px;
-}
-.step-formula {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-2);
-  line-height: 1.7;
-}
-
-.weight-row {
-  display: flex;
-  gap: 10px;
-}
-.weight-chip {
-  flex: 1;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 8px 10px;
-  text-align: center;
-}
-.weight-label { font-size: 10px; color: var(--text-3); margin-bottom: 2px; }
-.weight-val {
-  font-family: var(--mono);
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
-}
-.weight-sub { font-size: 10px; color: var(--text-2); }
-
-/* ── final output ────────────────────────────────────────────────────── */
-.final-output {
-  border: 2px solid var(--combo);
-  border-radius: 8px;
-  background: var(--surface);
-  padding: 18px;
-  margin-bottom: 40px;
-}
-.final-title {
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--combo);
-  margin-bottom: 12px;
-}
-.final-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 12px;
-}
-.final-stat {
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  background: var(--surface-2);
-  padding: 10px 12px;
-}
-.final-stat-label { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
-.final-stat-val   { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
-.final-stat-sub   { font-size: 10px; color: var(--text-2); }
-
-.nlayers-row {
-  display: flex;
-  gap: 8px;
-}
-.nlayer-box {
-  flex: 1;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 8px 10px;
-  text-align: center;
-}
-.nlayer-n {
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 700;
-}
-.nlayer-n.n0 { color: var(--text-3); }
-.nlayer-n.n1 { color: var(--rna); }
-.nlayer-n.n2 { color: var(--combo); }
-.nlayer-desc { font-size: 10px; color: var(--text-2); margin-top: 2px; }
-
-/* ── gains / losses audit ────────────────────────────────────────────── */
-.audit-section {
-  margin-top: 40px;
-}
-.audit-title {
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text);
-  margin-bottom: 4px;
-}
-.audit-sub {
-  font-size: 13px;
-  color: var(--text-2);
-  margin-bottom: 20px;
-}
-
-.audit-table {
-  width: 100%;
-  border-collapse: collapse;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  font-size: 12px;
-}
-.audit-table th {
-  background: var(--surface-2);
-  padding: 10px 14px;
-  text-align: left;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-3);
-  border-bottom: 1px solid var(--border);
-  font-weight: 600;
-}
-.audit-table td {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
-  color: var(--text);
-  line-height: 1.4;
-}
-.audit-table tr:last-child td { border-bottom: none; }
-.audit-table tr:hover td { background: var(--surface-2); }
-
-.step-badge {
-  display: inline-block;
-  font-family: var(--mono);
-  font-size: 9px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.step-badge.rna   { background: var(--rna-soft);   color: var(--rna); }
-.step-badge.prot  { background: var(--prot-soft);  color: var(--prot); }
-.step-badge.combo { background: var(--combo-soft); color: var(--combo); }
-.step-badge.all   { background: var(--surface-2);  color: var(--text-2); }
-
-.gain-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--gain);
-  background: var(--gain-soft);
-  border-radius: 3px;
-  padding: 2px 6px;
-  margin: 2px 2px 2px 0;
-}
-.loss-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--loss);
-  background: var(--loss-soft);
-  border-radius: 3px;
-  padding: 2px 6px;
-  margin: 2px 2px 2px 0;
-}
-.warn-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--warn);
-  background: var(--warn-soft);
-  border-radius: 3px;
-  padding: 2px 6px;
-  margin: 2px 2px 2px 0;
-}
-
-.pills { display: flex; flex-wrap: wrap; gap: 4px; }
-
-/* ── correlation legend ──────────────────────────────────────────────── */
-.corr-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 16px;
-}
-.corr-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 10px 12px;
-}
-.corr-pair { font-size: 11px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
-.corr-val  {
-  font-family: var(--mono);
-  font-size: 20px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  margin-bottom: 2px;
-}
-.corr-val.hi   { color: var(--loss); }
-.corr-val.mid  { color: var(--warn); }
-.corr-val.lo   { color: var(--gain); }
-.corr-desc { font-size: 10px; color: var(--text-2); line-height: 1.4; }
-
-/* ── section spacer ──────────────────────────────────────────────────── */
-.section { margin-bottom: 32px; }
-
-/* ── connector arrows between major sections ─────────────────────────── */
-.big-arrow {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 4px 0;
-  gap: 0;
-}
-.big-arrow-stem {
-  width: 2px;
-  height: 24px;
-}
-.big-arrow-stem.rna   { background: var(--rna-mid); }
-.big-arrow-stem.prot  { background: var(--prot-mid); }
-.big-arrow-stem.combo { background: var(--combo-mid); }
-.big-arrow-stem.both  {
-  background: linear-gradient(to bottom, var(--rna-mid), var(--prot-mid));
-}
-.big-arrow-head {
-  width: 0; height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-}
-.big-arrow-head.rna   { border-top: 9px solid var(--rna-mid); }
-.big-arrow-head.prot  { border-top: 9px solid var(--prot-mid); }
-.big-arrow-head.combo { border-top: 9px solid var(--combo-mid); }
-
-.dual-arrow-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-}
-.dual-arrow-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 4px 0;
-}
-
-/* ── merge indicator ─────────────────────────────────────────────────── */
-.merge-indicator {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 4px 0 8px;
-  font-size: 11px;
-  color: var(--text-2);
-}
-.merge-line {
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(to right, var(--rna-mid), var(--border));
-}
-.merge-line.right {
-  background: linear-gradient(to left, var(--prot-mid), var(--border));
-}
-.merge-diamond {
-  width: 10px; height: 10px;
-  background: var(--combo);
-  transform: rotate(45deg);
-  flex-shrink: 0;
-}
-
-/* ── kish table ──────────────────────────────────────────────────────── */
-.kish-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 11px;
-  margin-top: 8px;
-}
-.kish-table th {
-  font-family: var(--mono);
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-3);
-  padding: 4px 8px;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-}
-.kish-table td {
-  font-family: var(--mono);
-  font-size: 11px;
-  padding: 4px 8px;
-  color: var(--text);
-  border-bottom: 1px solid var(--border);
-}
-.kish-table tr:last-child td { border-bottom: none; }
-
-/* responsive */
-@media (max-width: 700px) {
-  .sources-grid   { grid-template-columns: 1fr; }
-  .sources-divider { display: none; }
-  .transform-row  { grid-template-columns: 1fr; }
-  .output-row     { grid-template-columns: 1fr; }
-  .combo-steps    { grid-template-columns: 1fr; }
-  .final-grid     { grid-template-columns: 1fr 1fr; }
-  .corr-grid      { grid-template-columns: 1fr; }
-}
+/* ── Header ── */
+.header{border-bottom:2px solid var(--border);padding-bottom:1.5rem;margin-bottom:2.5rem}
+.header-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--text3);margin-bottom:.5rem}
+.header h1{font-size:1.75rem;font-weight:700;letter-spacing:-.02em;line-height:1.2;color:var(--text)}
+.header-sub{margin-top:.5rem;color:var(--text2);font-size:13px}
+.stage{margin-bottom:1.5rem;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--surface)}
+.stage-head{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border-bottom:1px solid var(--border);background:var(--surface2)}
+.stage-num{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;padding:2px 7px;border-radius:3px;background:var(--border);color:var(--text2);white-space:nowrap;border:1px solid transparent}
+.stage-num.rna{background:var(--rna-bg);color:var(--rna);border-color:var(--rna-border)}
+.stage-num.prot{background:var(--prot-bg);color:var(--prot);border-color:var(--prot-border)}
+.stage-num.alt{background:var(--alt-bg);color:var(--alt);border-color:var(--alt-border)}
+.stage-num.score{background:var(--score-bg);color:var(--score);border-color:var(--score-border)}
+.stage-num.query{background:var(--query-bg);color:var(--query);border-color:var(--query-border)}
+.stage-title{font-weight:600;font-size:13.5px;color:var(--text);flex:1}
+.stage-kpi{font-family:var(--mono);font-size:11px;color:var(--text3);white-space:nowrap}
+.stage-body{padding:1rem}
+.source-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.6rem;margin-bottom:.85rem}
+.source-card{padding:.6rem .75rem;border-radius:4px;border:1px solid var(--border);background:var(--surface2)}
+.source-card.rna{border-color:var(--rna-border);background:var(--rna-bg)}
+.source-card.prot{border-color:var(--prot-border);background:var(--prot-bg)}
+.source-label{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+.source-card.rna .source-label{color:var(--rna)}
+.source-card.prot .source-label{color:var(--prot)}
+.source-desc{font-size:11.5px;color:var(--text2);line-height:1.4}
+.math-block{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--border);border-radius:0 4px 4px 0;padding:.55rem .85rem;margin:.5rem 0;font-family:var(--mono);font-size:12px;color:var(--text);overflow-x:auto;white-space:nowrap}
+.math-block.rna{border-left-color:var(--rna)}
+.math-block.prot{border-left-color:var(--prot)}
+.math-block.alt{border-left-color:var(--alt)}
+.math-block.score{border-left-color:var(--score)}
+.math-block.query{border-left-color:var(--query)}
+.stat-row{display:flex;flex-wrap:wrap;gap:.5rem;margin:.75rem 0 0}
+.stat{display:flex;align-items:baseline;gap:.3rem;padding:3px 9px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;font-family:var(--mono);font-size:11px}
+.stat-val{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.stat-key{color:var(--text3);font-size:10px}
+.tier-chip{display:inline-block;padding:2px 8px;border-radius:3px;font-family:var(--mono);font-size:11px;font-weight:600;border:1px solid transparent}
+.tier-H{background:#DCFCE7;color:#14532D;border-color:#86EFAC}
+.tier-M{background:#DBEAFE;color:#1E3A8A;border-color:#93C5FD}
+.tier-C{background:#FEF3C7;color:#78350F;border-color:#FDE68A}
+.tier-L{background:var(--surface2);color:var(--text2);border-color:var(--border)}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .tier-H{background:#052E16;color:#34D399;border-color:#064E3B}
+  :root:not([data-theme="light"]) .tier-M{background:#0C1832;color:#60A5FA;border-color:#1E3A6B}
+  :root:not([data-theme="light"]) .tier-C{background:#1C1400;color:#FCD34D;border-color:#3D2E00}
+}
+:root[data-theme="dark"] .tier-H{background:#052E16;color:#34D399;border-color:#064E3B}
+:root[data-theme="dark"] .tier-M{background:#0C1832;color:#60A5FA;border-color:#1E3A6B}
+:root[data-theme="dark"] .tier-C{background:#1C1400;color:#FCD34D;border-color:#3D2E00}
+.connector{text-align:center;padding:.35rem 0;color:var(--text3);font-size:20px;line-height:1;user-select:none}
+.table-wrap{overflow-x:auto}
+.data-table{width:100%;border-collapse:collapse;font-size:12.5px;margin:.6rem 0 0;font-variant-numeric:tabular-nums}
+.data-table th{padding:5px 10px;text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border);font-family:var(--mono)}
+.data-table td{padding:5px 10px;border-bottom:1px solid var(--border);color:var(--text2);font-family:var(--mono)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table .val{color:var(--text);font-weight:600}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:.6rem}
+@media(max-width:600px){.two-col{grid-template-columns:1fr}}
+code{font-family:var(--mono);font-size:11.5px;background:var(--surface2);padding:1px 5px;border-radius:3px;color:var(--text)}
+.label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.3rem;margin-top:.75rem}
+.label:first-child{margin-top:0}
+p{color:var(--text2);font-size:13px;margin:.35rem 0}
+.note{font-size:11.5px;color:var(--text3);margin:.25rem 0}
+.warn-box{background:var(--warn-bg);border:1px solid var(--warn-border);border-radius:4px;padding:.6rem .85rem;margin:.6rem 0}
+.warn-box p{color:var(--warn);font-size:12.5px}
+.warn-box .warn-head{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--warn);margin-bottom:.2rem}
+.query-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.6rem;margin-top:.75rem}
+.query-card{padding:.7rem .85rem;border:1px solid var(--query-border);border-radius:4px;background:var(--query-bg)}
+.query-cmd{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--query);margin-bottom:3px}
+.query-formula{font-family:var(--mono);font-size:10.5px;color:var(--text2);margin-bottom:4px}
+.query-desc{font-size:11.5px;color:var(--text2);line-height:1.45}
+.summary-table{border:1px solid var(--border);border-radius:5px;overflow:hidden}
+.summary-table thead tr{background:var(--surface2)}
 </style>
 
 <div class="page">
 
-  <!-- ── header ───────────────────────────────────────────────────────── -->
-  <header class="page-header">
-    <div class="eyebrow">GeneTraceAI · chai branch · 2026-08-13</div>
-    <h1 class="page-title">Multi-Omics Scoring Pipeline — Data Flow &amp; Statistical Audit</h1>
-    <p class="page-sub">
-      End-to-end trace of data origin, sample counts, statistical transformations, intermediate outputs,
-      and the information gained or lost at each stage — from five raw sources to a single
-      <code style="font-family:var(--mono);font-size:12px">core_score.parquet</code>.
-    </p>
-  </header>
+  <!-- ═══ v1 BANNER ═══ -->
+  <div class="v1-banner">
+    <div class="v1-banner-head">
+      <span class="v1-tag">v1 ENGINEERING ARTEFACT</span>
+      <span class="v1-title">GeneTraceAI Pipeline &mdash; Pre-registration document</span>
+    </div>
+    <div class="v1-body">
+      <p><strong>Operating characteristics not yet measured.</strong> Pre-registered diagnostics T0&ndash;T10 pending. Results are neither validated nor peer-reviewed.</p>
+      <p>This score is <strong>not</strong> a dependency prediction, <strong>not</strong> a validated ranking, and the confidence tiers are a <strong>filtering convention</strong>, not a joint-evidence probability. Treat all outputs as engineering quantities until T0b, T1, and T2 return.</p>
+      <p style="margin-top:.4rem"><em>Commit: [freeze hash before submission] &mdash; 2026-08-13</em></p>
+    </div>
+  </div>
 
-  <!-- ══════════════════════════════════════════════════════════════════
-       STAGE 0 — SOURCE DATA
-  ═══════════════════════════════════════════════════════════════════ -->
-  <div class="section">
-    <div class="stage-label">Stage 0 — Raw source data</div>
+  <!-- ═══ HEADER ═══ -->
+  <div class="header">
+    <div class="header-eyebrow">GeneTraceAI &middot; Dissertation Technical Appendix &middot; 2025&ndash;26 &middot; Audit rev 3</div>
+    <h1>Pipeline Architecture &amp; Statistical Audit</h1>
+    <div class="header-sub">Stages 0&ndash;5 + Query Layer &middot; 16,050 genes &middot; 1,493 cell lines &middot; ~24M scored pairs (post-fallback) &middot; Documented gaps in red</div>
+  </div>
 
-    <div class="sources-grid">
-      <!-- RNA: DepMap -->
-      <div class="source-card rna">
-        <span class="source-tag">RNA</span>
-        <div class="source-name">DepMap RNA-seq</div>
-        <div class="source-desc">Broad Institute · 22Q4 · Illumina short-read, STAR+RSEM pipeline</div>
-        <div class="stat-row"><span class="stat-label">Cell lines</span><span class="stat-val">1,479</span></div>
-        <div class="stat-row"><span class="stat-label">Genes</span><span class="stat-val">19,899</span></div>
-        <div class="stat-row"><span class="stat-label">Coverage</span><span class="stat-val">reference</span></div>
-        <div><span class="scale-chip">log₂(TPM+1) — native</span></div>
+  <!-- ═══ STAGE 0 ═══ -->
+  <div class="stage">
+    <div class="stage-head">
+      <span class="stage-num">STAGE 0</span>
+      <span class="stage-title">DuckDB Warehouse &mdash; Source Ingestion &amp; Unified Schema</span>
+      <span class="stage-kpi">5 sources &middot; 1 catalog</span>
+    </div>
+    <div class="stage-body">
+      <div class="label">Input sources</div>
+      <div class="source-grid">
+        <div class="source-card rna">
+          <div class="source-label">DepMap / CCLE</div>
+          <div class="source-desc">RNA-seq RSEM log&#8322;(TPM+1) &middot; Broad Institute &middot; <strong>1,479 total</strong> profiled &middot; <strong>1,412 with lineage annotation</strong></div>
+        </div>
+        <div class="source-card rna">
+          <div class="source-label">HPA (Uhl&eacute;n)</div>
+          <div class="source-desc">Human Protein Atlas <strong>cell-line</strong> nTPM &middot; joins on ACH model_id &middot; 1,105 unique lines &middot; NOT tissue consensus data</div>
+        </div>
+        <div class="source-card rna">
+          <div class="source-label">GEO Microarray</div>
+          <div class="source-desc">NCBI GEO curated series &middot; log&#8322; MAS5 &middot; cell-line expression panels</div>
+        </div>
+        <div class="source-card prot">
+          <div class="source-label">ProCAN</div>
+          <div class="source-desc">SWATH-MS proteomics &middot; 949 cell lines &middot; pre-joined ACH model_id</div>
+        </div>
+        <div class="source-card prot">
+          <div class="source-label">CCLE Proteomics</div>
+          <div class="source-desc">LC-MS/MS TMT &middot; 375 cell lines &middot; wide-format UniProt columns</div>
+        </div>
       </div>
-
-      <!-- RNA: HPA -->
-      <div class="source-card rna">
-        <span class="source-tag">RNA</span>
-        <div class="source-name">HPA / Uhlén</div>
-        <div class="source-desc">Human Protein Atlas · cell line RNA consensus · nTPM</div>
-        <div class="stat-row"><span class="stat-label">Cell lines</span><span class="stat-val">1,103</span></div>
-        <div class="stat-row"><span class="stat-label">Genes</span><span class="stat-val">16,064</span></div>
-        <div class="stat-row"><span class="stat-label">ρ vs DepMap</span><span class="stat-val">0.812</span></div>
-        <div><span class="scale-chip">linear nTPM → log₂(x+1)</span></div>
-      </div>
-
-      <!-- RNA: GEO -->
-      <div class="source-card rna">
-        <span class="source-tag">RNA</span>
-        <div class="source-name">GEO Warehouse</div>
-        <div class="source-desc">15 curated series · GPL570 / GPL14877 · RMA &amp; MAS5 probes → gene</div>
-        <div class="stat-row"><span class="stat-label">Cell lines</span><span class="stat-val">590</span></div>
-        <div class="stat-row"><span class="stat-label">Genes</span><span class="stat-val">16,064</span></div>
-        <div class="stat-row"><span class="stat-label">Samples</span><span class="stat-val">3,267 GSMs</span></div>
-        <div><span class="scale-chip">linear (auto-detected) → log₂(x+1)</span></div>
-      </div>
-
-      <!-- divider -->
-      <div class="sources-divider">·</div>
-
-      <!-- Protein: ProCAN -->
-      <div class="source-card prot">
-        <span class="source-tag">Protein</span>
-        <div class="source-name">ProCAN</div>
-        <div class="source-desc">Goncalves 2022 · DIA-MS absolute quantification · Sanger SIDM-resolved</div>
-        <div class="stat-row"><span class="stat-label">Cell lines</span><span class="stat-val">944</span></div>
-        <div class="stat-row"><span class="stat-label">Proteins → ENSG</span><span class="stat-val">8,186</span></div>
-        <div class="stat-row"><span class="stat-label">ρ vs CCLE</span><span class="stat-val">0.373</span></div>
-        <div><span class="scale-chip">log₂ intensity — native</span></div>
-      </div>
-
-      <!-- Protein: CCLE -->
-      <div class="source-card prot">
-        <span class="source-tag">Protein</span>
-        <div class="source-name">CCLE / Gygi</div>
-        <div class="source-desc">Nusinow 2020 · TMT multiplexed mass spectrometry · 375 lines</div>
-        <div class="stat-row"><span class="stat-label">Cell lines</span><span class="stat-val">375</span></div>
-        <div class="stat-row"><span class="stat-label">Proteins → ENSG</span><span class="stat-val">11,715</span></div>
-        <div class="stat-row"><span class="stat-label">Coverage</span><span class="stat-val">25% of scored</span></div>
-        <div><span class="scale-chip">log-ratio (centred at 0)</span></div>
+      <div class="label">Line count reconciliation</div>
+      <p>DepMap provides 1,412 of the 1,493 lineage-annotated lines. The remaining 81 lines appear in HPA and/or GEO only. All 1,493 &times; 16,060 = 23,977,580 pairs appear in the Stage 1 output (n_sources &ge; 1 for each); the 81 HPA/GEO-only lines have n_sources &isin; {1, 2}.</p>
+      <div class="stat-row">
+        <div class="stat"><span class="stat-val">1,412</span><span class="stat-key">DepMap lines with lineage</span></div>
+        <div class="stat"><span class="stat-val">81</span><span class="stat-key">HPA/GEO-only lines</span></div>
+        <div class="stat"><span class="stat-val">1,493</span><span class="stat-key">total lines in RNA output</span></div>
+        <div class="stat"><span class="stat-val">16,060</span><span class="stat-key">gene universe</span></div>
       </div>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════════════
-       STAGE 1 — SCALE STANDARDISATION
-  ═══════════════════════════════════════════════════════════════════ -->
-  <div class="dual-arrow-row">
-    <div class="dual-arrow-col">
-      <div class="big-arrow-stem rna"></div><div class="big-arrow-head rna"></div>
+  <div class="connector">&#8595;</div>
+
+  <!-- ═══ STAGE 1 ═══ -->
+  <div class="stage">
+    <div class="stage-head">
+      <span class="stage-num rna">STAGE 1</span>
+      <span class="stage-title">RNA z-scores &mdash; Robust Lineage Conditioning + Stouffer Combination</span>
+      <span class="stage-kpi">23,977,580 rows &middot; 16,060 genes &middot; 1,493 lines</span>
     </div>
-    <div class="dual-arrow-col">
-      <div class="big-arrow-stem prot"></div><div class="big-arrow-head prot"></div>
-    </div>
-  </div>
+    <div class="stage-body">
+      <div class="label">Robust z-score within lineage (median / MAD)</div>
+      <p>Each source is z-scored within its lineage group using median and normalised MAD. Resistant to the outliers (skew &minus;4.54, excess kurtosis &approx;78) typical in RNA expression. Lines with fewer than 5 peers in a lineage (MIN_PEERS = 5) receive NaN and are excluded from downstream combination for that source.</p>
+      <div class="math-block rna">z_ig = ( x_ig &minus; median_L ) / max( MAD_L &times; 1.4826 ,  0.384 )</div>
+      <p class="note">MAD floor 0.384 calibrated against shared transcriptomics notebook &middot; MIN_PEERS = 5</p>
 
-  <div class="section">
-    <div class="stage-label">Stage 1 — Scale standardisation (per source)</div>
-    <div class="transform-row">
-      <div class="transform-block rna">
-        <div class="tx-title">RNA: auto-detected log transform</div>
-        <div class="tx-formula">maybe_log(v):
-  if max(v) &gt; 25 or min(v) &lt; -10:
-    → log₂(clip(v, 0) + 1)
-  else:
-    → v unchanged</div>
-        <div class="tx-note">DepMap arrives log₂ — no change. HPA nTPM (linear, median ≈ 12) and GEO warehouse values (linear, median ≈ 489) are both transformed. Scale detected <em>per source</em>, not pooled.</div>
+      <div class="warn-box">
+        <div class="warn-head">Limitation &mdash; silence-floor interaction</div>
+        <p>When a gene is silent across a lineage, MAD &rarr; 0 and gets floored to 0.384. Any small expression above the lineage median then produces a large z-score (e.g., 0.5 log&#8322; units above median &rarr; z = 1.3). Genes that are genuinely unexpressed in a tissue type can appear artificially variable. This inflates confidence for pairs where the gene is biologically off; it is the same signal-noise confound that MAD-based outlier detection was designed to suppress, not eliminate.</p>
       </div>
-      <div class="transform-block prot">
-        <div class="tx-title">Protein: already on log scale</div>
-        <div class="tx-formula">ProCAN: log₂ intensity, range [-5, +15]
-CCLE:   log-ratio,    range [-11, +5]
 
-→ no transform applied</div>
-        <div class="tx-note">Offset between platforms (~3.5 units) is <em>irrelevant</em> — the within-lineage z-score subtracts each source's own median, so the absolute offset cancels in the next stage.</div>
-      </div>
-    </div>
-  </div>
+      <div class="label">Stouffer combination across sources</div>
+      <p>Sources weighted by square-root panel size. The shrinkage correction <strong>multiplies</strong> z_raw by &radic;(n_observed/n_total) &lt; 1, pulling sparse-source pairs toward zero beyond what the Stouffer weights already capture. At n_observed = 1 of n_total = 3: z_t = z_raw &times; &radic;(1/3) &asymp; 0.577 &times; z_raw. This is an <em>additional epistemic discount</em> on top of the standard weighted combination; it lacks a formal derivation but is a documented conservative design choice.</p>
+      <div class="math-block rna">z_raw = &#8721;&#7522; ( &radic;n&#7522; &middot; z&#7522; ) / &radic; &#8721;&#7522; n&#7522;       (standard weighted Stouffer)</div>
+      <div class="math-block rna">z_t   = z_raw &times; &radic;(n_observed / n_total)    &isin; [0, 1) for sparse pairs</div>
+      <p class="note">Note: &radic;(n_obs/n_tot) is computed as dividing by &radic;(n_tot/n_obs). The direction is confirmed: z_t &lt; z_raw when n_obs &lt; n_tot &mdash; shrinks, not amplifies.</p>
 
-  <!-- ══════════════════════════════════════════════════════════════════
-       STAGE 2 — LINEAGE-CONDITIONED ROBUST Z-SCORE
-  ═══════════════════════════════════════════════════════════════════ -->
-  <div class="dual-arrow-row">
-    <div class="dual-arrow-col"><div class="big-arrow-stem rna"></div><div class="big-arrow-head rna"></div></div>
-    <div class="dual-arrow-col"><div class="big-arrow-stem prot"></div><div class="big-arrow-head prot"></div></div>
-  </div>
-
-  <div class="section">
-    <div class="stage-label">Stage 2 — Lineage-conditioned robust z-score (within each source × lineage stratum)</div>
-    <div class="transform-row">
-      <div class="transform-block rna">
-        <div class="tx-title">robust_z_matrix — applied per lineage group</div>
-        <div class="tx-formula">for each (source, lineage):
-  med  = nanmedian(X, axis=lines)     # per gene
-  MAD  = nanmedian(|X − med|) × 1.4826
-  MAD  = max(MAD, <em>0.384</em>)          # MAD_FLOOR
-  z    = (X − med) / MAD
-  z[n_valid &lt; <em>5</em>] = NaN            # MIN_PEERS</div>
-        <div class="tx-note">30 lineages across 1,840 model_ids. MAD_FLOOR = 0.384 prevents pathological z-scores when all lines in a lineage express the gene at the same level. MIN_PEERS = 5 suppresses estimates from micro-lineages.</div>
-      </div>
-      <div class="transform-block prot">
-        <div class="tx-title">Same function, same parameters</div>
-        <div class="tx-formula">ProCAN: 30 lineages × 8,186 genes
-CCLE:   30 lineages × 11,715 genes
-
-MAD_FLOOR = 0.384  (identical)
-MIN_PEERS = 5      (identical)</div>
-        <div class="tx-note">Protein z-scores are within-lineage too. A breast cancer line with z = +2 means it has 2.7× the lineage-median deviation above the breast-lineage median for that protein — tissue bias removed.</div>
+      <div class="label">n_sources distribution (unchanged)</div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Sources contributing</th><th>Rows</th><th>Share</th></tr></thead>
+          <tbody>
+            <tr><td>1 (DepMap / HPA / GEO only)</td><td class="val">6,793,380</td><td>28.3%</td></tr>
+            <tr><td>2</td><td class="val">14,437,940</td><td>60.2%</td></tr>
+            <tr><td>3 (all three)</td><td class="val">2,746,260</td><td>11.5%</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════════════
-       STAGE 3 — STOUFFER WITHIN-LAYER COMBINATION
-  ═══════════════════════════════════════════════════════════════════ -->
-  <div class="dual-arrow-row">
-    <div class="dual-arrow-col"><div class="big-arrow-stem rna"></div><div class="big-arrow-head rna"></div></div>
-    <div class="dual-arrow-col"><div class="big-arrow-stem prot"></div><div class="big-arrow-head prot"></div></div>
-  </div>
+  <div class="connector">&#8595;</div>
 
-  <div class="section">
-    <div class="stage-label">Stage 3 — Stouffer meta-analysis within each omics layer</div>
-    <div class="transform-row">
-      <div class="transform-block rna">
-        <div class="tx-title">RNA — 3-source Stouffer</div>
-        <div class="tx-formula">w_src  = √(n_lines this source, this gene)
-wz_sum = Σ(w × z)   over available sources
-z_raw  = wz_sum / √(Σ w²)
-shrink = √(3 / n_available)  if n &lt; 3
-rna_z_t = z_raw / shrink</div>
-        <div class="tx-note">
-          <table class="kish-table">
-            <tr><th>Source</th><th>Lines</th><th>Weight (√n)</th></tr>
-            <tr><td>DepMap</td><td>1,479</td><td>38.5</td></tr>
-            <tr><td>HPA</td>   <td>1,103</td><td>33.2</td></tr>
-            <tr><td>GEO</td>   <td>590</td>  <td>24.3</td></tr>
-          </table>
-          <div style="margin-top:6px">DepMap–HPA ρ=0.812 → Kish n_eff ≈ <em>2.0</em> (not 3)</div>
-        </div>
+  <!-- ═══ STAGE 2 ═══ -->
+  <div class="stage">
+    <div class="stage-head">
+      <span class="stage-num prot">STAGE 2</span>
+      <span class="stage-title">Protein z-scores &mdash; Platform Tier + James&ndash;Stein Shrinkage</span>
+      <span class="stage-kpi">6,017,000 rows &middot; 11,870 genes</span>
+    </div>
+    <div class="stage-body">
+      <div class="label">Platform reliability tier (per-gene Spearman &rho; &mdash; ProCAN vs CCLE)</div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Tier</th><th>Condition</th><th>Treatment</th></tr></thead>
+          <tbody>
+            <tr><td><strong>consistent</strong></td><td>&rho; &ge; 0.5</td><td>Full weight in combination</td></tr>
+            <tr><td><strong>cautious</strong></td><td>&rho; &ge; 0.3</td><td>Down-weighted contribution</td></tr>
+            <tr><td><strong>conflicting</strong></td><td>&rho; &lt; 0.3</td><td>CCLE excluded; ProCAN only</td></tr>
+          </tbody>
+        </table>
       </div>
-      <div class="transform-block prot">
-        <div class="tx-title">Protein — 2-source Stouffer</div>
-        <div class="tx-formula">w_src  = √(n_lines this source, this gene)
-wz_sum = Σ(w × z)   over available sources
-z_raw  = wz_sum / √(Σ w²)
-shrink = √(2 / n_available)  if n &lt; 2
-prot_z_t = z_raw / shrink</div>
-        <div class="tx-note">
-          <table class="kish-table">
-            <tr><th>Source</th><th>Lines</th><th>Weight (√n)</th></tr>
-            <tr><td>ProCAN</td><td>944</td><td>30.7</td></tr>
-            <tr><td>CCLE</td>  <td>375</td><td>19.4</td></tr>
-          </table>
-          <div style="margin-top:6px">ProCAN–CCLE ρ=0.373 → Kish n_eff ≈ <em>1.45</em> (not 2)</div>
-        </div>
+      <p class="note">Known issue: tiering on estimated &rho; selects partly on estimation noise (winner&rsquo;s curse). Split-half test pending.</p>
+
+      <div class="label">James&ndash;Stein shrinkage (corrected: &lambda; decreases with n)</div>
+      <div class="math-block prot">&lambda; = K / (n + K)    K = 30      &lambda; = 0.86 at n=5 &middot; 0.50 at n=30 &middot; 0.09 at n=300</div>
+      <div class="math-block prot">&rho;&#770;_g = &lambda; &middot; &rho;_prior  +  (1&minus;&lambda;) &middot; &rho;_raw        &rho;_prior = 0.373</div>
+
+      <div class="label">Protein-within-RNA residual &mdash; which &rho; is used</div>
+      <p>The &rho;_g used here is the <strong>per-gene Pearson correlation between protein z-score and RNA z-score</strong> across shared cell lines &mdash; the RNA&ndash;protein expression correlation. It is <em>not</em> the platform-agreement &rho; (ProCAN vs CCLE) from the tier step. The two quantities happen to share the same prior (0.373 = median of both), but they are distinct: the platform &rho; measures measurement reproducibility; the RNA&ndash;protein &rho; measures biological covariation between layers. Using the wrong one would remove a biologically irrelevant fraction of protein variance instead of the RNA-shared component.</p>
+      <div class="math-block prot">z_prot_resid = z_prot &minus; &rho;&#770;_g(RNA&ndash;prot) &middot; z_rna</div>
+      <p>The residuals are then re-standardised by global robust z-score across all lines. The standard deviation of z_prot_resid is approximately &radic;(1&minus;&rho;&#178;) &asymp; 0.93 before re-standardisation; the robust-z step brings it back to unit scale.</p>
+
+      <div class="stat-row">
+        <div class="stat"><span class="stat-val">6,017,000</span><span class="stat-key">rows out</span></div>
+        <div class="stat"><span class="stat-val">11,870</span><span class="stat-key">genes with protein</span></div>
+        <div class="stat"><span class="stat-val">0.373</span><span class="stat-key">JS prior = median RNA&ndash;prot &rho;</span></div>
       </div>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════════════
-       INTERMEDIATE OUTPUTS
-  ═══════════════════════════════════════════════════════════════════ -->
-  <div class="dual-arrow-row">
-    <div class="dual-arrow-col"><div class="big-arrow-stem rna"></div><div class="big-arrow-head rna"></div></div>
-    <div class="dual-arrow-col"><div class="big-arrow-stem prot"></div><div class="big-arrow-head prot"></div></div>
-  </div>
+  <div class="connector">&#8595;</div>
 
-  <div class="section">
-    <div class="stage-label">Intermediate outputs — on disk</div>
-    <div class="output-row">
-      <!-- RNA intermediate -->
-      <div class="output-card rna">
-        <div class="output-name">bulk_rna_z.parquet</div>
-        <div class="dim-badge">
-          <span>29,733,972</span><span class="dim-x">rows</span>
-        </div>
-        <div class="stat-row" style="margin-bottom:8px">
-          <span class="stat-label">Shape</span>
-          <span class="stat-val" style="font-size:11px">19,899 genes × 1,501 model_ids</span>
-        </div>
-        <!-- n_sources bar -->
-        <div class="stage-label" style="margin-bottom:4px">n_sources breakdown</div>
-        <div class="nsrc-bar">
-          <div class="nsrc-seg" style="width:27%;background:var(--rna-soft);border:1px solid var(--rna-mid)"></div>
-          <div class="nsrc-seg" style="width:47%;background:var(--rna-mid)"></div>
-          <div class="nsrc-seg" style="width:26%;background:var(--rna)"></div>
-        </div>
-        <div class="nsrc-legend">
-          <span class="nsrc-item"><span class="nsrc-dot" style="background:var(--rna-soft);border:1px solid var(--rna-mid)"></span>1 source: 8.0M (27%)</span>
-          <span class="nsrc-item"><span class="nsrc-dot" style="background:var(--rna-mid)"></span>2 sources: 14.0M (47%)</span>
-          <span class="nsrc-item"><span class="nsrc-dot" style="background:var(--rna)"></span>3 sources: 7.7M (26%)</span>
-        </div>
-      </div>
-
-      <!-- Protein intermediate -->
-      <div class="output-card prot">
-        <div class="output-name">bulk_prot_z.parquet</div>
-        <div class="dim-badge">
-          <span>6,411,267</span><span class="dim-x">rows</span>
-        </div>
-        <div class="stat-row" style="margin-bottom:8px">
-          <span class="stat-label">Shape</span>
-          <span class="stat-val" style="font-size:11px">11,870 genes × 1,014 model_ids</span>
-        </div>
-        <!-- n_sources bar -->
-        <div class="stage-label" style="margin-bottom:4px">n_sources breakdown</div>
-        <div class="nsrc-bar">
-          <div class="nsrc-seg" style="width:79%;background:var(--prot-mid)"></div>
-          <div class="nsrc-seg" style="width:21%;background:var(--prot)"></div>
-        </div>
-        <div class="nsrc-legend">
-          <span class="nsrc-item"><span class="nsrc-dot" style="background:var(--prot-mid)"></span>1 source: 5.1M (79%)</span>
-          <span class="nsrc-item"><span class="nsrc-dot" style="background:var(--prot)"></span>2 sources: 1.3M (21%)</span>
-        </div>
-        <div style="margin-top:8px;font-size:11px;color:var(--warn)">⚠ 79% single-platform — prot_z shrunk by √2 for these</div>
-      </div>
+  <!-- ═══ STAGE 3 ═══ -->
+  <div class="stage">
+    <div class="stage-head">
+      <span class="stage-num alt">STAGE 3</span>
+      <span class="stage-title">Alteration Scoring &mdash; Mutations, Fusions, Copy-Number</span>
+      <span class="stage-kpi">632K + 144K + 117K pairs</span>
     </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════════════════
-       STAGE 4 — CROSS-LAYER CORRELATION
-  ═══════════════════════════════════════════════════════════════════ -->
-  <div class="merge-indicator">
-    <div class="merge-line"></div>
-    <div class="merge-diamond"></div>
-    <div class="merge-line right"></div>
-  </div>
-
-  <div class="section">
-    <div class="stage-label">Stage 4 — Cross-layer correlation structure (known before combining)</div>
-    <div class="corr-grid">
-      <div class="corr-card">
-        <div class="corr-pair">DepMap ↔ HPA (RNA–RNA)</div>
-        <div class="corr-val hi">ρ = 0.812</div>
-        <div class="corr-desc">Measured on shared genes. High — same underlying biology, similar sequencing protocols. Kish n_eff = 2/(1+0.812) ≈ <em>1.10</em> for this pair alone; GEO adds coverage but at lower ρ.</div>
-      </div>
-      <div class="corr-card">
-        <div class="corr-pair">ProCAN ↔ CCLE (Prot–Prot)</div>
-        <div class="corr-val mid">ρ = 0.373</div>
-        <div class="corr-desc">Median per-protein Spearman, 291 shared lines (test_run_proteomics_platform_overlap.py). Platform effect (DIA-MS vs TMT) is real. Kish n_eff = 2/(1+0.373) ≈ <em>1.45</em>.</div>
-      </div>
-      <div class="corr-card">
-        <div class="corr-pair">RNA ↔ Protein (cross-layer)</div>
-        <div class="corr-val lo">ρ ≈ 0.37–0.46</div>
-        <div class="corr-desc">Literature range for cell lines. Per-gene ρ estimated from overlap; shrunk toward <em>0.373</em> (James–Stein) when n_overlap &lt; 30. Orthogonalisation corrects for this.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════════════════
-       STAGE 5 — ORTHOGONAL COMBINATION (CELL 7i)
-  ═══════════════════════════════════════════════════════════════════ -->
-  <div class="big-arrow" style="margin:4px auto">
-    <div class="big-arrow-stem combo" style="height:20px"></div>
-    <div class="big-arrow-head combo"></div>
-  </div>
-
-  <div class="section">
-    <div class="stage-label">Stage 5 — Orthogonal RNA-protein combination (Cell 7i)</div>
-    <div class="combo-section">
-      <div class="combo-title">Three-step orthogonal combination → core_z</div>
-      <div class="combo-steps">
-        <div class="combo-step">
-          <div class="step-num">STEP 1</div>
-          <div class="step-title">Per-gene ρ estimation</div>
-          <div class="step-formula">For each gene with both layers:
-r = Pearson(rna_z, prot_z)
-  over overlapping lines
-
-λ = 30 / (n_overlap + 30)
-ρ_g = λ·0.373 + (1-λ)·r
-
-Prior: ρ₀ = 0.373</div>
+    <div class="stage-body">
+      <div class="two-col">
+        <div>
+          <div class="label">Mutations &mdash; Hill functions + Noisy-OR + clip</div>
+          <div class="math-block alt">hill(x, p0, k) = x&#7486; / (x&#7486; + p0&#7486;)</div>
+          <div class="math-block alt">p_base = 1&minus;(1&minus;p_VEP)(1&minus;p_path)(1&minus;p_burden)</div>
+          <div class="math-block alt">p_mut  = clip( p_base + 0.15&middot;driver_flag , 1.0 )</div>
+          <div class="warn-box">
+            <div class="warn-head">Limitation &mdash; p_burden / gene-length confound</div>
+            <p>p_burden counts variants per (gene, line), capped at 5. Long genes accumulate more neutral variants under a neutral mutation rate: TTN, MUC16, OBSCN top mutation-frequency lists regardless of selection. Without normalisation for coding length and trinucleotide context (MutSigCV-style), p_burden is partly a proxy for gene length. Hypermutant lines (MSI, POLE-mutant) will saturate p_burden across most genes, enriching those lines in HIGH tier for reasons unrelated to any specific gene.</p>
+          </div>
+          <div class="warn-box">
+            <div class="warn-head">Limitation &mdash; Noisy-OR channel dependence</div>
+            <p>ClinVar/COSMIC pathogenicity (p_path) is partially derived from consequence class (p_VEP). The channels are not independent; Noisy-OR inflates p_base upward. Mutual information between channels has not been measured.</p>
+          </div>
+          <div class="stat-row"><div class="stat"><span class="stat-val">632,000</span><span class="stat-key">mutation pairs</span></div></div>
         </div>
-        <div class="combo-step">
-          <div class="step-num">STEP 2</div>
-          <div class="step-title">Partial residualisation</div>
-          <div class="step-formula">prot_resid =
-  prot_z − ρ_g × rna_z
+        <div>
+          <div class="label">Fusions &mdash; Binary &times; Confidence</div>
+          <p>Score is 0 when no fusion is detected. An unassayed line and an assayed fusion-negative line are indistinguishable.</p>
+          <div class="math-block alt">p_fusion = conf_weight &times; 1[fusion detected]</div>
+          <div class="stat-row"><div class="stat"><span class="stat-val">144,000</span><span class="stat-key">fusion pairs</span></div></div>
 
-prot_resid_z =
-  prot_resid / √(1 − ρ_g²)
-
-→ unique protein signal
-  (post-transcriptional)</div>
-        </div>
-        <div class="combo-step">
-          <div class="step-num">STEP 3</div>
-          <div class="step-title">Weighted combination</div>
-          <div class="step-formula">core_z =
-  (W_RNA × rna_z
-   + W_PROT × prot_resid_z)
-  / √(W_RNA² + W_PROT²)
-
-core_score = Φ(core_z)</div>
-        </div>
-      </div>
-      <div class="weight-row">
-        <div class="weight-chip">
-          <div class="weight-label">W_RNA</div>
-          <div class="weight-val">1.414</div>
-          <div class="weight-sub">= √(Kish n_eff 2.0)</div>
-        </div>
-        <div class="weight-chip">
-          <div class="weight-label">W_PROT</div>
-          <div class="weight-val">1.204</div>
-          <div class="weight-sub">= √(Kish n_eff 1.45)</div>
-        </div>
-        <div class="weight-chip">
-          <div class="weight-label">Denominator</div>
-          <div class="weight-val">1.838</div>
-          <div class="weight-sub">= √(W_RNA² + W_PROT²)</div>
-        </div>
-        <div class="weight-chip">
-          <div class="weight-label">Φ(z) at z=2</div>
-          <div class="weight-val">0.977</div>
-          <div class="weight-sub">standard normal CDF</div>
-        </div>
-        <div class="weight-chip">
-          <div class="weight-label">Φ(z) at z=4</div>
-          <div class="weight-val">0.99997</div>
-          <div class="weight-sub">not 0.99 like rank</div>
+          <div class="label" style="margin-top:.9rem">CNA &mdash; Absolute CN Thresholds</div>
+          <div class="math-block alt">amp:  TOTAL_CN &gt; 2.5  AND role &isin; {oncogene, both}</div>
+          <div class="math-block alt">del:  TOTAL_CN &lt; 1.5  AND role &isin; {tsg, both}</div>
+          <div class="warn-box">
+            <div class="warn-head">Limitation &mdash; no ploidy correction</div>
+            <p>Fixed absolute-CN thresholds penalise aneuploid lines: a tetraploid (ploidy=4) needs CN &gt; 2.5 to be called amplified, which is actually a relative deletion. Correction requires subtracting expected CN (proportional to ploidy) before thresholding. Ploidy data not currently in the warehouse.</p>
+          </div>
+          <div class="warn-box">
+            <div class="warn-head">Limitation &mdash; measurement flag absent</div>
+            <p>A line never profiled for CNA receives <code>has_cna_alteration&nbsp;=&nbsp;False</code> (left-join fill). Unassayed and assayed-negative are indistinguishable throughout the pipeline.</p>
+          </div>
+          <div class="stat-row"><div class="stat"><span class="stat-val">117,000</span><span class="stat-key">CNA flags</span></div></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════════════
-       FINAL OUTPUT
-  ═══════════════════════════════════════════════════════════════════ -->
-  <div class="big-arrow" style="margin:4px auto">
-    <div class="big-arrow-stem combo" style="height:20px"></div>
-    <div class="big-arrow-head combo"></div>
+  <div class="connector">&#8595;</div>
+
+  <!-- ═══ STAGE 4 ═══ -->
+  <div class="stage">
+    <div class="stage-head">
+      <span class="stage-num score">STAGE 4</span>
+      <span class="stage-title">Core Score &mdash; Orthogonal Combination + Per-Pair Fallback</span>
+      <span class="stage-kpi">~24M rows &middot; 16,050 genes &middot; 1,493 lines (all RNA-profiled)</span>
+    </div>
+    <div class="stage-body">
+      <div class="label">Step 1 &mdash; Within-lineage RNA percentile &rarr; z-score (probit)</div>
+      <div class="math-block score">rna_pct   = rank(rna_z, within lineage) / n          &isin; (0, 1)</div>
+      <div class="math-block score">rna_pct_z = &Phi;&sup1;( clip(rna_pct, 0.001, 0.999) )   &isin; (&minus;&infin;, +&infin;)   mean&asymp;0, sd&asymp;1</div>
+
+      <div class="label">Step 2 &mdash; Protein residuals &rarr; global robust z-score</div>
+      <div class="math-block score">prot_resid_z = ( z_prot_resid &minus; median_global ) / MAD_global &times; 1.4826</div>
+      <p class="note">Both rna_pct_z and prot_resid_z are on the same standard normal scale. The combination is commensurable.</p>
+
+      <div class="label">Step 3 &mdash; Orthogonal combination (RNA + Protein, n_layers = 2)</div>
+      <div class="math-block score">W_RNA = &radic;2 = 1.414  (2 independent RNA sources)   W_PROT = &radic;1.45 = 1.204  (n_eff at &rho;=0.373)</div>
+      <div class="math-block score">core_z = ( W_RNA &middot; rna_pct_z + W_PROT &middot; prot_resid_z ) / &radic;3.45</div>
+      <div class="math-block score">core_score = &Phi;(core_z)   &isin; [0, 1]</div>
+      <p class="note">W_RNA = &radic;2 is provisional pending T3 covariance measurement. sd(prot_resid_z) = 1 after robust-z re-standardisation; the &radic;(1&minus;&rho;&#178;) &asymp; 0.93 rescaling is handled by that step.</p>
+
+      <div class="label">Per-pair fallback &mdash; protein-free lines (n_layers = 1)</div>
+      <p>Previously, 1,073 RNA-profiled lines had no protein coverage and received no score for the 10,871 shared genes, losing 48.6% of all RNA pairs. The per-pair fallback recovers these lines: for each protein-capable gene at a line without protein data, the score is the RNA percentile directly (the norm.ppf &rarr; norm.cdf round-trip returns the original percentile). The fallback uses the same formula as RNA-only genes.</p>
+      <div class="math-block score">core_score = &Phi;(&Phi;&sup1;(rna_pct)) = rna_pct   [n_layers = 1 fallback, protein-free lines]</div>
+      <p class="note">These lines have n_layers = 1 even though the gene has protein data &mdash; the flag records data availability for that specific pair, not for the gene in general.</p>
+
+      <div class="label">RNA-only genes (no proteomics platform &mdash; n_layers = 1)</div>
+      <div class="math-block score">core_score = rna_pct   (5,179 genes not in ProCAN or CCLE)</div>
+
+      <div class="stat-row">
+        <div class="stat"><span class="stat-val">~24M</span><span class="stat-key">scored pairs (post-fallback)</span></div>
+        <div class="stat"><span class="stat-val">10,871</span><span class="stat-key">RNA+Prot genes</span></div>
+        <div class="stat"><span class="stat-val">5,179</span><span class="stat-key">RNA-only genes</span></div>
+        <div class="stat"><span class="stat-val">1,493</span><span class="stat-key">lines covered (all RNA lines)</span></div>
+      </div>
+    </div>
   </div>
 
-  <div class="section">
-    <div class="stage-label">Final output</div>
-    <div class="final-output">
-      <div class="final-title">core_score.parquet  (after re-run of 02_core_score.ipynb)</div>
-      <div class="final-grid">
-        <div class="final-stat">
-          <div class="final-stat-label">Genes</div>
-          <div class="final-stat-val">19,899</div>
-          <div class="final-stat-sub">protein-coding + Approved HGNC</div>
+  <div class="connector">&#8595;</div>
+
+  <!-- ═══ STAGE 4b ═══ -->
+  <div class="stage">
+    <div class="stage-head">
+      <span class="stage-num score">STAGE 4b</span>
+      <span class="stage-title">Alteration Flag Routing</span>
+      <span class="stage-kpi">228,115 flagged pairs &middot; &lt;1% post-fallback</span>
+    </div>
+    <div class="stage-body">
+      <div class="math-block score">has_any_alteration = ( p_mutation &gt; 0 )  OR  ( p_fusion &gt; 0 )  OR  ( has_cna_alteration )</div>
+      <p class="note">Currently named <code>has_driver_alteration</code> in schema. Fires on any called variant. Rename to <code>has_any_alteration</code> pending; the &ldquo;driver&rdquo; label is not substantiated by the computation.</p>
+    </div>
+  </div>
+
+  <div class="connector">&#8595;</div>
+
+  <!-- ═══ STAGE 4c ═══ -->
+  <div class="stage">
+    <div class="stage-head">
+      <span class="stage-num score">STAGE 4c</span>
+      <span class="stage-title">Confidence Tiers &mdash; 1.17&times; enrichment for HIGH</span>
+      <span class="stage-kpi">4 tiers</span>
+    </div>
+    <div class="stage-body">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Tier</th><th>Expression rank</th><th>Alteration flag</th><th>Pairs (pre-fallback)</th><th>Share</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tier-chip tier-H">HIGH</span></td><td>top 20%</td><td>Yes</td><td class="val">53,000</td><td>0.4%</td></tr>
+            <tr><td><span class="tier-chip tier-M">MEDIUM</span></td><td>top 20%</td><td>No</td><td class="val">2,400,000</td><td>19.6%</td></tr>
+            <tr><td><span class="tier-chip tier-C">CONTEXT</span></td><td>not top 20%</td><td>Yes</td><td class="val">174,000</td><td>1.4%</td></tr>
+            <tr><td><span class="tier-chip tier-L">LOW</span></td><td>not top 20%</td><td>No</td><td class="val">9,700,000</td><td>78.5%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="warn-box">
+        <div class="warn-head">Finding &mdash; expression rank and alteration are near-orthogonal (1.17&times; enrichment)</div>
+        <p>Expected HIGH under independence = 228K &times; 19.9% = 45,400. Observed = 53,000. Enrichment = 1.17&times;. The tiers cross two near-independent variables; HIGH implies joint evidence but delivers only a 17% enrichment over chance. The near-orthogonality is itself a reportable finding: genomic alteration and transcriptional upregulation are largely independent signals in this DepMap corpus. Use tiers as a filtering convention, not as a probabilistic claim.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="connector">&#8595;</div>
+
+  <!-- ═══ STAGE 5 ═══ -->
+  <div class="stage">
+    <div class="stage-head">
+      <span class="stage-num score">STAGE 5</span>
+      <span class="stage-title">Evidence Ledger &mdash; Audit-Ready Join</span>
+      <span class="stage-kpi">~24M rows &middot; 12 fields per pair</span>
+    </div>
+    <div class="stage-body">
+      <p>All upstream signals joined into a single query-ready parquet. Each row is one gene &times; cell-line pair.</p>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Field</th><th>Source</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td class="val">ensg_id</td><td>Stage 4</td><td>Ensembl gene ID (uppercase)</td></tr>
+            <tr><td class="val">model_id</td><td>Stage 0</td><td>Cell line ACH ID (lowercase ach-)</td></tr>
+            <tr><td class="val">core_score</td><td>Stage 4</td><td>&Phi;(core_z) or rna_pct &isin; [0, 1]</td></tr>
+            <tr><td class="val">n_layers</td><td>Stage 4</td><td>1 = RNA only (gene or line); 2 = RNA + Protein</td></tr>
+            <tr><td class="val">confidence_tier</td><td>Stage 4c</td><td>HIGH / MEDIUM / CONTEXT / LOW</td></tr>
+            <tr><td class="val">has_driver_alteration</td><td>Stage 4b</td><td>OR of any alteration (rename pending)</td></tr>
+            <tr><td class="val">p_mutation</td><td>Stage 3</td><td>Clipped Hill+Noisy-OR product</td></tr>
+            <tr><td class="val">p_fusion</td><td>Stage 3</td><td>Fusion confidence &times; flag</td></tr>
+            <tr><td class="val">has_cna_alteration</td><td>Stage 3</td><td>Absolute CN threshold (no ploidy correction)</td></tr>
+            <tr><td class="val">gene_symbol</td><td>gene_lookup</td><td>HGNC symbol</td></tr>
+            <tr><td class="val">gene_role</td><td>gene_lookup</td><td>oncogene / tsg / both / unknown</td></tr>
+            <tr><td class="val">lineage</td><td>Stage 0</td><td>Tissue lineage from sample_info</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="warn-box">
+        <div class="warn-head">Architecture gap &mdash; no measurement flag / abstention</div>
+        <p>None of the 12 fields records whether a measurement was taken. Unassayed and assayed-negative lines are indistinguishable for all three alteration types. A <code>__measured</code> boolean per alteration type, or a Kleene three-valued output, is the minimum needed to distinguish &ldquo;negative&rdquo; from &ldquo;unknown.&rdquo;</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="connector">&#8595;</div>
+
+  <!-- ═══ QUERY LAYER ═══ -->
+  <div class="stage">
+    <div class="stage-head">
+      <span class="stage-num query">QUERY</span>
+      <span class="stage-title">CLI Query Layer &mdash; Four Command Modes</span>
+      <span class="stage-kpi">cli.py</span>
+    </div>
+    <div class="stage-body">
+      <div class="query-grid">
+        <div class="query-card">
+          <div class="query-cmd">gene &lt;GENE&gt;</div>
+          <div class="query-formula">rank by core_score desc</div>
+          <div class="query-desc">Top-30 cell lines. ACH ID &middot; name &middot; score &middot; tier. Accepts symbol or ENSG.</div>
         </div>
-        <div class="final-stat">
-          <div class="final-stat-label">Cell lines (RNA)</div>
-          <div class="final-stat-val">1,501</div>
-          <div class="final-stat-sub">DepMap ∪ HPA ∪ GEO</div>
+        <div class="query-card">
+          <div class="query-cmd">gene &lt;GENE&gt; &lt;ACH-ID&gt;</div>
+          <div class="query-formula">detail: one gene &times; cell line</div>
+          <div class="query-desc">Full metadata: score, tier, rank, n_layers, alteration fields, lineage, disease, sex, age, growth pattern.</div>
         </div>
-        <div class="final-stat">
-          <div class="final-stat-label">Cell lines (Prot)</div>
-          <div class="final-stat-val">1,014</div>
-          <div class="final-stat-sub">ProCAN ∪ CCLE</div>
+        <div class="query-card">
+          <div class="query-cmd">genes A B [C &hellip;]</div>
+          <div class="query-formula">joint = min(score_A, score_B, &hellip;)</div>
+          <div class="query-desc">Co-selection. G&ouml;del t-norm (weakest-link AND). Floor = 0.50 before ranking.</div>
         </div>
-        <div class="final-stat">
-          <div class="final-stat-label">Score range</div>
-          <div class="final-stat-val">(0, 1)</div>
-          <div class="final-stat-sub">Φ(core_z), not rank</div>
+        <div class="query-card">
+          <div class="query-cmd">exclude A B</div>
+          <div class="query-formula">selectivity = score_A &times; (1 &minus; score_B)</div>
+          <div class="query-desc">Selectivity query. Product form &mdash; &Lstrok;ukasiewicz-style, different from the min() operator used in genes. Consistent with different semantics (exclusion vs conjunction).</div>
         </div>
       </div>
-      <div class="stage-label" style="margin-bottom:6px">n_layers stratum (determines stratum_rank grouping)</div>
-      <div class="nlayers-row">
-        <div class="nlayer-box">
-          <div class="nlayer-n n2">n_layers = 2</div>
-          <div class="nlayer-desc">Both RNA and protein measured.<br>RNA + orthogonal protein signal combined.</div>
+      <div class="warn-box" style="margin-top:.75rem">
+        <div class="warn-head">Limitation &mdash; min vs product operator inconsistency</div>
+        <p>The <code>genes</code> command uses min() (G&ouml;del t-norm: zero if either gene is zero). The <code>exclude</code> command uses a product form (multiplicative penalty). These are not parallel: a gene scoring 0.5 contributes differently to a conjunction than to an exclusion. The asymmetry is a documented design choice, not a bug, but users should not expect the score scales to be comparable across commands.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ABSENT COMPONENTS ═══ -->
+  <div class="stage" style="border-color:var(--warn-border)">
+    <div class="stage-head" style="background:var(--warn-bg);border-color:var(--warn-border)">
+      <span class="stage-num" style="background:var(--warn-bg);color:var(--warn);border-color:var(--warn-border)">ABSENT</span>
+      <span class="stage-title" style="color:var(--warn)">Components with validated support &mdash; not yet integrated</span>
+    </div>
+    <div class="stage-body">
+      <div class="two-col">
+        <div>
+          <div class="label">Cell-line similarity graph</div>
+          <p>Validated at &rho; = 0.68 for RNA-based tissue lookup; built in <code>cell_similarity/</code> but not connected to the scoring pipeline. Would enable similarity-weighted score propagation to lines with sparse direct measurements.</p>
         </div>
-        <div class="nlayer-box">
-          <div class="nlayer-n n1">n_layers = 1</div>
-          <div class="nlayer-desc">One omics layer only.<br>core_score = Φ(rna_z_t) or Φ(prot_z_t).</div>
-        </div>
-        <div class="nlayer-box">
-          <div class="nlayer-n n0">n_layers = 0</div>
-          <div class="nlayer-desc">No data for this (gene, line) pair.<br>core_score = NaN.</div>
+        <div>
+          <div class="label">Kleene filter (abstention logic)</div>
+          <p>Validated at 80.9% agreement. Would output UNKNOWN for pairs where coverage is insufficient to distinguish absent expression from absent data. Currently every pair receives a numeric score regardless of data quality.</p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════════════
-       GAINS / LOSSES AUDIT
-  ═══════════════════════════════════════════════════════════════════ -->
-  <div class="audit-section">
-    <h2 class="audit-title">Information audit — gains and losses per stage</h2>
-    <p class="audit-sub">Every transformation preserves some information and discards some. This table makes that explicit so each trade-off is a deliberate design decision, not a silent side-effect.</p>
-
-    <div style="overflow-x:auto">
-    <table class="audit-table">
-      <thead>
-        <tr>
-          <th style="width:120px">Stage</th>
-          <th style="width:160px">Layer</th>
-          <th>What you gain</th>
-          <th>What you lose</th>
-          <th>Statistical justification</th>
-        </tr>
-      </thead>
-      <tbody>
-
-        <tr>
-          <td><strong>Scale standardisation</strong></td>
-          <td><span class="step-badge all">All sources</span></td>
-          <td>
-            <div class="pills">
-              <span class="gain-pill">✓ Cross-platform comparability</span>
-              <span class="gain-pill">✓ Single consistent log₂ space</span>
-            </div>
-          </td>
-          <td>
-            <div class="pills">
-              <span class="loss-pill">✗ Absolute expression magnitude (partial)</span>
-              <span class="warn-pill">⚠ log₂(0+1)=0 conflates zero-expression with missing data</span>
-            </div>
-          </td>
-          <td>Log transforms compress heteroscedasticity in count data and bring variance closer to constant across expression levels (Durbin 2002). The +1 pseudocount is standard but loses the zero-inflation structure.</td>
-        </tr>
-
-        <tr>
-          <td><strong>Lineage z-score</strong></td>
-          <td><span class="step-badge all">RNA + Protein</span></td>
-          <td>
-            <div class="pills">
-              <span class="gain-pill">✓ Tissue-of-origin bias removed</span>
-              <span class="gain-pill">✓ "High relative to peers" is meaningful</span>
-              <span class="gain-pill">✓ Robust to outliers (MAD vs SD)</span>
-              <span class="gain-pill">✓ Platform offset cancels (median subtracted)</span>
-            </div>
-          </td>
-          <td>
-            <div class="pills">
-              <span class="loss-pill">✗ Absolute expression level gone</span>
-              <span class="loss-pill">✗ Cross-lineage comparisons invalid</span>
-              <span class="warn-pill">⚠ Small lineages (n=5) produce noisy z-scores despite floor</span>
-              <span class="warn-pill">⚠ Lineage label errors propagate silently</span>
-            </div>
-          </td>
-          <td>Within-lineage normalisation is standard in CRISPR fitness screens (Behan 2019). MAD is 4.5× more efficient than SD for contaminated Gaussian data (Hampel 1974). MAD_FLOOR = 0.384 = 1/(2√2·Φ⁻¹(0.75)) matches the calibrated threshold from the shared notebook.</td>
-        </tr>
-
-        <tr>
-          <td><strong>Stouffer combination (RNA)</strong></td>
-          <td><span class="step-badge rna">RNA only</span></td>
-          <td>
-            <div class="pills">
-              <span class="gain-pill">✓ 1,501 model_ids scored (vs 1,479 DepMap-only)</span>
-              <span class="gain-pill">✓ Source reliability encoded in √n weights</span>
-              <span class="gain-pill">✓ Shrinkage penalises single-source uncertainty</span>
-              <span class="gain-pill">✓ n_sources column tracks evidence depth</span>
-            </div>
-          </td>
-          <td>
-            <div class="pills">
-              <span class="loss-pill">✗ Kish correction underestimates true redundancy for 3 correlated sources</span>
-              <span class="warn-pill">⚠ DepMap–HPA ρ=0.812 → only 1.1 independent observations for that pair</span>
-              <span class="warn-pill">⚠ GEO probes are microarray — different noise model than RNA-seq</span>
-            </div>
-          </td>
-          <td>Stouffer's method (fixed-effects meta-analysis) is BLUE under normality when weights equal √n (Hedges &amp; Olkin 1985). The Kish design effect correction, n_eff = k/(1+(k-1)·ρ̄), adjusts for between-source correlation but assumes uniform pairwise ρ, which is a simplification here.</td>
-        </tr>
-
-        <tr>
-          <td><strong>Stouffer combination (Protein)</strong></td>
-          <td><span class="step-badge prot">Protein only</span></td>
-          <td>
-            <div class="pills">
-              <span class="gain-pill">✓ 1,014 model_ids scored (vs 375 CCLE-only)</span>
-              <span class="gain-pill">✓ 21% of (gene, line) pairs have two-platform confirmation</span>
-            </div>
-          </td>
-          <td>
-            <div class="pills">
-              <span class="loss-pill">✗ 79% of pairs are single-platform — penalised by √2 shrinkage</span>
-              <span class="warn-pill">⚠ ProCAN–CCLE ρ=0.373 means only 1.45 effective observations even at best</span>
-              <span class="warn-pill">⚠ Isoform ambiguity: 232 UniProt accessions unmappable to ENSG</span>
-            </div>
-          </td>
-          <td>Platform ρ=0.373 is in the "merge with caution" range per the internal test. The Stouffer shrinkage factor √(2/1)=1.41 reduces single-platform z-scores by ~30%, which is the correct conservative approach under uncertainty about platform reproducibility.</td>
-        </tr>
-
-        <tr>
-          <td><strong>Per-gene ρ estimation</strong></td>
-          <td><span class="step-badge combo">Cross-layer</span></td>
-          <td>
-            <div class="pills">
-              <span class="gain-pill">✓ Gene-specific correlation accounted for</span>
-              <span class="gain-pill">✓ James–Stein shrinkage prevents overfitting sparse overlaps</span>
-            </div>
-          </td>
-          <td>
-            <div class="pills">
-              <span class="loss-pill">✗ ρ estimated with error (Pearson on ≤375 lines for CCLE genes)</span>
-              <span class="warn-pill">⚠ RNA-only genes use prior ρ=0.373 — no empirical estimate possible</span>
-              <span class="warn-pill">⚠ ρ assumed stationary across lineages</span>
-            </div>
-          </td>
-          <td>James–Stein shrinkage λ = n_min/(n+n_min) with n_min=30 is a standard empirical Bayes regularisation. Genes with n_overlap ≥ 30 receive &lt;50% shrinkage; genes below receive majority-prior scores. This is the same philosophy as MAD_FLOOR — calibrate, don't trust sparse estimates.</td>
-        </tr>
-
-        <tr>
-          <td><strong>Orthogonal combination</strong></td>
-          <td><span class="step-badge combo">Cross-layer</span></td>
-          <td>
-            <div class="pills">
-              <span class="gain-pill">✓ Double-counting of shared RNA-protein variance eliminated</span>
-              <span class="gain-pill">✓ Protein residual captures post-transcriptional regulation</span>
-              <span class="gain-pill">✓ Kish-weighted combination is the BLUE under ρ-corrected assumptions</span>
-              <span class="gain-pill">✓ RNA-protein contradictions reduce core_score (correct)</span>
-            </div>
-          </td>
-          <td>
-            <div class="pills">
-              <span class="loss-pill">✗ At ρ_g → 1, protein contributes nothing (prot_resid_z ≈ 0)</span>
-              <span class="warn-pill">⚠ ρ assumed linear; non-linear RNA–protein dependence not captured</span>
-              <span class="warn-pill">⚠ Cross-lineage ρ variation assumed zero</span>
-            </div>
-          </td>
-          <td>The partial correlation approach is equivalent to hierarchical regression: first fit RNA, then add protein residual. This is the canonical way to combine correlated predictors in a latent variable model. The information added by protein = (1−ρ²) × Var(prot_z) — quantifiable, not assumed.</td>
-        </tr>
-
-        <tr>
-          <td><strong>Φ(core_z) transformation</strong></td>
-          <td><span class="step-badge combo">Final</span></td>
-          <td>
-            <div class="pills">
-              <span class="gain-pill">✓ Score in (0, 1) — compatible with downstream pipeline</span>
-              <span class="gain-pill">✓ Magnitude preserved: z=2 → 0.977, z=4 → 0.99997</span>
-              <span class="gain-pill">✓ Interpretable: probability under standard normal</span>
-            </div>
-          </td>
-          <td>
-            <div class="pills">
-              <span class="loss-pill">✗ Tail compression: z=3 vs z=5 nearly identical (0.9987 vs 0.9999)</span>
-              <span class="warn-pill">⚠ core_z normality assumed — violated by heavy-tailed protein distributions</span>
-            </div>
-          </td>
-          <td>Φ(z) is a monotone bijection — it preserves all ranking information that z-scores contain. Unlike rank(pct=True), distances are preserved in the middle of the distribution where most genes live. The tail compression is a feature for high-confidence callers: extreme outliers (z&gt;3) all score near 1.0, which is appropriate for a "very likely elevated" signal.</td>
-        </tr>
-
-      </tbody>
-    </table>
+  <!-- ═══ KPI SUMMARY ═══ -->
+  <div style="margin-top:2.5rem;border-top:2px solid var(--border);padding-top:1.5rem">
+    <div style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:.85rem">Pipeline KPI Summary &mdash; v1 state</div>
+    <div class="table-wrap">
+      <table class="data-table summary-table">
+        <thead><tr><th>Stage</th><th>Output rows</th><th>Genes</th><th>Key statistic</th></tr></thead>
+        <tbody>
+          <tr><td>0 &mdash; Warehouse</td><td class="val">&mdash;</td><td class="val">16,060</td><td>1,412 DepMap + 81 HPA/GEO-only = 1,493; HPA is cell-line data</td></tr>
+          <tr><td>1 &mdash; RNA z-scores</td><td class="val">23,977,580</td><td class="val">16,060</td><td>Median/MAD; floor 0.384; MIN_PEERS=5; 1,493 lines (Cartesian product)</td></tr>
+          <tr><td>2 &mdash; Protein z-scores</td><td class="val">6,017,000</td><td class="val">11,870</td><td>JS &lambda;=K/(n+K) K=30; residual = RNA&ndash;prot &rho;, not platform &rho;</td></tr>
+          <tr><td>3 &mdash; Alterations</td><td class="val">893,000</td><td class="val">&mdash;</td><td>632K mut (Hill+clip) &middot; 144K fus &middot; 117K CNA (no ploidy)</td></tr>
+          <tr><td>4 &mdash; Core score</td><td class="val">~24M</td><td class="val">16,050</td><td>Per-pair fallback recovers 1,073 lines; all 1,493 RNA lines covered</td></tr>
+          <tr><td>4b &mdash; Flag routing</td><td class="val">228,115</td><td class="val">&mdash;</td><td>&lt;1% post-fallback; naming &ldquo;driver&rdquo; overstates content</td></tr>
+          <tr><td>4c &mdash; Tiers</td><td class="val">~24M</td><td class="val">&mdash;</td><td>HIGH 1.17&times; chance; expression &perp; alteration (interesting finding)</td></tr>
+          <tr><td>5 &mdash; Evidence ledger</td><td class="val">~24M</td><td class="val">16,050</td><td>No measurement flag; Kleene absent; rename pending</td></tr>
+        </tbody>
+      </table>
     </div>
-  </div>
-
-  <!-- ── footnote ──────────────────────────────────────────────────────── -->
-  <div style="margin-top:40px;padding-top:20px;border-top:1px solid var(--border);font-size:11px;color:var(--text-3);line-height:1.6">
-    <strong style="color:var(--text-2)">Key parameters:</strong>
-    MAD_FLOOR = 0.384 · MIN_PEERS = 5 · N_MIN_RHO = 30 · RHO_PRIOR_CROSS = 0.373 ·
-    W_RNA = √2.0 = 1.414 · W_PROT = √1.45 = 1.204<br>
-    <strong style="color:var(--text-2)">Pipeline files:</strong>
-    <code style="font-family:var(--mono)">05_bulk_rna_scorer.py</code> →
-    <code style="font-family:var(--mono)">06_bulk_protein_scorer.py</code> →
-    <code style="font-family:var(--mono)">02_core_score.ipynb</code> (Cells 7g, 7h, 7i) →
-    <code style="font-family:var(--mono)">core_score.parquet</code>
   </div>
 
 </div>
