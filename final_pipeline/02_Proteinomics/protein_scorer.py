@@ -30,7 +30,6 @@ from config import PROT_Z, PROT_TIER
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "utils"))
 import common as C
 
-N_SOURCES    = 2
 _PROCAN_META = {"gdsc_model_name", "sanger_model_id", "model_id",
                 "matched_via", "n_model_id", "is_ambiguous"}
 
@@ -137,9 +136,7 @@ def run():
     denom  = np.sqrt(agg["w2_sum"].values)
     safe   = denom > 0
     z_raw  = np.where(safe, agg["wz_sum"].values / np.where(safe, denom, 1.0), np.nan)
-    shrink = np.where(agg["n_sources"] < N_SOURCES,
-                      np.sqrt(N_SOURCES / agg["n_sources"]), 1.0)
-    agg["z_t"]       = (z_raw / shrink).astype("float32")
+    agg["z_t"]       = z_raw.astype("float32")
     agg["n_sources"] = agg["n_sources"].astype("int8")
 
     result = agg[["gene_id","model_id","z_t","n_sources"]]

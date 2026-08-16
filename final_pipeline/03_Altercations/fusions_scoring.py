@@ -5,17 +5,24 @@ Scores gene fusions per (gene, cell-line) as p_fusion, a probability of
 functional impact using three evidence channels:
 
   p_conf  — fusion caller confidence (low=1, medium=2, high=3 ordinal)
-  p_ffpm  — FFPM (fragments per fused-gene million) — per-gene percentile rank
-  p_recur — fusion count across samples — per-gene percentile rank
+  p_ffpm  — FFPM (fragments per fused-gene million) — ABSOLUTE scale
+  p_recur — fusion count across samples — ABSOLUTE count scale
 
 Combination: p_base = 1 - (1-p_conf)(1-p_ffpm)(1-p_recur)
              p_fusion = min(p_base + 0.15 * in_frame_flag, 1.0)
 
 Hill function:  hill(x, p0, k) = x^k / (x^k + p0^k)
 Hyperparameters:
-  Conf ordinal   p0 locked to ordinal range; k=1.5
-  FFPM pctl      p0=0.3  k=2.0  (percentile in [0,1])
-  Recur pctl     p0=0.3  k=2.0
+  Conf ordinal   p0=2.0 (half-max at medium); k=1.5
+                 low≈0.26, medium=0.50, high≈0.65
+                 (p0=1.0 set floor at 0.50, making all fusions drivers)
+  FFPM absolute  p0=0.5  k=2.0  (half-max at 0.5 FFPM; median raw=0.08)
+                 Replaces within-gene percentile rank, which inflated
+                 median score to 0.774 regardless of absolute evidence.
+  Recur count    p0=2.0  k=2.0  (half-max at 2 occurrences)
+                 singleton→0.20, seen in 2+→0.50, 5+→0.86
+                 (87% of fusions are singletons; percentile rank made
+                  them all score 0.50+, violating Noisy-OR independence)
   In-frame boost b=0.15
 
 Reads from:  cleaned_track_data/fusions_gene_level.parquet
@@ -50,13 +57,13 @@ def run():
     print(f"fusions_gene_level: {len(df):,} rows x {df.shape[1]} cols")
 
     df = df.copy()
-    df["conf_ord"]   = df["max_confidence"].map(CONF_MAP).astype(float)
-    df["ffpm_pctl"]  = df.groupby("ensg_id")["best_ffpm"].rank(pct=True)
-    df["recur_pctl"] = df.groupby("ensg_id")["fusion_count"].rank(pct=True)
+    df["conf_ord"] = df["max_confidence"].map(CONF_MAP).astype(float)
 
-    df["p_conf"]  = hill(df["conf_ord"],  p0=1.0, k=1.5)
-    df["p_ffpm"]  = hill(df["ffpm_pctl"], p0=0.3, k=2.0)
-    df["p_recur"] = hill(df["recur_pctl"],p0=0.3, k=2.0)
+    # Absolute scales — percentile ranks inflated all fusions to ~0.75+ regardless
+    # of evidence, making Noisy-OR always ≥0.95 and fusion_driver always TRUE.
+    df["p_conf"]  = hill(df["conf_ord"],   p0=2.0, k=1.5)  # half-max at medium; low≈0.26
+    df["p_ffpm"]  = hill(df["best_ffpm"],  p0=0.5, k=2.0)  # half-max at 0.5 FFPM
+    df["p_recur"] = hill(df["fusion_count"], p0=2.0, k=2.0)  # half-max at 2 occurrences
 
     df["conf_scored"]  = df["conf_ord"].notna()
     df["ffpm_scored"]  = df["best_ffpm"].notna()

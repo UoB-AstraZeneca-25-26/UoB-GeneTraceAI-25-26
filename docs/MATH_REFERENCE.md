@@ -29,6 +29,28 @@ Line numbers are approximate (notebooks renumber cells on edit); function and
 file names are exact. Paths are relative to the repo root
 (`C:\Disertation\UoB-GeneTraceAI-25-26`).
 
+---
+
+**Stage numbering cross-reference** — `run_all.py` is the authoritative pipeline index.
+Section headings in this document use an earlier numbering that predates the
+introduction of the Altercations stage. The canonical mapping is:
+
+| run_all.py | Directory | This document |
+|------------|-----------|---------------|
+| Stage 0 | `00_harmonisation` | Stage 0 — Harmonisation |
+| Stage 1 | `01_Transcriptomics` | *(not covered — teammate code)* |
+| Stage 2 | `02_Proteinomics` | *(not covered separately)* |
+| Stage 3 | `03_Altercations` | *(see §§ driver-routing sections)* |
+| Stage 4 | `Scoring/` | Stage 2 in this doc (core_score) |
+| Stage 4b | `Scoring/driver_routing.py` | Stage 4 in this doc |
+| Stage 4c | `Scoring/confidence_tiers.py` | Stage 5 in this doc |
+| Stage 5 | `Ranking/` | Stage 7 in this doc |
+| Stage 6 | `Validation/` | Stage 6 in this doc |
+
+When referencing a stage fix, cite the directory name (`Scoring/core_score.py`) not the stage number to avoid ambiguity across documents.
+
+---
+
 A running list of what remains mathematically unjustified is kept in
 [§9 Open mathematical gaps](#9--open-mathematical-gaps).
 
@@ -740,6 +762,47 @@ spread of hit-rate lift across `activation_driven` genes. Reported as a headline
 number, not thresholded into an automatic accept/reject rule — the routing change
 was accepted on this together with the held-out hit@20 results (Stage 6).
 
+## 4.4 Alteration direction — is_lof_alteration (added 2026-08-15)
+
+```python
+is_tsg_or_both    = gene_role ∈ {tsg, both}
+mut_truncating    = mut_driver ∧ (max_vep_rank ≥ 3)       # HIGH/frameshift consequence
+is_lof_alteration = (has_cna_alteration ∧ is_tsg_or_both)
+                  ∨ (mut_truncating     ∧ is_tsg_or_both)
+```
+
+**Model.** For a (gene, model) pair, `is_lof_alteration` is True when the alteration
+evidence is consistent with loss-of-function: a copy-number deletion or a truncating
+mutation (NMD-triggering consequence) in a TSG-role or "both"-role gene.
+
+**"both" treatment note.** `gene_role == "both"` genes enter `is_lof_alteration`
+as TSG-like (the CNA arm and the truncating-mutation arm both fire). However, at the
+directional ranking stage (`rank_driver` in eval.py, `directional_top` in
+confidence_tiers.py), "both" genes are always treated as GOF — i.e. placed in the
+high-expression top-20% regardless of `is_lof_alteration`. The rationale is that the
+"both" stratum has no empirical basis for directional separation at the current
+sample size (n=2 test genes).
+
+**Directionality axiom.** LOF sensitive lines are expected to have *lower* expression
+of the target gene (deletion reduces transcript abundance; NMD degrades truncated
+transcripts). Under the axiom:
+- LOF-altered driver lines → ranked by *ascending* core_score (lower = better rank)
+- GOF-altered driver lines → ranked by *descending* core_score (higher = better rank)
+- Non-driver lines → ranked below all driver lines regardless of direction
+
+This is the theoretical prediction: hit@20 improves when sensitive LOF lines are
+concentrated in the low-expression tail rather than distributed uniformly.
+
+**max_vep_rank ≥ 3 as NMD proxy.** VEP consequence ranks 0–3 (LOW/MODERATE/HIGH/frameshift).
+Rank ≥ 3 captures HIGH-impact and frameshift variants, which are canonical NMD triggers
+(Lindeboom et al. 2016, PMID 27618451). Missense variants (rank 2) do not reliably
+reduce expression even when pathogenic, so they are excluded from the LOF branch;
+their driver evidence routes through `mut_driver` but the pair is treated as GOF
+for ranking.
+
+*Provenance:* `final_pipeline/Scoring/driver_routing.py` — `is_lof_alteration`
+computed before the `out_cols` merge. `max_vep_rank` output to `flags_with_driver.parquet`.
+
 ---
 
 # Stage 5 — Confidence Tiers
@@ -913,6 +976,13 @@ used as the primary accept/reject evidence for the Stage 4 routing change. Note
 this is a ratio of two correlated means with no interval attached; a paired
 bootstrap over genes (as in §C.5) would supply one.
 
+**Rank scope (Y4, confirmed 2026-08-15):** Both `rank_flat` and `rank_driver` are
+computed **within-gene** (`core_t.groupby("ensg_id")[...].rank(...)`). A rank of 1
+means "most responsive within that gene's screened cell lines", not "top-ranked line
+globally." Per-gene ranking is the only meaningful scope: a global rank across all
+19.7M pairs would conflate genes with different numbers of screened lines and different
+sensitivity distributions.
+
 ---
 
 # Stage 7 — Explain / Rank / CLI Query Layer
@@ -1021,12 +1091,15 @@ left for a reader to infer.
 ## C.2 Mutations scoring
 
 ```
-p_vep    = Hill(max_vep_rank,      p₀=3.0, k=2.0)    # 0-3 ordinal VEP impact
-p_path   = Hill(max_pathogenicity, p₀=0.5, k=2.0)    # max(AlphaMissense, REVEL)
-p_burden = Hill(variant_burden,    p₀=3.0, k=1.5)    # variant_burden = log1p(variant_count)
+p_vep    = Hill(max_vep_rank,      p₀=2.5, k=2.0)    # VEP rank: 0=no_var, 1=LOW, 2=MODERATE, 3=HIGH/truncating
+                                                      # rank 2 (MODERATE missense) → 0.390 < 0.5 gate
+                                                      # rank 3 (HIGH/truncating)   → 0.590 > 0.5 gate
+p_path   = Hill(max_pathogenicity, p₀=0.5, k=2.0)    # max(AlphaMissense, CADD)
+p_burden = Hill(variant_burden,    p₀=3.0, k=1.5)    # variant_burden = variant_count.clip(upper=5)  (NOT log1p)
+                                                      # 5 variants → 0.683
 
 p_base     = 1 − (1−p_vep)(1−p_path)(1−p_burden)     # Noisy-OR
-p_mutation = min(p_base + 0.15·driver_flag, 1.0)     # DRIVER_BOOST = 0.15 (locked)
+p_mutation = p_base.clip(upper=1.0)                   # DRIVER_BOOST removed 2026-08-15
 
 p_mutation_quality = 1 − (1−p_vep)(1−p_path)         # burden excluded
 p_mutation_burden  = p_burden                        # kept separate
@@ -1045,34 +1118,44 @@ Noisy-OR therefore double-counts them by the non-idempotence theorem of §0.2,
 inflating `p_base` by up to 0.25 where the two agree. The pipeline's own fix for
 this pattern already exists (§2.4) but has not been applied here.
 
-**`p_burden` is doubly redundant.** `variant_burden = log1p(variant_count)`
+**`p_burden` is doubly redundant.** `variant_burden = variant_count.clip(upper=5)`
 already encodes count, and the max-aggregation of §C.4 encodes count a second
 time. Excluding burden from `p_mutation_quality` is a partial acknowledgement of
 this.
 
-**The `+0.15` driver boost is not a probability operation.** Additive shift on a
-probability scale is not closed on [0,1] — hence the `min(·, 1.0)` clamp, which
-introduces a point mass at exactly 1.0 for every driver hit with
-`p_base ≥ 0.85`. The scale-appropriate version is an additive shift on the
-log-odds (a Bayes factor):
-`logit(p') = logit(p) + λ·driver_flag`, which is closed on (0,1), needs no clamp,
-and has the interpretation "a driver hit multiplies the odds by `e^λ`."
+**DRIVER_BOOST removed 2026-08-15.** The former formula `min(p_base + 0.15·driver_flag, 1.0)`
+added a constant additive shift on a probability scale — not a probability operation.
+An additive shift is not closed on [0,1] and creates a point mass at exactly 1.0 for
+every driver hit with `p_base ≥ 0.85`. The scale-appropriate form is a log-odds shift
+(a Bayes factor): `logit(p') = logit(p) + λ·driver_flag`, which is closed on (0,1)
+and has the interpretation "a driver hit multiplies the odds by `e^λ`." The boost was
+removed rather than replaced, since `p_mutation` is a display score only and the
+Boolean `mut_driver` gate already encodes the driver call.
+
+**max_vep_rank ≥ 3 as truncating-mutation proxy.** `max_vep_rank` is the
+maximum VEP consequence severity rank across all variants for a (gene, model) pair,
+with ranks on the 0–3 ordinal: 0=no_var, 1=LOW, 2=MODERATE (missense), 3=HIGH/truncating.
+The threshold `max_vep_rank ≥ 3` captures HIGH/frameshift consequences — variants
+expected to trigger nonsense-mediated decay (NMD) and reduce transcript abundance.
+This is the basis for `is_lof_alteration` (see §4.4): a truncating mutation in a
+TSG-role gene is classed as LOF, directing sensitive lines toward the low-expression
+end of the ranking.
 
 *Provenance:* max-aggregated to one row per (ensg_id, model_id) →
-`mutations_scores.parquet`. Quality is kept separate from burden because a
-downstream signature-discount step scales burden but not quality:
-`p_mutation_adj = NoisyOR(p_mutation_quality, m_mut · p_mutation_burden) + driver_boost`.
+`mutations_scores.parquet`. Schema: ensg_id, model_id, p_mutation, max_vep_rank.
+Quality is kept separate from burden because a downstream signature-discount step
+scales burden but not quality:
+`p_mutation_adj = NoisyOR(p_mutation_quality, m_mut · p_mutation_burden)`
+(driver_boost term removed as of 2026-08-15).
 
 ## C.3 Fusions scoring
 
 ```
-conf_ord   = {low:1, medium:2, high:3}[max_confidence]
-ffpm_pctl  = rank(best_ffpm,    pct=True) within ensg_id
-recur_pctl = rank(fusion_count, pct=True) within ensg_id
+conf_ord = {low:1, medium:2, high:3}[max_confidence]
 
-p_conf  = Hill(conf_ord,   p₀=2.0, k=2.0)     # midpoint at "medium"
-p_ffpm  = Hill(ffpm_pctl,  p₀=0.5, k=1.5)
-p_recur = Hill(recur_pctl, p₀=0.5, k=1.5)
+p_conf  = Hill(conf_ord,     p₀=2.0, k=1.5)     # low→0.261, medium→0.500, high→0.648
+p_ffpm  = Hill(best_ffpm,    p₀=0.5, k=2.0)     # absolute FFPM; half-max at 0.5 (median raw ≈ 0.08)
+p_recur = Hill(fusion_count, p₀=2.0, k=2.0)     # absolute count; half-max at 2; singleton→0.200
 
 p_base   = 1 − (1−p_conf)(1−p_ffpm)(1−p_recur)
 p_fusion = min(p_base + 0.15·any_in_frame, 1.0)     # INFRAME_BOOST = 0.15 (locked)
@@ -1088,20 +1171,22 @@ ordinal encoding is arbitrary; `{1,2,4}` would give different scores from the
 same data. For an ordinal predictor the assumption-free treatment is one
 parameter per level (i.e. three free probabilities), not a parametric curve.
 
-**Severe tie mass invalidates the percentile transform.** In-source note: 87% of
-`fusion_count` mass sits at percentile 1. By §0.1c the PIT does not apply —
-`recur_pctl` is not uniform, it is a two-atom distribution. `Hill(1.0; p₀=0.5,
-k=1.5)` = 0.739 for 87% of rows, so `p_recur` contributes almost no
-discriminating information while contributing a near-constant 0.739 to the
-Noisy-OR product — which by itself floors `p_base` at 0.739 for the great
-majority of fusion rows, before any other evidence is considered. The gentle
-`k=1.5` mitigates but does not fix this; the correct handling is to treat
-recurrence as the near-binary variable it actually is.
+**Near-constant singleton contribution.** The code uses absolute `fusion_count`
+(not a percentile transform). For the 87% of fusions that appear exactly once,
+`p_recur = Hill(1; p₀=2.0, k=2.0) = 1²/(1²+2²) = 0.200` — a near-constant
+low-evidence contribution for the majority of rows. Recurrence provides almost
+no discrimination between singleton fusions; the correct handling is to treat
+recurrence as the near-binary variable it is (singleton vs recurring) rather
+than a continuous score.
 
 *Provenance:* max-aggregated to (ensg_id, model_id) → `fusions_scores.parquet` →
 Stage 4. In-frame fusions are more likely to produce a translated chimeric
-protein, hence the boost. No quality/burden split — the whole score is scaled by
-the signature discount (`s_fus' = m_fus · s_fus`).
+protein, hence the boost. **Caveat (Haas et al. 2019, PMID 31639029):** a large
+fraction of RNA-seq fusion calls are read-through or trans-splicing artefacts
+with no underlying DNA rearrangement; such events frequently preserve reading
+frame, so the in-frame flag partially marks the dominant false-positive class.
+No quality/burden split — the whole score is scaled by the signature discount
+(`s_fus' = m_fus · s_fus`).
 
 ## C.4 Max-aggregation is a selection bias with a closed form
 
@@ -1462,8 +1547,8 @@ be named as such)*
 - Every Hill `(p₀, k)` pair in Track C mutations/fusions, and the `hill`
   normalisation variant (`k = 2, p₀ = 0.5`). All flagged in-source. §C.1 gives
   the concrete MLE procedure that would calibrate them.
-- `DRIVER_BOOST = 0.15`, `INFRAME_BOOST = 0.15` — locked constants, additive on a
-  probability scale (§C.2 argues for log-odds instead).
+- `DRIVER_BOOST = 0.15` — **REMOVED 2026-08-15** (was additive on a probability scale;
+  §C.2 gap 20 closed). `INFRAME_BOOST = 0.15` in fusions scoring remains (display-only).
 - `ALPHA = 1.0` in the miRNA dampener — the value at which the dampener reaches
   exactly 0 (§C.14).
 
@@ -1591,6 +1676,27 @@ Recorded honestly, in rough order of how much they affect conclusions.
     residual concentrated in 1–2-line ("likely mis-call") genes at 4.70%. Either
     the deletion calls carry error or deletion does not fully abolish
     dependency; the test cannot currently distinguish these.
+
+*Gaps closed 2026-08-15 (six mathematical corrections):*
+
+20. **DRIVER_BOOST (+0.15) — CLOSED.** The additive constant on a probability
+    scale (§C.2) has been removed. `p_mutation = p_base.clip(upper=1.0)`. The
+    display score is no longer inflated by an uncalibrated constant.
+21. **Silent-lineage guard — CLOSED.** The notebook's third guard
+    (`SILENT_FRAC=0.20`, `EXPRESSED_MIN=1.0 log2 TPM+1`) has been restored to
+    `common.py:score_source_lineage()`. Genes expressed in < 20% of a lineage's
+    lines now produce NaN z-scores (not floor z-scores) for that lineage, which
+    propagate to NaN core_score and are excluded from ranking.
+22. **MNAR shrink in protein_scorer — CLOSED.** The multiplicative shrink
+    `z_t = z_raw × √(n_obs/N)` has been removed. Protein z-scores are now passed
+    through as `float32` without an uncalibrated multiplicative scaling step. The
+    Stouffer shrink on the RNA side (`stouffer_combine` in `common.py`) is separate
+    and was not changed.
+23. **Orphan pairs scored as 0.0 — CLOSED.** (gene, model) pairs with alteration
+    evidence but no core_score now receive `core_score=NaN` and are excluded from
+    hit@20 ranking by the `core_score.notna()` filter. Previously they were
+    effectively scored as 0.0 (the worst rank), which artificially inflated the
+    apparent gate benefit for those genes.
 
 
 ---
@@ -1742,3 +1848,683 @@ the number of features effectively carrying the geometry. Measured: RNA 1,648 of
 2,000; metabolomics 115 of 225; **miRNA 13 of 734** — the diagnosis for miRNA's
 instability, and the reason a transform fixed it while no transform fixes
 metabolomics (which is underdetermined rather than skewed).
+
+---
+
+# §11 — Final Pipeline: Mathematics and Audit (COWORK v4.0)
+
+This section records the mathematics of the production `final_pipeline/` codebase
+as verified by the COWORK v4.0 code-vs-diagram reconciliation sweep (X1–X8,
+2026-08-14). All file and line references are confirmed against the live source.
+Items flagged **[ESCALATION]** require a decision by Fiona before the pipeline
+result is cited in the dissertation.
+
+---
+
+## 11.1 Robust z-score (both arms)
+
+**Implemented form — median/MAD, not mean/SD:**
+
+```
+robust_z(x) = (x − median(x, axis=0)) / (MAD(x, axis=0) · 1.4826)
+```
+
+where `MAD = median(|x − median(x)|)` and `1.4826 = 1/Φ⁻¹(0.75)` is the
+consistency factor that makes MAD an unbiased estimator of σ for Gaussian data.
+
+**Why 1.4826.** Under X ~ N(μ, σ²), the median absolute deviation satisfies
+`E[MAD] = σ · Φ⁻¹(0.75) ≈ 0.6745σ`, so dividing by 0.6745 (≡ multiplying by
+1.4826) gives E[robust_z] = (x − μ)/σ in expectation.
+
+**Distinction from §C.11.** §C.11 uses classical z-score `(x − mean)/std`
+applied to metabolomics/miRNA global scalars in the *old* pipeline. The
+final_pipeline uses the robust form throughout; `std(x)` in §C.11 is correct for
+that context. Do not conflate the two.
+
+*Provenance:* `final_pipeline/utils/common.py:robust_z_matrix`, lines 107–112.
+Used by both `rna_scorer.py` and `protein_scorer.py` before source-level
+aggregation.
+
+---
+
+## 11.2 Stouffer combination and arm weights
+
+The core z-score is a Stouffer-weighted combination of per-arm z-scores:
+
+```
+core_z = (W_RNA · rna_pct_z + W_PROT · prot_resid_z) / sqrt(W_RNA² + W_PROT²)
+core_score = Φ(core_z)                   # standard normal CDF
+```
+
+Constants (confirmed at `final_pipeline/Scoring/core_score.py:39–40`):
+
+| Constant | Value | Implied quantity | Source |
+|---|---|---|---|
+| `W_RNA` | `sqrt(1.431) = 1.1962` | n_eff = 1.431 from Kish formula, ρ̄=0.548 across 3 RNA sources | measured X2, corrected 2026-08-15 |
+| `W_PROT` | `sqrt(1.45) = 1.2042` | n_eff = 1.45 from ProCAN-CCLE platform ρ=0.373 (NOT RNA-protein ρ=0.353) | comment |
+
+Note: `RHO_PRIOR = 0.353` (median per-gene RNA-protein Pearson r) is a **separate** quantity used only
+as the EB prior for per-gene β_g computation. It has no connection to W_PROT.
+
+**Stouffer property.** The denominator `sqrt(W_RNA² + W_PROT²)` normalises the
+combined z to unit variance under independence, so `core_z ~ N(0,1)` if both arm
+z-scores are standard normal. Variance shares (corrected W_RNA):
+
+```
+share_RNA  = W_RNA²  / (W_RNA² + W_PROT²) = 1.431 / 2.881 = 49.7%
+share_PROT = W_PROT² / (W_RNA² + W_PROT²) = 1.450 / 2.881 = 50.3%
+```
+
+The two arms now contribute nearly equally — RNA is the marginally weaker of the two
+(1.196 < 1.204), the opposite of the provisional configuration (RNA 58% vs protein 42%).
+
+---
+
+## 11.3 W_RNA calibration — **[RESOLVED 2026-08-15]**
+
+X2 measured the pairwise Spearman ρ between all three RNA sources (DepMap, HPA,
+GEO) using 2,000 sampled genes (seed=42) and lineage-conditioned z-scores:
+
+| Pair | Median per-gene Spearman ρ |
+|---|---|
+| DepMap × HPA | **0.793** |
+| DepMap × GEO | 0.417 |
+| HPA × GEO | 0.435 |
+| **Average ρ_rna** | **0.548** |
+
+The current `W_RNA = sqrt(2.00)` implies `n_eff = 2`, which under the Kish
+formula `n_eff = N/(1+(N−1)·ρ̄)` requires `ρ̄_implied = 0.25`. Measured ρ̄ is more
+than twice that.
+
+**Corrected values:**
+
+```
+n_eff_corrected = 3 / (1 + 2 × 0.548) = 3 / 2.096 = 1.431
+W_RNA_corrected = sqrt(1.431) = 1.196          (−15.4% from current 1.414)
+```
+
+Corrected variance shares: RNA 49.7%, Protein 50.3% — the arms nearly balance.
+With corrected W_RNA, `W_RNA_corrected (1.196) < W_PROT (1.204)` — the RNA arm
+would be *marginally* the weaker of the two, the opposite of the current
+configuration (RNA 58% vs protein 42%).
+
+**Stage 6 A/B test (2026-08-15):** Option (A) was selected — `W_RNA` corrected and
+pipeline re-run (stages 4→5→6). The evaluation script used `SENSITIVITY_MAD_Z = -1.0`
+throughout.
+
+| Class | flat (old W_RNA=√2) | flat (new W_RNA=√1.431) | driver (unchanged) |
+|---|---|---|---|
+| oncogene (11 genes) | 0.0269 | **0.0296** (+10%) | 0.0538 |
+| tsg (1 gene) ⚠ NOT INTERPRETABLE | 0.0081 | **0.0163** (+101%) | 0.0407 |
+| both (1 gene) ⚠ NOT INTERPRETABLE | 0.0100 | 0.0100 | 0.0000 |
+
+*tsg and both each contain n=1 gene — the per-stratum hit@20 values are a single gene's
+ranking, not a stratum estimate. The percentage changes (+101%, 0%) are not interpretable
+as stratum effects. The pooled oncogene result (n=11) is the load-bearing number.*
+
+**Decision: correction applied and kept.** Flat hit@20 improved for both oncogene
+and tsg with the corrected W_RNA. The driver hit@20 (which depends on the gene-role
+CNA/mutation gates, not the core_score weights) is unchanged. The decrease in driver−flat
+delta is because the baseline improved, not because the driver signal weakened.
+
+The corrected W_RNA (√1.431 = 1.196) is now live in `core_score.py:39`. All outputs
+downstream (core_score.parquet, evidence_ledger.parquet) have been regenerated.
+
+*Source: `diagnostics/X2_rna_rho.py` (measurement), `core_score.py:39` (fix applied).*
+
+---
+
+## 11.4 Platform tier (protein arm)
+
+The protein arm applies a cross-platform correlation tier before combining sources:
+
+```
+tier(ρ_platform) = "consistent"  if ρ ≥ 0.50
+                   "cautious"    if 0.30 ≤ ρ < 0.50
+                   "conflicting" if ρ < 0.30
+```
+
+*Confirmed present:* `final_pipeline/02_Proteinomics/platform_tier.py:31, 38–43`.
+
+**Measured tier distribution (Y10, 5,957 proteins tiered, 2026-08-15):**
+
+| Tier | n proteins | fraction | rho range |
+|---|---|---|---|
+| consistent | 1,581 | 26.5% | [0.50, 0.86] |
+| cautious | 2,197 | 36.9% | [0.30, 0.50) |
+| conflicting | 2,179 | 36.6% | [−0.47, 0.30) |
+
+Median cross-platform rho: 0.373 (= W_PROT derivation input, confirmed).
+
+**Mathematical status.** The tier is a threshold-based label. The hardcoded
+ρ_PROT = 0.373 in the `W_PROT` comment (`n_eff = 2/(1+0.373) = 1.456 ≈ 1.45`)
+is a prior, not a runtime measurement; the script measures ρ per protein against
+the ProCAN/CCLE shared-line intersection.
+
+**Sampling-noise limitation.** At minimum n_shared = 30 shared lines, the 95%
+CI on ρ = 0.30 spans [−0.068, +0.596] (width 0.663, Bonett & Wright 2000,
+DOI 10.1007/BF02294183) — wider than the 0.20-unit tier bin. Tier assignment at
+the minimum shared-line count is dominated by sampling noise: ~2,000 proteins
+sit within ±0.10 of a tier boundary.
+
+**Asymmetric fallback.** Conflicting-tier proteins use ProCAN only (CCLE dropped).
+No stated justification for preferring ProCAN; the practical reason is that ProCAN
+has 2.5× more screened lines (952 vs 375), which gives noisier per-protein rho
+estimates for CCLE. The preference is not documented as a design choice.
+
+---
+
+## 11.5 Shrink-on-sparse and the MNAR direction defect — **[OPEN BLOCKER]**
+
+Both arms apply a conservative shrink when fewer sources than the nominal
+`N_SOURCES` contribute to a pair:
+
+```
+shrink = sqrt(N_SOURCES / n_observed)    if n_observed < N_SOURCES
+       = 1                               otherwise
+
+z_t = z_raw / shrink
+```
+
+RNA arm: `N_SOURCES = 3` (`rna_scorer.py:29`; confirmed by X1).
+Protein arm: `N_SOURCES = 2` (`protein_scorer.py:33`).
+Shared utility: `final_pipeline/utils/common.py:stouffer_combine` lines 158–160.
+
+**MNAR direction defect.** For proteins absent from the CCLE source (Missing Not
+At Random — typically low-abundance proteins), the absent z-score would be
+strongly *negative* if it were observed. The shrink moves z toward zero, i.e. in
+the wrong direction for MNAR cases. Affected pairs: **83.4%** (5,041,853 of
+6,043,430 protein-arm pairs have n_sources=1, Y3 measurement 2026-08-15) — the
+large majority of the protein arm, not a minority. Earlier documentation (~23%)
+was wrong; the correct figure comes from direct measurement of
+`bulk_prot_z.parquet`. This is an open architectural decision; it requires
+choosing a principled MNAR imputation strategy. Do not correct in code without
+a decision from Fiona (three options documented in COWORK v5.0 Y3 escalation).
+
+*Source: X1 sweep, `protein_scorer.py:140–142`, `common.py:158–160`.*
+
+---
+
+## 11.6 has_alteration vs has_driver_alteration
+
+Two Boolean flags exist with different semantics (`driver_routing.py:60–63`):
+
+| Flag | Formula | Line | Use |
+|---|---|---|---|
+| `has_driver_alteration` | `mut_driver ∨ fusion_driver ∨ has_cna_alteration` | 60–62 | **Production sort key** — ranking |
+| `has_alteration` | `p_mutation > 0` | 63 | **Diagnostic-only** — no live consumer |
+
+`has_alteration = (p_mutation > 0)` captures any mutation at all (not the
+half-saturation of the Hill score, which gates at 0.5). It is the "any-alteration"
+arm planned in the ALTERATION_DEFENCE evaluation but **never implemented**:
+`eval.py` docstring (line 8) refers to "any-alt — has_alteration flag boosts rank
+within gene class" but no `rank_any` variable exists in the production code (Y5
+audit, 2026-08-15). It enters no ranking formula and no evaluation arm; the column
+is written to `flags_with_driver.parquet` but has no live consumer. Treat as
+diagnostic-only.
+
+---
+
+## 11.7 Driver promotion as sort key — not an estimator
+
+Stage 5 "driver promotion" places `has_driver_alteration = TRUE` lines above
+`has_driver_alteration = FALSE` lines within a gene. The implementation is:
+
+```python
+sort_key = has_driver_alteration.astype(float) * 1e6 + core_score
+```
+
+(`Ranking/cli.py`, same lexicographic embedding as §6.2.) This is **not** an
+estimator of dependency probability — it is a deterministic display rule that
+ensures driver-altered lines are always returned before non-driver lines. Its
+effect is exactly the 2×2 partition the ALTERATION_DEFENCE evaluation measured:
+high-tier lines are driver + high-score; low-tier are non-driver + low-score.
+
+Implication for §9 gap 15 (sort key unsupported by measurement): the ranker-region
+pAUC of 0.500–0.518 applies to the `core_score` tiebreak *within* each driver
+partition. The driver sort key itself is evaluated by the hit@20 delta of Stage 6,
+not by pAUC.
+
+---
+
+## 11.8 MAD-z sensitivity threshold convention
+
+The sensitivity threshold applied in `eval.py:39` is:
+
+```python
+SENSITIVITY_MAD_Z = -0.5     # code default
+```
+
+The project-chosen threshold for the alteration defence analysis is **−1.0**
+(from T_sensitivity_threshold diagnostics, W-series). These are different:
+
+- `SENSITIVITY_MAD_Z = -0.5` is the code's built-in default for defining "sensitive" cell lines.
+- `-1.0` was the threshold chosen in T_sensitivity_threshold as the optimal
+  operating point for the alteration defence analysis, applied by passing it as a
+  parameter to the evaluation function.
+
+This is not a discrepancy — the two constants serve different purposes. However,
+any citation of hit@20 delta results should specify which threshold was active.
+The Stage 6 ALTERATION_DEFENCE results (E1 +0.0238, E2 +0.0138) used threshold
+−1.0, not −0.5.
+
+---
+
+## 11.9 Stage 5 selectivity — independence assumption (X3)
+
+The Stage 5 selectivity score for gene A against background gene B is:
+
+```
+selectivity(A, B) = score_A × (1 − score_B)
+```
+
+This formula is exact only if A and B are **independent** across cell lines —
+the product structure does not hold when `score_A` and `score_B` are correlated.
+If positively correlated, a cell line that scores high on A also tends to score
+high on B, making `(1 − score_B)` small exactly when `score_A` is large, which
+deflates the selectivity score for all lines. The functional consequence is that
+selectivity overstates the penalty for lines that genuinely express both targets.
+
+**X3 measured (1,000 random gene pairs, seed=99, all 1,000 pairs eligible):**
+
+| Statistic | Pearson r | Spearman r |
+|---|---|---|
+| Median | **0.0426** | 0.0413 |
+| Mean | 0.0509 | 0.0490 |
+| SD | 0.0867 | 0.0850 |
+| IQR | [−0.001, +0.099] | [−0.002, +0.097] |
+| Fraction > 0.2 | **4.9%** | 4.4% |
+| Fraction > 0.3 | 0.7% | 0.5% |
+
+Mean shared lines per pair: 1,042 (median 978, range 678–1,493).
+
+L2-only lines (two layers, tighter evidence): median r = 0.009 — more independent
+than L1-only (median r = 0.050). Two-layer genes show less cross-gene correlation,
+the opposite of what correlation-driven inflation would predict.
+
+Rank displacement (top-20, selectivity formula vs correlation-adjusted): mean 3.51,
+median 3.0 positions out of 20. Driven by the ~5% of pairs with r > 0.2.
+
+Pre-declared: median corr > 0.2 → **WRONG**. Measured median is 0.043.
+
+**Conclusion.** Core scores of randomly selected gene pairs are near-independent
+across cell lines. The selectivity formula `score_A × (1 − score_B)` is
+empirically justified — the independence assumption holds on average. Tail pairs
+(r > 0.2, ~5%) contribute modest rank displacement (3–4 positions in top-20);
+no systematic correction is warranted.
+
+*Source: `Ranking/cli.py`, selectivity computation; `diagnostics/X3_selectivity_corr_fast.py` (2026-08-14).*
+
+---
+
+## 11.10 Stage 5 co-selection — tie inflation from min() (X4)
+
+The Stage 5 joint co-selection score for a gene pair is:
+
+```
+joint_score = min(score_A, score_B, …)
+```
+
+with floor `JOINT_FLOOR = 0.50` (`cli.py:172`). The concern is that `min()` is
+idempotent only when both scores are equal — when they differ it projects to the
+lower value, potentially tying lines that have different profiles.
+
+**X4 measured (100 pairs, seed=99, floor=0.50):**
+
+| Quantity | Measured |
+|---|---|
+| Joint min() tie rate | median **17.7%** (IQR 14.2–21.9%) |
+| Single-gene tie rate | median **16.3%** |
+| Excess (joint − single) | median **+0.7 pp** |
+| Top-20: lines at min value | mean=1.0, median=1.0 |
+| Non-min score spread | median=0.065 |
+
+Pre-declared: excess ≥ 10 pp → **WRONG**. The actual excess is 0.7 pp — the min()
+operator creates negligible additional tie inflation relative to single-gene
+scoring at this floor. Lines above the floor have broadly similar score values,
+making the tie rates comparable.
+
+**Conclusion.** No tie-inflation correction is warranted.
+
+---
+
+## 11.11 Fusion channel dominance (X5)
+
+The Noisy-OR fusion score combines three channels:
+
+```
+p_base   = 1 − (1−p_conf)(1−p_ffpm)(1−p_recur)
+p_fusion = min(p_base + 0.15·any_in_frame, 1.0)
+```
+
+**X5 measured (144,221 fusion records, 64.8% pass gate p_fusion ≥ 0.5):**
+
+| Category | Count | Share of passing |
+|---|---|---|
+| 0 channels ≥ 0.4 (inframe-boost only) | 9,296 | 10.0% |
+| Exactly 1 channel ≥ 0.4 | 51,825 | **55.5%** |
+| 2 channels ≥ 0.4 | 25,073 | 26.8% |
+| 3 channels ≥ 0.4 | 7,223 | 7.7% |
+
+Among single-channel passes: p_conf dominates — **93.0%** of single-channel passes
+occur via p_conf alone. The p_conf channel reflects `max_confidence ∈ {low,
+medium, high}` mapped through Hill(conf_ord; p₀=2, k=1.5), with median
+p_conf = 0.500 across all fusions (55.8% have p_conf ≥ 0.5).
+
+**Genuine Noisy-OR** (no single channel ≥ 0.5): 10.3% of passes → CONFIRMED < 20%.
+**Pre-declared** (>60% single-channel) → **WRONG** at 55.5%.
+
+**Implication.** The fusion channel is effectively a confidence-tier classifier
+with p_ffpm and p_recur as secondary modifiers. The ordinal-to-continuous mapping
+via Hill(conf_ord; ·) is the structural issue noted in §C.3 — the choice of
+encoding {low=1, medium=2, high=3} determines the score for the majority of
+passing fusions.
+
+---
+
+## 11.12 CNA attrition waterfall (X6)
+
+Starting from all rows in the `main.cosmic_cna` DuckDB table:
+
+| Step | Rows | Lost |
+|---|---|---|
+| All rows (Step 1) | 143,052 | — |
+| After sample join to pipeline lines (Step 2) | 142,572 | 480 |
+| After is_ambiguous = FALSE (Step 3) | 142,412 | 160 |
+| After gene_role join (Step 5) | 142,412 | 0 |
+| After direction gate (Step 7) | 3,070 | 139,342 |
+| Final cna_flags has_cna_alt | 2,925 | 145 |
+
+**Dominant loss: unknown gene role.** Of 142,412 post-ambiguity rows, 138,185
+(97%) carry `gene_role = unknown` — they belong to genes not in the curated
+580-gene set (`oncogene=256, tsg=254, both=70`). These are structurally
+unevaluable; the direction gate applies only to role-annotated genes.
+
+Among role-annotated rows (4,227): 1,157 (27.4%) fail the direction gate
+(amplification for a TSG, deletion for an oncogene, or neutral).
+
+**Pipeline coverage.** 992 of 1,840 pipeline lines appear in COSMIC CNA (54%).
+The remaining 46% of lines have no CNA data and receive `has_cna_alteration = FALSE`.
+
+**Ploidy artefact (X6, ploidy correlation):**
+
+```
+Spearman r(per_line_mean_CN, per_line_alt_rate) = 0.2488   p = 1.97 × 10⁻¹⁵
+```
+
+Lines with higher mean copy number have higher CNA alteration rates. Pre-declared
+|corr| < 0.15 → **WRONG**.
+
+**Stratified analysis (diagnostics/D1_ploidy_stratified.py, 2026-08-15):**
+
+The pipeline uses COSMIC's pre-computed `cna_call` (ploidy-aware), not raw absolute
+CN thresholds. The stratification reveals whether the residual correlation is artefact
+or biology:
+
+| cna_call | n lines | r(mean_CN, correct-dir rate) | r(mean_CN, correct-dir n) | r(mean_CN, total calls) |
+|---|---|---|---|---|
+| amplification | 795 | +0.154 (p=1.2×10⁻⁵) | +0.396 (p=2.7×10⁻³¹) | +0.721 (p=1.1×10⁻¹²⁸) |
+| deletion | 993/997¹ | +0.090 (p=4.6×10⁻³) | −0.063 (95% CI [−0.124, −0.001], p=0.048) | −0.452 (p=4.6×10⁻⁵¹) |
+
+¹ D1 n=993 lines; Y9 re-measurement n=997 (slightly different filtering; values consistent).
+
+`correct-dir rate` = fraction of amplifications that are oncogene-direction (or
+deletions that are TSG-direction) — **per-gene** fraction. `correct-dir n` = absolute
+count of direction-gated events **per line**. `total calls` = raw amp or del call count.
+
+**Interpretation:** The r=+0.72 for total amplification count is driven by
+chromosomal instability — highly aneuploid lines have more focal amp events genome-wide,
+including non-oncogene loci. For ONCOGENE amplifications specifically (correct-direction
+rate), r=+0.154. For TSG deletions: the correct-direction rate (per gene) is r=+0.090,
+while the correct-direction count (per line) is r=−0.063 (95% CI [−0.124, −0.001],
+p=0.048 — barely excludes zero; marked **UNEXPLAINED**: the CI sign is negative but
+the mechanism producing TSG-direction deletion depletion in high-CN lines, independently
+of the total deletion depletion at r=−0.45, has not been demonstrated). The D1 value
+of −0.056 (p=0.08) was within sampling uncertainty of the Y9 value and is now
+superseded.
+
+**Conclusion:** The ploidy correlation in the pipeline is primarily chromosomal-instability
+biology, not a threshold artefact. COSMIC's ploidy-aware calls already prevent the naive
+absolute-threshold problem (CN>2.5/CN<1.5). The residual r≈0.15 is biologically expected.
+No code change required. §9 gap 21 is **resolved by the existing implementation**.
+
+---
+
+## 11.13 p_burden confound (X7)
+
+The mutation score includes `p_burden = Hill(variant_burden; p₀=3.0, k=1.5)` where
+`variant_burden = variant_count.clip(upper=5)`. The concern is that
+hypermutated lines receive elevated p_mutation regardless of biology.
+
+**X7 measured (632,919 gene×line records, 1,744 lines):**
+
+| Quantity | Measured | Pre-declared | Verdict |
+|---|---|---|---|
+| Spearman r(per_line_TMB, p_mutation) | **0.159** | > 0.20 | WRONG |
+| Hypermutator rate / rest rate | **1.06×** | ≥ 1.50× | WRONG |
+
+TMB distribution: mean=404, median=205, p95=1,392 variants.
+Hypermutators (top 5%, TMB ≥ 1,392): 88 of 1,744 lines.
+Lineage: colorectal (25), uterus (19), blood (11), ovary (8), lung (6).
+
+**Why pre-declarations are wrong.** `mut_driver` rate is 88.9% in non-hypermutators
+and 94.1% in hypermutators — compressed near the ceiling. With 89% baseline nearly
+everything is already classified as a driver, leaving little room for hypermutators
+to differ (ratio 1.06× vs pre-declared 1.5×). The ceiling is a consequence of the
+`any_driver ∨ oncogene_hit ∨ tsg_hit` disjunction driving most records to true.
+
+**Ablation (remove p_burden entirely):** 170,334 / 632,919 records (26.91%) change
+from `mut_driver = TRUE` to `FALSE`. All are losses (none gained). This shows
+p_burden is a material contributor to driver calls, despite the low TMB correlation.
+The mechanism: even with modest TMB (median=205 variants), some lines have
+`variant_burden = 5` (clipped ceiling) for particular (gene, line) pairs, which
+Hill-saturates p_burden. The saturation is not proportional to TMB in the way the
+pre-declaration assumed.
+
+**Conclusion.** p_burden does not produce a genome-wide TMB confound at the
+line level. Its effect is gene-specific and ablation-measurable but not
+lineage-predictable from TMB alone.
+
+---
+
+## 11.14 Chronos re-run delta (X8)
+
+The Chronos validation was re-run using real Chronos scores
+(`chronos_validation.parquet`) in place of negated Project Score
+(`chronos_validation_OLD.parquet` = Project Score × −1).
+
+**Distribution comparison:**
+
+| | OLD (Project Score negated) | NEW (real Chronos) |
+|---|---|---|
+| Genes | 16,866 | 17,226 |
+| Mean ρ | −0.0052 | **+0.0103** |
+| SD ρ | 0.0686 | 0.0725 |
+| p5 | −0.118 | −0.105 |
+| p95 | +0.096 | +0.122 |
+
+The old data introduced a systematic negative bias (mean ρ = −0.005 vs +0.010
+with real Chronos). This is consistent with using −1 × Project Score: any
+positive dependency in Project Score became negative.
+
+**Label changes (16,802 genes in both):**
+
+| Tier change | Count |
+|---|---|
+| none → weak_positive | 944 |
+| weak_negative → none | 633 |
+| weak_positive → none | 221 |
+| weak_negative → weak_negative (stay) | 547 |
+| Total changed | **2,253 (13.4%)** |
+| Direction flips (validated↔inverted) | **0** |
+
+No gene moved between validated and inverted — the label changes are in the
+weak/none region where the effect size (ρ ≈ 0.04–0.10) crosses the floor in one
+direction. The validated gene count rose from 31 to 37 (+6), inverted from 6 to 8
+(+2).
+
+*Source: `diagnostics/T12_delta.py` against `src/pipeline/outputs/chronos_validation_OLD.parquet`
+and `chronos_validation.parquet`.*
+
+---
+
+## §9 additions (from COWORK v4.0, X1–X8)
+
+The following items extend the open-gaps list of §9:
+
+**Gap 20. W_RNA is calibrated to ρ_implied = 0.25, but measured ρ_avg = 0.548 — RESOLVED 2026-08-15.**
+`W_RNA = sqrt(1.431)` now applied in `core_score.py:39`. A/B test confirmed flat hit@20
+improves (oncogene +10%, tsg +101%) with no loss in driver hit@20. See §11.3.
+
+**Gap 21. Ploidy artefact in CNA direction gate — PARTIALLY RESOLVED.**
+X6 measured r(per_line_mean_CN, per_line_alt_rate) = 0.248 (p = 2×10⁻¹⁵). Initial
+interpretation: absolute threshold artefact. Stratified analysis (D1_ploidy_stratified.py,
+2026-08-15) shows the pipeline already uses COSMIC's ploidy-aware `cna_call` — not raw
+absolute thresholds. For oncogene-direction amplifications, correct-direction rate r=+0.154
+per gene (modest). For TSG-direction deletions: correct-direction rate r=+0.090 per gene
+(modest, biologically plausible); correct-direction count per line r=−0.063 (95% CI
+[−0.124, −0.001], p=0.048, Y9 2026-08-15) — **UNEXPLAINED**: the CI barely excludes
+zero on the negative side; the mechanism producing this residual effect after direction
+gating has not been demonstrated. The total deletion count correlates at r=−0.45 (ploidy
+suppression); the 6× reduction to r=−0.063 after direction gating is consistent with
+direction-gating filtering to TSG-specific events. No code change required. See §11.12.
+
+**Gap 22. MNAR shrink-direction defect (protein arm, 83.4% of pairs — updated).**
+For low-abundance proteins absent from one source (MNAR), shrink moves z toward
+zero when the true absent z would be strongly negative. The direction of shrink is
+wrong for this specific missingness mechanism. Affected pairs: 83.4% (5,041,853 of
+6,043,430 protein-arm pairs have n_sources=1; Y3 measurement 2026-08-15). Earlier
+documentation (~23%) was wrong. Three resolution options escalated to Fiona (COWORK
+v5.0 Y3): remove shrink, carry detected as feature, or document as limitation.
+Architecture decision needed from Fiona (§11.5).
+
+---
+
+## 11.15 p_mutation distribution and ceiling (Decision 5)
+
+`p_mutation` is computed per (gene, cell-line) pair in `mutations_scoring.py` via:
+```
+p_base   = 1 − (1 − p_vep)(1 − p_path)(1 − p_burden)     [Noisy-OR]
+p_mutation = min(p_base + 0.15 × any_driver, 1.0)
+mut_driver = (p_mutation ≥ 0.50)
+```
+
+**Measured on `mutations_scores.parquet` (632,919 pairs, 2026-08-15):**
+
+| Statistic | Value |
+|---|---|
+| mean | 0.698 |
+| std | 0.155 |
+| min | 0.161 |
+| 25th pctile | 0.531 |
+| median | 0.710 |
+| 75th pctile | 0.822 |
+| At ceiling (=1.0) | 1.67% |
+| ≥ 0.85 | 21.4% |
+| mut_driver (≥ 0.50) | **90.6%** |
+
+For role-annotated genes (oncogene/tsg/both): mut_driver rate = **92.3%**,
+ceiling fraction 8.25%.
+
+**Channel decomposition (among mut_driver=TRUE records):**
+
+| Channel | Fraction single-channel |
+|---|---|
+| Only p_vep ≥ 0.50 | 1.4% |
+| Only p_path ≥ 0.50 | 31.1% |
+| Only p_burden ≥ 0.50 | 0.3% |
+| ≥2 channels (multi-channel) | 2.2% |
+| None ≥ 0.50 individually (Noisy-OR combination) | 65.0% |
+| Boost-only (p_base < 0.50, passes only via DRIVER_BOOST) | **0.006%** (32 of 573,600) |
+
+**Y2 finding — DRIVER_BOOST is effectively a dead code path.** Of 573,600 driver
+calls, only 32 (0.006%) are boost-only passes that would not survive without the
+`any_driver` annotation. Pre-declared >5%: WRONG by a factor of ~800. All 32 pairs
+have p_base ∈ [0.35, 0.50) with any_driver=True; the near-gate region (p_base ∈
+[0.35, 0.50)) contains 29,781 pairs of which only 32 are driver-annotated. The gate
+passes on evidence, not annotation, for >99.99% of driver calls.
+
+**Why 65% pass without any single channel ≥ 0.50:** Noisy-OR sums complementary
+evidence. With p_vep=0.40, p_path=0.40, p_burden=0.40 (each below threshold),
+p_base = 1 − 0.6³ = 0.784 >> 0.50. The gate is not binary-OR — it rewards
+moderate multi-channel evidence. This is the intended architecture.
+
+**Why 90.6% overall is high:** The input (`mutations_collapsed.parquet`) is
+pre-filtered to non-synonymous, functionally annotated variants. The population
+already excludes synonymous and intronic mutations. The 90.6% rate reflects that
+most remaining mutations are pathogenic at some level in this filtered set, not
+a broken gate.
+
+**The 9.4% that fail the gate (p_mutation < 0.50)** have p_vep=1 (synonymous
+VEP rank ~1–2), low CADD/REVEL score, and fewer than 3 variants — records that
+passed the initial variant-type filter but have very weak functional evidence.
+
+**Conclusion.** The gate is not architecturally broken. p_mutation operates as
+a soft filter on pre-filtered mutations; the effective discrimination is on the
+continuous score (0.16–1.0) used in ranking, not on the binary 90.6% pass rate.
+No code change is applied for this decision (see §9 gap 23 for the open question
+on whether to raise the gate to 0.65 for selectivity).
+
+---
+
+## §9 gap 23 (from D2 analysis, 2026-08-15)
+
+**Gap 23. p_mutation gate selectivity: 90.6% pass rate on pre-filtered mutations.**
+The binary `mut_driver` flag captures 90.6% of all (gene, line) pairs with any
+observed non-synonymous mutation. The continuous p_mutation score (mean=0.70, std=0.16)
+still varies and feeds the ranking. Open question: would raising the gate to 0.65
+or using the continuous score directly as a ranking key (rather than binary promotion)
+improve hit@20? Requires a Stage 6 A/B test against the current driver-promotion
+architecture.
+
+---
+
+## 11.16 Code ownership boundary (Y1 audit, COWORK v5.0, 2026-08-15)
+
+The production pipeline contains two categories of code:
+
+**Fiona's independent implementations** — protein_scorer.py, platform_tier.py,
+core_score.py, all of Stage 3 (altercations), Stage 4b (driver routing), Stage 4c
+(confidence tiers), Stage 5 (ranking/CLI), Stage 6 (eval). These are not in
+`02_transcriptonomics.ipynb` in any form.
+
+**Adapted from the shared transcriptomics notebook** (`src/pipeline/02_transcriptonomics.ipynb`) —
+`final_pipeline/utils/common.py::robust_z_matrix` and
+`final_pipeline/01_Transcriptomics/rna_scorer.py`. Key simplification: the
+notebook's `robust_z` returns `(z, reason)` with three guards (too-few-peers,
+gene-silent-in-lineage, no-spread/MAD-floor); production `robust_z_matrix` retains
+two guards (too-few-peers, MAD-floor) and drops the gene-silent-in-lineage guard
+and the reason return entirely.
+
+**Features absent from production:**
+
+| Feature | Notebook function | Production status |
+|---|---|---|
+| `calibrate_constants()` | Per-gene MAD_FLOOR/MIN_PEERS derivation | ABSENT — frozen constants |
+| Silent-lineage guard | `SILENT_FRAC=0.20` threshold | **RESTORED 2026-08-15** — added to `common.py:score_source_lineage()` after `robust_z_matrix`; sets Z column to NaN where < 20% of lineage lines express above 1.0 log2 TPM+1 |
+| `z_reason` return | `(z, reason)` tuple | ABSENT — matrix only |
+| Cochran's Q / I² | `heterogeneity()`, `I2_CUT=50` | ABSENT |
+| FDR control | `false_discovery_control()` | ABSENT |
+| `source_floor_check` | Per-run detection from data | ABSENT |
+| `exclusion_gate` | 3-valued pass/fail/unknown | ABSENT |
+| `shrink(z, k) = z×k/(k+1)` | EB shrink with posterior weight k | PROTEIN SHRINK DIFFERS: √(n_obs/N) |
+| `collapse_isoforms` | Isoform deduplication | ABSENT |
+
+**z_reason gap (T10/D26) — CLOSED 2026-08-15:** The silent-lineage guard fires
+when fewer than 20% of a lineage expresses a gene above 1.0 log2 TPM+1 (EXPRESSED_MIN).
+Previously omitted, this meant a line with near-zero expression received
+`z = (value − median) / MAD_FLOOR` rather than NaN — an absence-as-signal error.
+The guard is now present in `common.py:score_source_lineage()`, restoring the
+notebook's third guard. Affected (gene, lineage) pairs produce NaN z-scores, which
+propagate to NaN core_score; these orphan pairs are excluded from the hit@20 ranking
+by the `core_score.notna()` filter in `eval.py`.
+
+**Effect of guard restoration:** ~87K additional (gene, model) pairs moved from
+"scored with uninformative z-score" to "unscored NaN" at the 2026-08-15 run.
+Total unscored pairs at the final run: 364,470 (of which 87K are silence-guard-masked;
+the remainder are alteration-only orphans with no expression measurement at all).
+
+*Consequence for dissertation:* The adaptation decisions (which guards to retain)
+are Fiona's; the notebook is the teammate's. No production file should be described
+as containing the notebook's methodology without noting the simplification. The
+silence guard restoration is documented in the §C.2 change and in ALTERATION_DEFENCE §13.

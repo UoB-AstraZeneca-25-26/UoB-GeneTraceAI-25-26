@@ -4,25 +4,24 @@
 Scores somatic mutations per (gene, cell-line) as a probability of functional
 impact using a Noisy-OR combination of three evidence channels:
 
-  p_vep    — VEP consequence rank (SIFT/PolyPhen: 1=low, 5=high)
+  p_vep    — VEP consequence rank: 0=no_var, 1=LOW, 2=MODERATE, 3=HIGH/truncating
   p_path   — AlphaMissense / CADD pathogenicity score (0-1)
   p_burden — variant count per (gene, cell-line)
 
 Combination: p_base = 1 - (1-p_vep)(1-p_path)(1-p_burden)
-             p_mutation = min(p_base + 0.15 * driver_flag, 1.0)
+             p_mutation = p_base.clip(upper=1.0)
 
 Hill function:  hill(x, p0, k) = x^k / (x^k + p0^k)
 Hyperparameters:
-  VEP     p0=3.0  k=2.0
-  Path    p0=0.5  k=2.0
-  Burden  p0=3.0  k=1.5
-  Driver boost  b=0.15  (oncogene or TSG hit)
+  VEP     p0=2.5  k=2.0  → rank 2 (MODERATE)=0.390 < gate; rank 3 (HIGH/truncating)=0.590 > gate
+  Path    p0=0.5  k=2.0  → pathogenicity 0.71 reaches 0.667
+  Burden  p0=3.0  k=1.5  → 5 variants reaches 0.683
 
 Reads from:  cleaned_track_data/mutations_collapsed.parquet
              reference/gene_lookup.parquet
 Writes to:   final_pipeline/outputs/mutations_scores.parquet
 
-Schema: ensg_id, model_id, p_mutation
+Schema: ensg_id, model_id, p_mutation, max_vep_rank
 """
 import sys
 from pathlib import Path
@@ -33,10 +32,9 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from config import CLEANED, MUTATIONS_SCR
 
-P0_VEP    = 3.0;  K_VEP    = 2.0
+P0_VEP    = 2.5;  K_VEP    = 2.0   # rank 2 (MODERATE) → 0.390 < 0.5 gate; rank 3 (HIGH) → 0.590 > 0.5 gate
 P0_PATH   = 0.5;  K_PATH   = 2.0
 P0_BURDEN = 3.0;  K_BURDEN = 1.5
-DRIVER_BOOST = 0.15
 
 
 def hill(x: pd.Series, p0: float, k: float) -> pd.Series:
@@ -67,17 +65,15 @@ def run():
     p_burden = df["p_burden"].fillna(0.0)
     p_base   = 1.0 - (1.0 - p_vep) * (1.0 - p_path) * (1.0 - p_burden)
 
-    # any_driver already annotated in mutations_collapsed (oncogene hit or TSG hit)
-    driver_flag = df["any_driver"].fillna(False).astype(int)
-
-    df["p_mutation"] = (p_base + DRIVER_BOOST * driver_flag).clip(upper=1.0)
+    df["p_mutation"] = p_base.clip(upper=1.0)
 
     scores = (
-        df.groupby(["ensg_id", "model_id"], sort=False)["p_mutation"]
-        .max()
+        df.groupby(["ensg_id", "model_id"], sort=False)
+        .agg(p_mutation=("p_mutation", "max"), max_vep_rank=("max_vep_rank", "max"))
         .reset_index()
     )
-    scores["model_id"] = scores["model_id"].str.lower()
+    scores["model_id"]    = scores["model_id"].str.lower()
+    scores["max_vep_rank"] = scores["max_vep_rank"].fillna(0).astype(int)
     scores.to_parquet(MUTATIONS_SCR, index=False)
     print(f"Output rows: {len(scores):,}  ->  {MUTATIONS_SCR}")
     print(f"p_mutation: mean={scores.p_mutation.mean():.3f}  median={scores.p_mutation.median():.3f}")

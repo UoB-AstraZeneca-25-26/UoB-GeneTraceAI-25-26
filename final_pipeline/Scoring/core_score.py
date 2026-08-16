@@ -13,9 +13,10 @@ Architecture:
 
 Combination (Cell 7i logic):
   RNA percentile  = rank(rna_z_t, ascending=True) / n  within lineage
-  Prot residual   = prot_z_t - rho_g * rna_z_t        (removes RNA redundancy)
+  Prot residual   = prot_z_t - beta_g * rna_z_t        (OLS residual; beta_g = rho_g * SD_prot/SD_rna)
+  prot_resid_z    = (prot_resid − median) / SD(prot_resid)   per gene  (unit-variance; MAD traded away)
   W_RNA = sqrt(2.0)  [provisional — replace after T3 covariance test]
-  W_PROT = sqrt(1.45)  [2 sources, ProCAN-CCLE rho=0.373 -> n_eff=1.45]
+  W_PROT = sqrt(1.45)  [2 sources, ProCAN-CCLE rho=0.373 -> n_eff=1.45; DISTINCT from RHO_PRIOR=0.353]
   core_z = (W_RNA * rna_pct_z + W_PROT * prot_resid_z) / sqrt(W_RNA^2 + W_PROT^2)
   core_score = Phi(core_z)  [monotone relabelling to [0,1]]
 
@@ -35,13 +36,13 @@ from config import RNA_Z, PROT_Z, PROT_TIER, CORE_SCORE, GENE_DISP
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "utils"))
 import common as C
 
-W_RNA  = np.sqrt(2.00)    # provisional — replace after T3 n_eff measurement
+W_RNA  = np.sqrt(1.431)   # Kish n_eff: N=3 sources, ρ_avg=0.548 → n_eff=3/(1+2×0.548)=1.431; replaces provisional sqrt(2.00)
 W_PROT = np.sqrt(1.45)    # 2 sources, ProCAN-CCLE rho=0.373 -> n_eff = 2/(1+0.373)
 W_NORM = np.sqrt(W_RNA**2 + W_PROT**2)
 
-RHO_PRIOR = 0.373   # global median rho — shrinkage target (Empirical Bayes prior)
+RHO_PRIOR = 0.353   # median per-gene r(prot_z, rna_z) — RNA-protein EB prior
 N_MIN_RHO = 30      # minimum shared lines to estimate per-gene rho
-K_RHO     = 30      # JS pseudo-count: prior/data get equal weight at n = K_RHO
+K_RHO     = 30      # EB pseudo-count: prior/data get equal weight at n = K_RHO
 
 
 def _percentile_within_lineage(z_wide: pd.DataFrame, lineage_map: pd.Series) -> pd.DataFrame:
@@ -83,7 +84,7 @@ def run():
         index=rna_pct.index, columns=rna_pct.columns,
     )
 
-    # ── Protein: per-gene James-Stein rho → residualise against RNA ────────
+    # ── Protein: per-gene empirical Bayes ρ blend → residualise against RNA ─
     genes_both = list(set(rna.gene_id) & set(prot.gene_id))
     merged = prot[prot.gene_id.isin(genes_both)].merge(
         rna[rna.gene_id.isin(genes_both)][["gene_id","model_id","rna_z"]],
@@ -94,29 +95,48 @@ def run():
     for g, grp in merged.groupby("gene_id"):
         if len(grp) < N_MIN_RHO:
             continue
-        # rho_raw is the per-gene Pearson correlation between protein z-score
-        # and RNA z-score across shared cell lines — the RNA-protein expression
-        # correlation. This is NOT the platform-agreement rho (ProCAN vs CCLE)
-        # from platform_tier.py; those are two distinct quantities that happen
-        # to share the same prior value (0.373 = global median of both).
+        # rho_raw: per-gene Pearson r(prot_z, rna_z) across shared lines.
+        # NOTE: this is NOT the platform-agreement rho (ProCAN vs CCLE, W_PROT=√1.45).
+        # Those are distinct quantities; 0.373 applies to W_PROT, 0.353 to this prior.
         rho_raw, _ = stats.pearsonr(grp["prot_z"].fillna(0), grp["rna_z"].fillna(0))
-        n = len(grp)
-        lam = K_RHO / (n + K_RHO)   # decreases with n: more data → less shrinkage toward prior
+        n   = len(grp)
+        lam = K_RHO / (n + K_RHO)   # decreases with n: more data → less shrinkage
         rho_g = lam * RHO_PRIOR + (1 - lam) * rho_raw
-        rho_rows.append({"gene_id": g, "rho_g": rho_g})
+        # β = ρ × SD(Y)/SD(X): the OLS regression coefficient, not the correlation.
+        # β = ρ only when SD(prot_z) = SD(rna_z); they differ substantially here
+        # (measured: SD_rna=1.525, SD_prot=0.951), so using ρ as-is overcorrects by ~1.88×.
+        sd_rna  = grp["rna_z"].std(ddof=1)
+        sd_prot = grp["prot_z"].std(ddof=1)
+        beta_g  = rho_g * (sd_prot / sd_rna) if sd_rna > 0 else rho_g
+        rho_rows.append({"gene_id": g, "rho_g": rho_g, "beta_g": beta_g})
     rho_df = pd.DataFrame(rho_rows)
 
+    # Fallback β for genes with too few shared lines (uses global SD ratio)
+    _sd_rna_global  = merged["rna_z"].std(ddof=1)
+    _sd_prot_global = merged["prot_z"].std(ddof=1)
+    _beta_fallback  = (RHO_PRIOR * (_sd_prot_global / _sd_rna_global)
+                       if _sd_rna_global > 0 else RHO_PRIOR)
+
     merged = merged.merge(rho_df, on="gene_id", how="left")
-    merged["rho_g"] = merged["rho_g"].fillna(RHO_PRIOR)
-    merged["prot_resid"] = merged["prot_z"] - merged["rho_g"] * merged["rna_z"]
+    merged["rho_g"]  = merged["rho_g"].fillna(RHO_PRIOR)
+    merged["beta_g"] = merged["beta_g"].fillna(_beta_fallback)
+    merged["prot_resid"] = merged["prot_z"] - merged["beta_g"] * merged["rna_z"]
 
     prot_resid_wide = merged.pivot(index="model_id", columns="gene_id", values="prot_resid")
 
-    # ── Lineage z-score protein residual ───────────────────────────────────
-    prot_resid_z_wide = pd.DataFrame(
-        C.robust_z_matrix(prot_resid_wide.values),
-        index=prot_resid_wide.index, columns=prot_resid_wide.columns,
-    )
+    # ── Standardise protein residual: (x − median) / SD per gene ──────────
+    # Unit variance is required by the Stouffer weight derivation; both arms
+    # must have SD = 1 at the stratum where tier is decided (within-gene).
+    # A two-step MAD-z → SD-rescale would cancel algebraically:
+    #   (x−med)/(MAD×1.4826) × (MAD×1.4826)/SD(x) = (x−med)/SD(x)
+    # We compute the one-step form directly.  Deliberate trade-off: robustness
+    # (MAD scale) is yielded in favour of unit variance.  MAD_FLOOR no longer
+    # affects the protein path.
+    _prot_med = prot_resid_wide.median(axis=0)
+    _prot_sd  = prot_resid_wide.std(ddof=1, axis=0).clip(lower=1e-6)
+    prot_resid_z_wide = prot_resid_wide.subtract(_prot_med, axis=1).div(_prot_sd, axis=1)
+    print(f"  prot_resid_z SD (post-standardise): "
+          f"mean={prot_resid_z_wide.std(ddof=1).mean():.4f}  (target 1.00)")
 
     # ── Orthogonal combination ──────────────────────────────────────────────
     shared_genes   = list(set(rna_pct_z_wide.columns) & set(prot_resid_z_wide.columns))

@@ -17,6 +17,7 @@ from config import DB
 
 SEED          = 42
 EXPRESSED_MIN = 1.0    # log2(TPM+1) > 1.0 <=> TPM > 1 (HPA/Uhlen 2015)
+SILENT_FRAC   = 0.20   # if < 20% of lineage lines express a gene, z-scores are uninformative
 MAD_FLOOR     = 0.384  # calibrated against the shared transcriptomics notebook
 MIN_PEERS     = 5      # minimum within-(source, lineage) peers for a z-score
 
@@ -123,6 +124,17 @@ def score_source_lineage(wide: pd.DataFrame, gene_ids: list,
     for _, grp in wide.groupby("lineage"):
         X = grp[gene_ids].values.astype(float)
         Z = robust_z_matrix(X)
+        # SILENCE GUARD — added 2026-08-15.
+        # This restores the third guard from the source notebook
+        # (02_transcriptomics.ipynb, robust_z), which was dropped during the
+        # adaptation into robust_z_matrix. SILENT_FRAC = 0.20 and
+        # EXPRESSED_MIN = 1.0 are the notebook's own values.
+        # Placed here because raw log2 expression is not reachable from
+        # core_score.py without a full warehouse batch-fetch loop (the same
+        # loop rna_scorer.py already runs). This is a change inside the
+        # adapted RNA utility layer; it does not modify 02_transcriptomics.ipynb.
+        frac_expressed = np.mean(X > EXPRESSED_MIN, axis=0)
+        Z[:, frac_expressed < SILENT_FRAC] = np.nan
         z_wide = pd.DataFrame(Z, index=grp.index.tolist(), columns=gene_ids)
         try:
             z_long = z_wide.stack(future_stack=True).dropna().reset_index()

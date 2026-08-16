@@ -83,10 +83,10 @@ pred["model_id"] = pred["model_id"].str.lower()
 unknown = pred[pred["class"] == "unknown"][["model_id", "ensg_id", "core_score"]]
 print(f"[{time.time()-t0:.1f}s] unknown-class rows: {len(unknown):,}  genes: {unknown.ensg_id.nunique():,}")
 
-ch = pd.read_parquet(VAL / "chronos_long.parquet")
-ib = pd.read_parquet(VAL / "id_bridge.parquet")
-ch = ch.merge(ib, on="sanger_model_id", how="inner")
-ch["model_id"] = ch["model_id"].str.lower()
+# T12 F1 fix: read real Chronos (from Achilles HDF5 via diagnostics/T12_F1_chronos_fix.py)
+# instead of the old chronos_long.parquet (which was Project Score negated, not Chronos)
+ch = pd.read_parquet(OUTPUTS / "chronos_corrected.parquet")
+# model_id is already lowercase ACH- format; ensg_id is lowercase ENSG
 ch["ensg_id"]  = ch["ensg_id"].str.lower()
 # More negative raw essentiality = more essential -> invert so high chronos_pct = essential
 ch["chronos_pct"] = 1.0 - ch.groupby("ensg_id")["essentiality"].rank(pct=True, method="average")

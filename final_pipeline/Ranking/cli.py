@@ -1,17 +1,6 @@
 """
 Ranking/cli.py  —  GeneTraceAI query interface
 ------------------------------------------------
-Commands:
-  gene    <GENE>                  Rank cell lines (ACH ID | Name | Score)
-  gene    <GENE> <ACH-ID>        Full metadata for a gene + cell line pair
-  genes   <GENE_A> <GENE_B> ...  Co-selection — AND query (min score)
-  exclude <GENE_A> <GENE_B>      Selectivity — GENE_A high, GENE_B low
-
-Examples:
-  python cli.py gene BRAF
-  python cli.py gene BRAF ACH-000001
-  python cli.py genes BRAF KRAS
-  python cli.py exclude BRAF KRAS
 """
 import sys
 from pathlib import Path
@@ -119,7 +108,8 @@ def cmd_gene(args: list) -> None:
         print(f"  Tier:         {row.get('confidence_tier', '?')}")
         print(f"  Rank:         {rank_pos} / {len(sub):,}")
         n_lay = int(row.get("n_layers", 0))
-        print(f"  Data layers:  {n_lay} (RNA + protein if available)")
+        layer_label = "RNA + protein" if n_lay == 2 else "RNA only"
+        print(f"  Data layers:  {n_lay} ({layer_label})")
         print(f"  Driver alt:   {'Yes' if row.get('has_driver_alteration', False) else 'No'}")
         if float(row.get("p_mutation", 0)) > 0:
             print(f"  p_mutation:   {float(row['p_mutation']):.3f}")
