@@ -99,3 +99,49 @@ score at the floor (0.07th percentile). Absence of expression is the informative
 signal for tissue-restricted genes; the floor is the correct placement.
 
 **Implemented in**: `02_core_score.ipynb` Cell 7b (expr_pct) and Cell 9b (stratum_rank).
+
+---
+
+## S5 — "NAN" cell-line name bug: negative finding (2026-08-16)
+
+### Investigation
+
+The CoWork spec (v7.0 task S5) asked to confirm and fix a bug where a cell line
+literally named "NAN" causes `pandas.read_csv` to coerce it to `NaN` (float),
+losing the row. The fix was specified as `keep_default_na=False` at the point of
+ingestion.
+
+**Verdict: bug cannot be confirmed as described.**
+
+Searches performed:
+
+1. `sample_info` table in `celllineselector.db`: SQL query
+   `WHERE upper(trim(cell_line_name)) = 'NAN'` — **0 rows**.
+2. `cell_line_lookup.parquet`: pandas filter `cell_line_name.str.upper() == 'NAN'`
+   — **0 rows**.
+3. `data/DepMap_24Q4/Model.csv` (raw source): read with `keep_default_na=False`,
+   searched all name/model columns for literal "NAN" — **0 rows**.
+
+No cell line named "NAN" (or "nan", "Na", "NA") exists in any data source in
+this project.
+
+### Related finding: 12,751 NaN coercions in auxiliary fields
+
+`data/DepMap_24Q4/Model.csv` read with default `keep_default_na=True` produces
+**12,751 NaN cells** that are not NaN under `keep_default_na=False`. These come
+from **auxiliary string columns** (ModelDerivationMaterial, ModelTreatment,
+PatientCountry, etc.) where empty strings are coerced. **The model ID columns
+and cell-line name columns are unaffected** — no model_id or cell_line_name
+becomes NaN due to this coercion.
+
+The harmonisation pipeline reads `Model.csv` via `data_utils.py`, which uses
+`pd.read_parquet` (not `pd.read_csv`) on pre-cleaned parquet files. The coercion
+therefore has no effect on any scored or ranked output.
+
+### Decision
+
+No fix is implemented: the bug as specified does not exist in this project's
+data. If a future data update introduces a cell line with a pandas sentinel name
+(NAN, NA, N/A, NULL, None, etc.), the correct fix is `keep_default_na=False` in
+`src/scripts/data_utils.py` at the `pd.read_csv` call for Model.csv. The
+relevant sentinel list is `pd.io.parsers.readers.STR_NA_VALUES`.

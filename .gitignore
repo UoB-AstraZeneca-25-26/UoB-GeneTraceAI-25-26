@@ -4,6 +4,10 @@ data/
 # all generated outputs
 outputs/
 
+# ── Large zip archives (too big for GitHub, share separately) ────
+GeneTraceAI_datasets.zip
+*.zip
+
 # ── DuckDB catalog / warehouse ───────────────────────────────────
 # rebuilt from the parquet files on demand — never a source of truth
 *.duckdb

@@ -591,3 +591,68 @@ biological state being asked about. The gate's version was hidden in a
 denominator; the ranking's version was hidden in what "more layers confirm"
 actually means. Citing one without the other in the thesis understates how
 central this failure mode is to the project's methodology.
+
+---
+
+## 13. Fifth postscript — sex-linked gene guard in the ranking CLI (2026-08-16)
+
+**Dated 2026-08-16.**
+
+### Finding (eighth instance of the absence-as-negative fault)
+
+`cmd_exclude(GENE_A, GENE_B)` in `final_pipeline/Ranking/cli.py` computes
+selectivity as `score_a × (1 − score_b)`. For Y-linked genes as GENE_B (e.g.
+DDX3Y, KDM5D, TSPY2, PCDH11Y — 19 Y-linked genes appear in predictions),
+female and unknown-sex cell lines receive a low `score_b` from the scoring model
+because the gene is chromosomally absent, not because it is biologically
+non-essential. This makes `1 − score_b` large, artificially inflating selectivity
+for female lines. Before the fix, 17 of the top-30 selectivity pairs for a
+representative GENE_A × DDX3Y query were female cell lines.
+
+This is instance 8 of the absence-as-negative fault class (see
+`MULTIGENE_SPEC.md` §A1 for the register). Prior instances 1–3 were in the
+denominator/coverage layer; instance 4 was in the ranking layer's completeness
+proxy; instance 5 in expression-fusion shrinkage; instances 6–7 in the
+evaluation and gene-role assignment. This instance is in the query/CLI layer —
+the user-facing output — and it required a separate guard because the query layer
+is post-scoring.
+
+### Fix
+
+`_y_linked_set()` and `_line_sex()` added to `final_pipeline/Ranking/cli.py`.
+For any query involving a Y-linked GENE_B:
+
+- `cmd_exclude`: `score_b` set to `NaN` for female / unknown-sex lines →
+  `selectivity = NaN` → sorted to last position (excluded from display).
+- `cmd_genes`: per-gene score set to `NaN` for female / unknown-sex lines →
+  `joint_score = NaN` → excluded from the ranked table.
+
+NaN approach is consistent with the orphan-pair pattern already in
+`driver_routing.py:100`. The sex annotation comes from `sample_info` in the
+DuckDB warehouse (male 991, female 747, unknown 102 = 5.5%); the Y-linked set
+comes from `chromosomal_location` in `gene_lookup.parquet` (HGNC-sourced,
+not hardcoded).
+
+**Verification (BEFORE → AFTER, DDX3Y as GENE_B):**
+- Female in top-30: **17 → 0**
+- Spot-check (3 further Y-linked genes as GENE_B): female in top-5 = 0 in all cases
+- Stage 6 validation set: 0 Y-linked genes (confirmed; hit@20 numbers unchanged)
+
+### X-linked dosage-sensitive genes — identified, NOT auto-guarded
+
+X-linked dosage-sensitive genes (e.g. KDM6A, KDM5C, ATRX, MED12, BRWD3,
+HUWE1, KDM5C) were identified as candidates for a similar guard. These were
+**deliberately not auto-guarded**:
+
+1. X-inactivation is incomplete and variable — many X-linked genes escape
+   silencing, so female cells are not structurally absent for X-linked genes the
+   way male cells are absent for Y-linked genes. An auto-guard would suppress
+   real signal.
+2. Skewed X-inactivation in cancer lines is widespread and poorly annotated —
+   applying a blanket guard without per-line XCI measurements would introduce
+   more noise than it removes.
+3. The correct treatment requires per-gene XCI data (e.g. Cotton et al. 2013
+   escape-from-XCI maps), not a global sex flag.
+
+The X-linked candidate set is identified and the decision is deferred to the
+researcher. Documentation: `docs/DEFENCE_CARD.md` §Limitations.

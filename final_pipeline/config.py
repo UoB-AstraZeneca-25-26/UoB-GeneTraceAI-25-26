@@ -9,14 +9,15 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent      # UoB-GeneTraceAI-25-26/
 PIPELINE = Path(__file__).resolve().parent          # final_pipeline/
 
-# ── read-only shared resources ─────────────────────────────────────────────
-DB         = REPO / "src/pipeline/outputs/celllineselector.db"
-REF        = REPO / "reference"
+# ── read-only shared resources (all inside final_pipeline/) ────────────────
+DB         = PIPELINE / "outputs/celllineselector.db"
+REF        = PIPELINE / "reference"
 GENE_LKP   = REF / "gene_lookup.parquet"
 CELL_LKP   = REF / "cell_line_lookup.parquet"
-CLEANED    = REPO / "cleaned_track_data"           # mutations, fusions, proteomics
+CLEANED    = PIPELINE / "cleaned_track_data"
+VALIDATION = PIPELINE / "validation/prepared"
+# Not used by pipeline stages (only by harmonisation notebooks):
 DATA_CLEAN = REPO / "data/parquet"
-VALIDATION = REPO / "validation/prepared"
 COSMIC_CNA = REPO / "data/COSMIC/CellLinesProject_CompleteCNA_v104_GRCh37.tsv"
 GDSC_MODEL = REPO / "data/GDSC/model_list_20260709.csv"
 

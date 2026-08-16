@@ -31,6 +31,22 @@ lines counted as confirmed non-dependencies, which manufactured 98% of a
 headline), `gate_audit/07A`, and the coverage handling in the similarity query
 path. This layer exists so it does not happen a fourth time, in the UI.
 
+**Fault-class register (updated 2026-08-16):** The absence-as-negative fault has
+since been documented across the project as follows. Instances 1–3 are named
+above. Instance 4: completeness ranking as fame proxy (`RANKING_DECLARATION.md`
+§9 postscript). Instance 5: expression-fusion shrinkage asymmetry
+(`EXPR_FUSION_PREREGISTRATION.md` T1 FAIL framing). Instance 6: `is_sensitive
+.fillna(False)` inside the held-out evaluation harness, so every (gene, line)
+pair GDSC never tested entered the hit@20 denominator as a confirmed negative
+(`BUILD_SPEC.md` C3 item 6; analysed in `EVAL_DENOMINATOR.md`). Instance 7:
+`gene_role="neither"` applied by fillna to every gene absent from COSMIC CGC,
+collapsing "not in COSMIC" into "confirmed non-driver" for 18,409 genes
+(`BUILD_SPEC.md` C3 item 9; `EXAM_DRILL.md` §B8). **Instance 8 (2026-08-16):**
+Y-linked gene scores in female / unknown-sex cell lines — chromosomal structural
+absence treated as low essentiality rather than absent evidence. Fixed in
+`final_pipeline/Ranking/cli.py`: female/unknown-sex pairs set to `score_b = NaN`
+(`selectivity = NaN`, sorted to last); documented in `docs/DEFENCE_CARD.md`.
+
 **Kleene strong three-valued logic**, TRUE / FALSE / UNKNOWN:
 
 ```
