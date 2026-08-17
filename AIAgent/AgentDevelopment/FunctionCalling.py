@@ -8,11 +8,22 @@ import asyncio
 import json
 from pathlib import Path
 
-import httpx
 from langchain_core.tools import tool
 from pydantic import BaseModel
 
-KNOWLEDGE_DIR = Path(__file__).resolve().parent.parent / "knowledge"
+from gene_index import GeneIndex, load_gene_index
+from http_utils import CircuitBreaker, safe_get
+
+# NOTE: capital K — this matches the actual on-disk directory name
+# (AIAgent/Knowledge/). The lowercase "knowledge/" that used to be here
+# raised FileNotFoundError at import on case-sensitive filesystems (gap G1).
+KNOWLEDGE_DIR = Path(__file__).resolve().parent.parent / "Knowledge"
+
+# reference/gene_lookup.parquet lives at the repo root, one level above
+# AIAgent/. Sibling layout is preserved in the Docker image (see Dockerfile).
+_DEFAULT_GENE_LOOKUP_PATH = (
+    Path(__file__).resolve().parent.parent.parent / "reference" / "gene_lookup.parquet"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -29,45 +40,61 @@ class GeneAliasResult(BaseModel):
     synonyms: list[str] = []
     cross_validated: bool = False
     sources: list[str] = []
+    degraded: list[str] = []
+
+
+# Local index is the primary source (R1): 19,213 genes, ~0 ms lookups, no
+# network dependency. `set_gene_index` lets the FastAPI lifespan prewarm it
+# once at startup; standalone/test use falls back to a lazy load here.
+_GENE_INDEX: GeneIndex | None = None
+
+
+def set_gene_index(index: GeneIndex) -> None:
+    global _GENE_INDEX
+    _GENE_INDEX = index
+
+
+def _get_gene_index() -> GeneIndex:
+    global _GENE_INDEX
+    if _GENE_INDEX is None:
+        _GENE_INDEX = load_gene_index(_DEFAULT_GENE_LOOKUP_PATH)
+    return _GENE_INDEX
+
+
+# Ensembl REST measured at 0% success during the plan.md review. A circuit
+# breaker stops burning ~3s of retries per call once it is confirmed down.
+_ensembl_breaker = CircuitBreaker(failure_threshold=5, reset_after=60.0)
 
 
 async def _query_ensembl(query: str) -> dict | None:
+    if _ensembl_breaker.is_open():
+        return None
     url = f"https://rest.ensembl.org/lookup/symbol/homo_sapiens/{query}"
-    headers = {"Content-Type": "application/json"}
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.get(url, headers=headers)
-    if response.status_code == 200:
-        return response.json()
-    return None
+    # GET with no body -> Accept, not Content-Type (fixes R4).
+    result = await safe_get(url, headers={"Accept": "application/json"})
+    (_ensembl_breaker.record_success if result is not None else _ensembl_breaker.record_failure)()
+    return result
 
 
 async def _query_ensembl_by_id(ensg_id: str) -> dict | None:
+    if _ensembl_breaker.is_open():
+        return None
     url = f"https://rest.ensembl.org/lookup/id/{ensg_id}"
-    headers = {"Content-Type": "application/json"}
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.get(url, headers=headers)
-    if response.status_code == 200:
-        return response.json()
-    return None
+    result = await safe_get(url, headers={"Accept": "application/json"})
+    (_ensembl_breaker.record_success if result is not None else _ensembl_breaker.record_failure)()
+    return result
 
 
 async def _query_hgnc(query: str) -> dict | None:
     url = f"https://rest.genenames.org/fetch/symbol/{query}"
-    headers = {"Accept": "application/json"}
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.get(url, headers=headers)
-    if response.status_code != 200:
+    data = await safe_get(url, headers={"Accept": "application/json"})
+    if data is None:
         return None
-    docs = response.json().get("response", {}).get("docs", [])
+    docs = data.get("response", {}).get("docs", [])
     return docs[0] if docs else None
 
 
-@tool
-async def gene_alias_lookup(query: str) -> str:
-    """Look up gene aliases and synonyms. Takes a gene name, symbol,
-    or Ensembl ID. Returns validated aliases from Ensembl and HGNC."""
-    query = query.strip()
-
+async def _lookup_from_network(query: str) -> GeneAliasResult:
     ensembl_coro = (
         _query_ensembl_by_id(query)
         if query.upper().startswith("ENSG")
@@ -75,8 +102,14 @@ async def gene_alias_lookup(query: str) -> str:
     )
     ensembl_data, hgnc_data = await asyncio.gather(ensembl_coro, _query_hgnc(query))
 
+    degraded = []
+    if ensembl_data is None:
+        degraded.append("ensembl")
+    if hgnc_data is None:
+        degraded.append("hgnc")
+
     if ensembl_data is None and hgnc_data is None:
-        return GeneAliasResult(found=False, query=query).model_dump_json()
+        return GeneAliasResult(found=False, query=query, degraded=degraded)
 
     sources = []
     ensembl_id = None
@@ -106,7 +139,7 @@ async def gene_alias_lookup(query: str) -> str:
         and ensembl_data.get("id") == hgnc_ensembl_id
     )
 
-    result = GeneAliasResult(
+    return GeneAliasResult(
         found=True,
         query=query,
         symbol=symbol,
@@ -116,7 +149,35 @@ async def gene_alias_lookup(query: str) -> str:
         synonyms=synonyms,
         cross_validated=cross_validated,
         sources=sources,
+        degraded=degraded,
     )
+
+
+@tool
+async def gene_alias_lookup(query: str) -> str:
+    """Look up gene aliases and synonyms. Takes a gene name, symbol,
+    or Ensembl ID. Returns validated aliases from Ensembl and HGNC."""
+    query = query.strip()
+
+    # Resolution order (R1): local parquet index -> Ensembl+HGNC enrichment
+    # -> found=False. The local index covers the full 19,213-gene panel at
+    # ~0 ms; network calls only fire for genes outside it.
+    local = _get_gene_index().lookup(query)
+    if local is not None:
+        result = GeneAliasResult(
+            found=True,
+            query=query,
+            symbol=local.symbol,
+            ensembl_id=local.ensg_id,
+            full_name=local.full_name,
+            previous_symbols=local.previous_symbols,
+            synonyms=local.synonyms,
+            cross_validated=True,
+            sources=["local_index"],
+        )
+        return result.model_dump_json()
+
+    result = await _lookup_from_network(query)
     return result.model_dump_json()
 
 
@@ -143,7 +204,9 @@ class ScoreResult(BaseModel):
 
 
 # Hardcoded mock data for initial scaffold.
-# TODO: replace with a parquet read from the pipeline scoring output.
+# TODO: replace with a parquet read from the pipeline scoring output
+# (plan.md Step 6 — still PARTIAL; not part of the production-readiness gap
+# list, which targets the gene lookup, not the scoring pipeline output).
 _MOCK_SCORES = {
     ("ENSG00000141510", "ACH-000001"): {
         "raw_expression": 4.32,

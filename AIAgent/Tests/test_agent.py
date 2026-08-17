@@ -11,10 +11,10 @@ load_dotenv()
 
 _HAS_REAL_KEY = bool(os.getenv("GROQ_API_KEY")) and os.getenv("GROQ_API_KEY") != "your_groq_api_key_here"
 
-pytestmark = pytest.mark.skipif(
-    not _HAS_REAL_KEY,
-    reason="GROQ_API_KEY not set — skipping live agent tests",
-)
+pytestmark = [
+    pytest.mark.live,
+    pytest.mark.skipif(not _HAS_REAL_KEY, reason="GROQ_API_KEY not set — skipping live agent tests"),
+]
 
 
 @pytest.fixture(scope="module")

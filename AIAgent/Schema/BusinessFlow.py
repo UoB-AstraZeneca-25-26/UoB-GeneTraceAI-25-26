@@ -1,10 +1,14 @@
-"""Wires the CellLineFinder agent together and exposes it via FastAPI.
+"""Wires the CellLineFinder agent together: LLM + tools + prompt.
 
-The agent (LLM + tools + prompt) is built ONCE at module level. The
-AgentExecutor handles the full cycle: LLM decides tool -> tool executes ->
-LLM formats response. No manual routing logic.
+The agent is built ONCE at module level. The AgentExecutor handles the full
+cycle: LLM decides tool -> tool executes -> LLM formats response. No manual
+routing logic.
+
+The FastAPI surface lives in `api/app.py` / `api/routes.py`, which import
+`executor` from this module. This file only builds the agent.
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -33,32 +37,16 @@ prompt = ChatPromptTemplate.from_messages([
 ])
 
 agent = create_tool_calling_agent(llm, tools, prompt)
+
+# R5: bound the agent loop. Without limits, a model that loops on tool
+# calls burns quota and holds the connection until the client gives up.
+# verbose defaults to False (H6) — it prints raw LLM output (and query
+# content) straight to stdout on every request; gate it behind DEBUG.
 executor = AgentExecutor(
-    agent=agent, tools=tools, verbose=True, return_intermediate_steps=True
+    agent=agent,
+    tools=tools,
+    verbose=os.getenv("DEBUG", "false").lower() in ("1", "true", "yes"),
+    return_intermediate_steps=True,
+    max_iterations=4,
+    max_execution_time=45.0,
 )
-
-
-from fastapi import FastAPI
-from pydantic import BaseModel
-
-app = FastAPI(title="CellLineFinder Agent")
-
-
-class QueryRequest(BaseModel):
-    query: str
-
-
-class QueryResponse(BaseModel):
-    answer: str
-
-
-@app.post("/agent/query", response_model=QueryResponse)
-async def agent_query(request: QueryRequest) -> QueryResponse:
-    result = await executor.ainvoke({"input": request.query})
-    return QueryResponse(answer=result["output"])
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=8000)
