@@ -1,0 +1,79 @@
+{
+  "depmap": {
+    "name": "depmap",
+    "full_name": "Cancer Dependency Map (DepMap)",
+    "url": "https://depmap.org/portal/",
+    "what_it_measures": "Genome-wide CRISPR knockout gene-effect scores (Chronos) and RNAi dependency scores across a large panel of cancer cell lines, plus matched multi-omics (expression, mutation, copy number).",
+    "data_types": ["CRISPR gene effect (Chronos)", "RNAi", "expression (TPM)", "mutation", "copy number"],
+    "cell_line_count": "~1100",
+    "version_used": "DepMap public release (see pipeline config for exact quarter)",
+    "caveats": "Cell line panel is skewed toward well-characterised lines; dependency scores are model-derived, not direct measurements.",
+    "reference": "Tsherniak et al., Cell 2017; Dempster et al., Nat Commun 2019"
+  },
+  "hpa": {
+    "name": "hpa",
+    "full_name": "Human Protein Atlas",
+    "url": "https://www.proteinatlas.org/",
+    "what_it_measures": "Protein and RNA expression profiles across human tissues, cell lines, and subcellular locations, based on antibody-based immunohistochemistry and mass spectrometry.",
+    "data_types": ["proteomics (IHC)", "RNA-seq expression", "subcellular localisation"],
+    "cell_line_count": "varies by assay",
+    "version_used": "See pipeline config for exact version",
+    "caveats": "Antibody-based measurements can vary in specificity; not all cell lines have proteomics coverage.",
+    "reference": "Uhlen et al., Science 2015"
+  },
+  "geo": {
+    "name": "geo",
+    "full_name": "Gene Expression Omnibus",
+    "url": "https://www.ncbi.nlm.nih.gov/geo/",
+    "what_it_measures": "Public repository of functional genomics data, including microarray and RNA-seq expression datasets submitted by independent labs.",
+    "data_types": ["microarray", "RNA-seq", "ChIP-seq", "other functional genomics"],
+    "cell_line_count": "varies by dataset (heterogeneous)",
+    "version_used": "Dataset-specific accessions, see pipeline config",
+    "caveats": "Highly heterogeneous across submissions; batch effects and inconsistent metadata are common.",
+    "reference": "Edgar et al., Nucleic Acids Res 2002"
+  },
+  "cellosaurus": {
+    "name": "cellosaurus",
+    "full_name": "Cellosaurus",
+    "url": "https://www.cellosaurus.org/",
+    "what_it_measures": "A knowledge resource on cell lines, providing standardised identifiers, synonyms, provenance, and cross-references to other cell line databases.",
+    "data_types": ["cell line identity", "synonyms", "provenance metadata"],
+    "cell_line_count": "~150000 cell lines catalogued",
+    "version_used": "See pipeline config for exact release",
+    "caveats": "Used for identity mapping, not molecular data; does not provide expression or dependency measurements.",
+    "reference": "Bairoch A., J Biomol Tech 2018"
+  },
+  "ensembl": {
+    "name": "ensembl",
+    "full_name": "Ensembl Genome Browser",
+    "url": "https://www.ensembl.org/",
+    "what_it_measures": "Genome annotation database providing gene models, transcript structures, and stable gene identifiers (ENSG IDs).",
+    "data_types": ["gene annotation", "transcript models", "stable IDs"],
+    "cell_line_count": "n/a (reference genome resource)",
+    "version_used": "See pipeline config for exact release/assembly",
+    "caveats": "Annotation changes across releases can shift gene boundaries or symbols.",
+    "reference": "Cunningham et al., Nucleic Acids Res 2022"
+  },
+  "cosmic": {
+    "name": "cosmic",
+    "full_name": "Catalogue of Somatic Mutations in Cancer",
+    "url": "https://cancer.sanger.ac.uk/cosmic",
+    "what_it_measures": "Curated database of somatic mutations, cancer gene census annotations (e.g. driver gene / tumour suppressor status), and mutation signatures in cancer.",
+    "data_types": ["somatic mutations", "cancer gene census (driver/TSG labels)", "mutational signatures"],
+    "cell_line_count": "n/a (mutation/annotation resource)",
+    "version_used": "See pipeline config for exact release",
+    "caveats": "Requires license for commercial use; driver gene labels reflect current evidence and may lag behind newer literature.",
+    "reference": "Tate et al., Nucleic Acids Res 2019"
+  },
+  "hgnc": {
+    "name": "hgnc",
+    "full_name": "HUGO Gene Nomenclature Committee",
+    "url": "https://www.genenames.org/",
+    "what_it_measures": "Authoritative source for human gene naming, providing approved gene symbols, full names, previous/retired symbols, and known aliases.",
+    "data_types": ["gene symbols", "gene names", "aliases", "previous symbols"],
+    "cell_line_count": "n/a (gene nomenclature resource)",
+    "version_used": "Live REST API queries, no fixed version",
+    "caveats": "Symbol approvals can change over time; always cross-validate against Ensembl for ID consistency.",
+    "reference": "Seal et al., Nucleic Acids Res 2023"
+  }
+}
