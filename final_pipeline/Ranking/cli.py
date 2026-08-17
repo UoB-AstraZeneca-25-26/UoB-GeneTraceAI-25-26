@@ -15,6 +15,11 @@ TOP_N = 30
 DIV   = "-" * 64
 BOLD  = "=" * 64
 
+_NEIGHBOURS_PATH = (Path(__file__).resolve().parent.parent.parent
+                    / "cell_similarity" / "outputs" / "rna_neighbours.parquet")
+_SIM_TOP_K = 5
+_SIM_NOTE  = "+0.186 drug-response concordance vs same-tissue baseline"
+
 
 # ── helpers ────────────────────────────────────────────────────────────────
 
@@ -83,6 +88,37 @@ def _resolve(query: str, gene_lkp: pd.DataFrame) -> tuple[str, str]:
     if not m2.empty:
         return m2.iloc[0]["ensg_id"], m2.iloc[0]["hgnc_symbol"]
     raise SystemExit(f"Gene not found: {query!r}")
+
+
+def _similar_lines(model_id: str, lines_df: pd.DataFrame) -> list[dict]:
+    """Top-_SIM_TOP_K RNA neighbours for model_id. Returns [] if file absent."""
+    if not _NEIGHBOURS_PATH.exists():
+        return []
+    try:
+        nbrs = pd.read_parquet(_NEIGHBOURS_PATH)
+        sub = (nbrs[nbrs["model_id"].str.lower() == model_id.lower()]
+               .sort_values("rank")
+               .head(_SIM_TOP_K)
+               .merge(
+                   lines_df[["model_id", "cell_line_name"]]
+                   .rename(columns={"model_id": "neighbour"}),
+                   on="neighbour", how="left"
+               ))
+        return sub.to_dict("records")
+    except Exception:
+        return []
+
+
+def _print_similar(neighbours: list[dict], label: str = "") -> None:
+    if not neighbours:
+        return
+    tag = f" for {label}" if label else ""
+    print(f"\n  RNA alternatives{tag}  [{_SIM_NOTE}]:")
+    for r in neighbours:
+        name = str(r.get("cell_line_name", "?"))[:27]
+        nbr  = str(r.get("neighbour", "?")).upper()
+        sim  = float(r.get("similarity", float("nan")))
+        print(f"    {nbr:<13}  {name:<28}  sim={sim:.3f}")
 
 
 def _check_outputs():
@@ -180,6 +216,8 @@ def cmd_gene(args: list) -> None:
         cellosaurus_dis = meta.get("diseases", "")
         if cellosaurus_dis:
             print(f"  Cellosaurus:  {str(cellosaurus_dis)[:80]}")
+        nbrs = _similar_lines(row["model_id"], lines_full[["model_id", "cell_line_name"]])
+        _print_similar(nbrs)
         print(BOLD + "\n")
         return
 
@@ -192,6 +230,10 @@ def cmd_gene(args: list) -> None:
         name = str(row.get("cell_line_name", "?"))[:29]
         print(f"  {row['model_id']:<13} {name:<30} {row['core_score']:>6.3f}  {row.get('confidence_tier', '?')}")
     print(f"\n  Showing top {min(TOP_N, len(sub))} of {len(sub):,} lines")
+    if not sub.empty:
+        top = sub.iloc[0]
+        nbrs = _similar_lines(top["model_id"], lines_full[["model_id", "cell_line_name"]])
+        _print_similar(nbrs, label=f"{top['model_id'].upper()} (rank 1)")
 
 
 def cmd_genes(gene_queries: list) -> None:
@@ -306,6 +348,10 @@ def cmd_exclude(args: list) -> None:
         name = str(row.get("cell_line_name", "?"))[:27]
         print(f"  {row['model_id']:<13} {name:<28} {row['score_a']:>7.3f}  {row['score_b']:>7.3f}  {row['selectivity']:>7.3f}")
     print(f"\n  Ranked pairs: {len(scored):,}  |  Excluded (sex guard): {n_nulled:,}")
+    if not display.empty:
+        top = display.iloc[0]
+        nbrs = _similar_lines(top["model_id"], lines)
+        _print_similar(nbrs, label=f"{top['model_id'].upper()} (rank 1)")
 
 
 # ── entry point ────────────────────────────────────────────────────────────
