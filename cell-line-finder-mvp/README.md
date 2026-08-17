@@ -4,6 +4,7 @@ An integrated multi-omics cell line selection platform built with Streamlit. Thi
 
 ## Folder Structure Overview
 
+```
 cell-line-finder-mvp/
 ├── README.md
 ├── requirements.txt
@@ -17,6 +18,7 @@ cell-line-finder-mvp/
     ├── query_builder.py
     ├── results_table.py
     └── profile_view.py
+```
 
 (Note: Create the ```__init__.py``` files as empty files. They tell Python to treat the `src` and `ui` directories as importable modules.)
 
