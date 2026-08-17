@@ -142,13 +142,8 @@ summary = {
         "reduction_pct":     round((1-activ.delta_driver.std()/activ.delta_any.std())*100, 1),
     },
     "spotlight": {
-<<<<<<< HEAD
         "BCL2_ENSG00000171791": {"class": "abundance_tracking", "in_test_set": "ensg00000171791" in test_genes},
         "BRAF_ENSG00000157764": {"class": "activation_driven",  "in_test_set": "ensg00000157764" in test_genes},
-=======
-        "BCL2_ENSG00000171791": {"class": "abundance_tracking", "in_test_set": "ENSG00000171791" in test_genes},
-        "BRAF_ENSG00000157764": {"class": "activation_driven",  "in_test_set": "ENSG00000157764" in test_genes},
->>>>>>> 20fd4e72bc1fd7b405f50772ccc06f338c5a0bb4
     },
 }
 with open("src/pipeline/outputs/stage4_eval_summary.json", "w") as f:
