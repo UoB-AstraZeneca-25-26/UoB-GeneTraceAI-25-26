@@ -6,6 +6,40 @@
 
 ---
 
+## Production readiness update (2026-08-17)
+
+The results below (Tests 1–4) were captured against the original scaffold,
+with a single unversioned `/agent/query` route and 100% live network/LLM
+tests. Per `Endpoint/plan.md`'s gap analysis (G4/R7), a suite that depends
+entirely on third-party uptime cannot back a "100% pass" claim, so the
+suite is now split:
+
+```
+pytest Tests/ -m "not live"   # 35 tests, offline, deterministic — gates CI
+pytest Tests/ -m live         # 9 tests, hits real Ensembl/HGNC/Groq
+```
+
+What changed in the implementation since these results were recorded:
+
+- **Gene resolution is local-first.** `gene_alias_lookup` now resolves
+  against the 19,213-gene `reference/gene_lookup.parquet` table (~0 ms,
+  offline) before ever calling Ensembl/HGNC; the network path is only
+  enrichment for genes outside that panel, with retries, a circuit
+  breaker, and explicit `degraded` reporting when a source is down.
+- **The API surface is now `/v1/agent/query`** (content-negotiated:
+  `Accept: text/event-stream` streams `data` before `token`; anything else
+  gets one buffered JSON body), plus `GET /health`. `/agent/query` remains
+  as a deprecated alias.
+- **`Knowledge/` casing (G1) is fixed** — the service now starts on Linux.
+- Full gap list, architecture rationale, and remaining implementation
+  order live in `Endpoint/plan.md`.
+
+The four business-case walkthroughs below are still an accurate
+demonstration of tool-selection and grounding correctness; they are just
+no longer the whole test story.
+
+---
+
 ## Architecture
 
 ```

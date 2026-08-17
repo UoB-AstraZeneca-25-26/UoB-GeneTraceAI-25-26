@@ -1,13 +1,14 @@
 """System prompt builder for the CellLineFinder agent.
 
-Loads static content from the knowledge/ directory and assembles it into a
+Loads static content from the Knowledge/ directory and assembles it into a
 single system prompt string. Built once at startup, not per-request.
 """
 
-import json
 from pathlib import Path
 
-KNOWLEDGE_DIR = Path(__file__).resolve().parent.parent / "knowledge"
+# NOTE: capital K — matches the actual on-disk directory name (fixes G1;
+# see AgentDevelopment/FunctionCalling.py for the same fix).
+KNOWLEDGE_DIR = Path(__file__).resolve().parent.parent / "Knowledge"
 
 _ROLE_AND_RULES = """\
 You are CellLineFinder's explanation agent. You help scientists
@@ -26,14 +27,18 @@ Rules:
 
 
 def build_system_prompt() -> str:
-    """Assemble the full system prompt from role rules, math reference,
-    and dataset descriptions."""
+    """Assemble the full system prompt from role rules and the math
+    reference.
+
+    Dataset descriptions are deliberately NOT embedded here (gap G16):
+    the `dataset_info` tool already returns the full entry on demand, so
+    duplicating ~700 tokens/turn of static JSON only inflates every LLM
+    call for no benefit.
+    """
     math_reference = (KNOWLEDGE_DIR / "math_reference.md").read_text()
-    datasets = json.loads((KNOWLEDGE_DIR / "datasets.json").read_text())
 
     sections = [
         _ROLE_AND_RULES,
         "## Mathematical reference (for score_explainer results)\n\n" + math_reference,
-        "## Known data sources (for dataset_info context)\n\n" + json.dumps(datasets),
     ]
     return "\n\n".join(sections)

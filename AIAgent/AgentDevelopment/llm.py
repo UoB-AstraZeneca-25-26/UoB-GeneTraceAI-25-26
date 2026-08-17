@@ -19,6 +19,9 @@ def get_llm() -> BaseChatModel:
     provider = os.getenv("LLM_PROVIDER", "groq").lower()
     model = os.getenv("LLM_MODEL", "qwen-qwq-32b")
     temperature = float(os.getenv("LLM_TEMPERATURE", "0.0"))
+    # R6 timeout budget: the LLM call is the innermost layer and must be
+    # strictly shorter than the agent's max_execution_time (45s).
+    timeout = float(os.getenv("LLM_CALL_TIMEOUT", "30.0"))
 
     if provider == "groq":
         from langchain_groq import ChatGroq
@@ -28,6 +31,7 @@ def get_llm() -> BaseChatModel:
             temperature=temperature,
             api_key=os.getenv("GROQ_API_KEY"),
             max_tokens=512,
+            timeout=timeout,
         )
 
     if provider == "huggingface":

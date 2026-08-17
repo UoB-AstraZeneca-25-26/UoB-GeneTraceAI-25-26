@@ -1,3 +1,4 @@
+import pytest
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain_core.tools import tool
@@ -10,6 +11,7 @@ def echo_tool(query: str) -> str:
     return f"echo: {query}"
 
 
+@pytest.mark.live
 def test_llm_resolves_tool_call():
     llm = ChatGroq(model="openai/gpt-oss-120b", temperature=0)
     llm_with_tools = llm.bind_tools([echo_tool])
