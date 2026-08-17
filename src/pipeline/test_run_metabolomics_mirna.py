@@ -238,7 +238,11 @@ print("PART B -- metabolomics-as-enzyme-activity vs Chronos essentiality")
 print("=" * 70)
 
 metab = pd.read_parquet(CLEANED / "metabolomics.parquet")
+<<<<<<< HEAD
 metab["model_id"] = metab["model_id"].str.lower()
+=======
+metab["model_id"] = metab["model_id"].str.upper()
+>>>>>>> 20fd4e72bc1fd7b405f50772ccc06f338c5a0bb4
 metab = metab.set_index("model_id")
 
 metab_proxy = pd.DataFrame(index=metab.index)

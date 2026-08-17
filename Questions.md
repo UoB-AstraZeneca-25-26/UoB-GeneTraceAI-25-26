@@ -24,10 +24,13 @@
 - Flat merge (~24M rows, mostly-null master cols) corrupts grain. Hub-and-spoke
   with canonical keys locked. Datasets joined through lookup tables, not merged.
 
+<<<<<<< HEAD
 ### Adding new data to the new Architecture
 - **Raised by:** Chaithali . **Owner:** Team
 - **Status** [OPEN] By Chaithali
 - Adding MiRNA and metabolomics is not possible as the datasets have no gene axis information and cannot be pulled into the Layer 1 architecture.I tried 2 different methods to make it work, one where i tried connecting by "model_ID", but that just results in equal value to all the genes.
+=======
+>>>>>>> 20fd4e72bc1fd7b405f50772ccc06f338c5a0bb4
 ---
 
 ## 2. Identity & Coverage

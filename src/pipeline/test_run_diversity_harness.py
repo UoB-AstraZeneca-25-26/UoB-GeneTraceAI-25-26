@@ -42,11 +42,7 @@ print("Building expression matrix for profile clustering...")
 prof = pd.read_parquet(REF / "depmap_profiles.parquet")
 rna_prof = prof[prof["datatype"] == "rna"][["profileid", "modelid"]].copy()
 rna_prof["model_id"] = rna_prof["modelid"].str.lower()
-rna_prof = rna_prof.drop(columns=["modelid"])
 expr_raw = pd.read_parquet(DATA_CLEAN / "depmap_expr_clean.parquet")
-expr_raw.index.name = "profileid"
-expr = expr_raw.reset_index().merge(rna_prof, on="profileid", how="inner")
-expr = expr.drop(columns=["profileid"]).set_index("model_id")
 expr.columns = expr.columns.str.lower()
 if expr.index.duplicated().any():
     expr = expr.groupby(level=0).mean()
