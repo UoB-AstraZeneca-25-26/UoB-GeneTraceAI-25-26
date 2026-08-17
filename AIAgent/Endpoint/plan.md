@@ -993,6 +993,22 @@ Step 15 is deliberately late: it is a real latency win, but it adds a routing
 path that must be kept in sync with the tools, so it should land only once the
 streaming behaviour is stable and measured.
 
+> **Status (2026-08-17): Steps 1–16 implemented.** `api/` now holds the
+> production FastAPI surface (`app.py`, `routes.py`, `schemas.py`,
+> `errors.py`, `middleware.py`, `security.py`, `settings.py`, `cache.py`);
+> `AgentDevelopment/gene_index.py` and `http_utils.py` provide the local
+> gene index and the retry/circuit-breaker HTTP layer; `main.py` is the
+> canonical entrypoint; `Dockerfile` + `requirements.lock.txt` exist.
+> `Tests/test_api.py` and `Tests/test_latency.py` were added, and the live
+> suite is now split out via the `live` pytest marker (R7). Offline suite:
+> `pytest Tests/ -m "not live"` — 35 passed. Live suite (real
+> Ensembl/HGNC/Groq): 8/9 passed, 1 failure is a Windows
+> ProactorEventLoop `RuntimeError: Event loop is closed` during async
+> connection teardown after the assertions had already run — an
+> environment artifact, not a tool/logic defect. Not yet done: TLS
+> termination, the nginx config in H9 (infra, not app code), and load
+> testing beyond what test_latency.py checks.
+
 ---
 
 ## `knowledge/datasets.json`
