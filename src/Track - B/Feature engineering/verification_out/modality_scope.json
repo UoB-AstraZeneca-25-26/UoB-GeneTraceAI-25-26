@@ -1,0 +1,92 @@
+{
+  "planning_doc": "CellLineSelector_FeatureEngineering_Phase1_Planning",
+  "generated_utc": "2026-07-22T18:26:27.295224+00:00",
+  "scope": {
+    "rna_depmap": {
+      "status": "IN_SCOPE_PENDING",
+      "coverage_note": "~1428 lines; log2(TPM+1)",
+      "blocker_or_gate": "compare_expression_scales must PASS (Q1 scale reconciliation)",
+      "rationale": "Primary expression source; highest gene coverage (53,961 ENSG)."
+    },
+    "rna_geo": {
+      "status": "IN_SCOPE_PENDING",
+      "coverage_note": "~2308 GSM samples; linear scale",
+      "blocker_or_gate": "compare_expression_scales + batch audit (Q1, Q14)",
+      "rationale": "Adds samples/studies but on a different scale from DepMap."
+    },
+    "rna_hpa": {
+      "status": "IN_SCOPE_PENDING",
+      "coverage_note": "~1105 lines; linear TPM/pTPM/nTPM",
+      "blocker_or_gate": "verify_hpa_variants must choose tpm/ptpm/ntpm",
+      "rationale": "Independent RNA source useful for cross-source agreement."
+    },
+    "protein": {
+      "status": "IN_SCOPE_PENDING",
+      "coverage_note": "375 lines (20.4%); TMT log-ratio",
+      "blocker_or_gate": "verify_proteomics_scale + UniProt->gene map (protein_map)",
+      "rationale": "Enables RNA->protein confirmation (D3) despite low coverage."
+    },
+    "mutation": {
+      "status": "IN_SCOPE",
+      "coverage_note": "1697 lines (92.2%)",
+      "blocker_or_gate": null,
+      "rationale": "High-coverage genomic suitability signal (D5)."
+    },
+    "fusion": {
+      "status": "IN_SCOPE",
+      "coverage_note": "1428 lines (77.6%); gene-PAIR grain",
+      "blocker_or_gate": "grain: emit per-partner or per-pair (design decision)",
+      "rationale": "Structural-variant suitability signal (D5)."
+    },
+    "signatures": {
+      "status": "IN_SCOPE",
+      "coverage_note": "1704 lines (92.6%); mixed value types",
+      "blocker_or_gate": "per-column handling (binary WGD, count aneuploidy, cont. ploidy)",
+      "rationale": "Genome-instability context (D11); highest coverage after mutation."
+    },
+    "lineage": {
+      "status": "IN_SCOPE_PENDING",
+      "coverage_note": "1840 lines (from sample_info)",
+      "blocker_or_gate": "audit_lineage_vocabulary (controlled-vocab check)",
+      "rationale": "Cell-line context (D6); needs vocabulary consistency."
+    },
+    "metabolomics": {
+      "status": "IN_SCOPE_PENDING",
+      "coverage_note": "927 lines (50.4%); 225 metabolites",
+      "blocker_or_gate": "verify_metabolomics_scale (units/normalisation unknown)",
+      "rationale": "Per-line metabolite abundance; scale must be characterised first."
+    },
+    "mirna": {
+      "status": "BLOCKED",
+      "coverage_note": "914 lines (49.7%); ~953 features",
+      "blocker_or_gate": "verify_mirna_identifiers: opaque 'nmir*' IDs must map to miRBase",
+      "rationale": "Optional modality; unusable until identifiers are resolvable. If mapping fails, flip to DESCOPED."
+    },
+    "copy_number": {
+      "status": "PENDING_ACQUISITION",
+      "coverage_note": "ABSENT now; DepMap covers ~nearly all lines once acquired",
+      "acquire": "DepMap OmicsCNGene.csv (gene-level relative copy number); segment-level file optional. Same ACH key.",
+      "blocker_or_gate": "acquire + clean + join on model_id, then promote to IN_SCOPE",
+      "rationale": "Directly required by D5 (the CNA in 'mutation, CNA, or fusion'). Amplifications/deep deletions (e.g. ERBB2, MYC amp; CDKN2A, PTEN loss) are first-class selection signals that mutation status alone misses. HIGH impact, near-zero acquisition cost."
+    },
+    "crispr_dependency": {
+      "status": "PENDING_ACQUISITION",
+      "coverage_note": "ABSENT now; DepMap CRISPR typically ~1000+ lines once acquired",
+      "acquire": "DepMap CRISPRGeneEffect.csv (Chronos gene-effect scores); CRISPRGeneDependency.csv (dependency probability) optional. Same ACH key.",
+      "blocker_or_gate": "acquire + clean + join on model_id, then promote to IN_SCOPE",
+      "rationale": "The functional-evidence axis (functional-dependency features) and, for AZ target-selection, plausibly the single most decision-relevant signal: it answers whether a target is functionally IMPORTANT in a line, not merely expressed. HIGHEST impact of the acquisitions."
+    },
+    "pathway_genesets": {
+      "status": "EXTERNAL_RESOURCE",
+      "coverage_note": "Not a cell-line modality; external gene-set knowledge",
+      "blocker_or_gate": "acquire MSigDB/Reactome at pathway-feature stage (D4/Q5)",
+      "rationale": "Needed to infer pathway activity; sourced when that feature is built."
+    },
+    "marker_panels": {
+      "status": "EXTERNAL_RESOURCE",
+      "coverage_note": "Not a cell-line modality; curated marker lists",
+      "blocker_or_gate": "acquire/curate marker panels at marker-feature stage (D7)",
+      "rationale": "Receptor/marker features require curated gene panels."
+    }
+  }
+}

@@ -1,0 +1,378 @@
+{
+  "schema": {
+    "n_rows": 28122939,
+    "columns": [
+      "model_id",
+      "gene",
+      "depmap_log2tpm1",
+      "expr_percentile_depmap",
+      "detected_depmap",
+      "geo_intensity",
+      "hpa_ntpm",
+      "detected_hpa",
+      "gene_biotype",
+      "biotype_coarse",
+      "in_default_universe",
+      "detected_geo",
+      "n_sources",
+      "n_sources_detected",
+      "detection_agreement",
+      "corroboration_available",
+      "single_source_gene"
+    ],
+    "n_lines": 1413,
+    "n_genes": 19903
+  },
+  "coverage": {
+    "n_sources": {
+      "2": [
+        13535090,
+        48.13
+      ],
+      "3": [
+        7759030,
+        27.59
+      ],
+      "1": [
+        6828819,
+        24.28
+      ]
+    },
+    "corroboration_available_pct": 75.72,
+    "single_source_gene_pct": 24.28,
+    "per_source_present_pct": {
+      "depmap": 100.0,
+      "geo": 30.62,
+      "hpa": 72.69
+    }
+  },
+  "agreement": {
+    "stored_agreement_summary": {
+      "n": 28122939,
+      "min": 0.5,
+      "max": 1.0,
+      "mean": 0.9506675493624617,
+      "median": 1.0,
+      "q01": 0.5,
+      "q25": 1.0,
+      "q75": 1.0,
+      "q99": 1.0,
+      "pct_zero": 0.0,
+      "skew": -2.6916133705481324
+    },
+    "stored_agreement_valuecounts": {
+      "1.0": [
+        25348192,
+        90.13
+      ],
+      "0.5": [
+        2774747,
+        9.87
+      ]
+    },
+    "n_detection_calls_dist": {
+      "2.0": [
+        20442998,
+        72.69
+      ],
+      "1.0": [
+        7679941,
+        27.31
+      ]
+    },
+    "detection_corroborated_pct": 72.69,
+    "single_detection_call_pct": 27.31,
+    "agreement_corrected_summary": {
+      "n": 28122939,
+      "min": 0.5,
+      "max": 1.0,
+      "mean": 0.9506675493624617,
+      "median": 1.0,
+      "q01": 0.5,
+      "q25": 1.0,
+      "q75": 1.0,
+      "q99": 1.0,
+      "pct_zero": 0.0,
+      "skew": -2.6916133705481324
+    },
+    "agreement_where_corroborated_valuecounts": {
+      "1.0": [
+        17668251,
+        86.43
+      ],
+      "0.5": [
+        2774747,
+        13.57
+      ]
+    },
+    "disagreement_pct_of_corroborated": 13.57,
+    "rows_changed_vs_stored": 0,
+    "rows_changed_vs_stored_pct": 0.0,
+    "per_source_detection_pct": {
+      "detected_depmap_pct": 72.76,
+      "detected_hpa_pct_where_measured": 60.45
+    },
+    "level_corr_but_not_detection_corr_pct": 3.03
+  },
+  "provenance": {
+    "biotype_coarse": {
+      "protein_coding": [
+        28122939,
+        100.0
+      ]
+    },
+    "in_default_universe_pct": 100.0,
+    "outside_default_universe_pct": 0.0
+  },
+  "reliability": {
+    "percentile_summary": {
+      "n": 28122939,
+      "min": 0.04235542380545646,
+      "max": 1.0,
+      "mean": 0.5179284660088785,
+      "median": 0.5001758528864996,
+      "q01": 0.13535647892277547,
+      "q25": 0.2626237250665729,
+      "q75": 0.7500879264432497,
+      "q99": 0.9900015073104557,
+      "pct_zero": 0.0,
+      "skew": 0.18975867131090854
+    },
+    "percentile_where_detected": {
+      "n": 20461956,
+      "min": 0.15449932171029493,
+      "max": 1.0,
+      "mean": 0.6354329891258952,
+      "median": 0.6362859870371301,
+      "q01": 0.2552379038335929,
+      "q25": 0.4543536150329096,
+      "q75": 0.8181681153594935,
+      "q99": 0.992764909812591,
+      "pct_zero": 0.0,
+      "skew": -0.02429813168399691
+    },
+    "percentile_where_not_detected": {
+      "n": 7660983,
+      "min": 0.04235542380545646,
+      "max": 0.6388484148118374,
+      "mean": 0.2040820076860529,
+      "median": 0.19806059388031955,
+      "q01": 0.12153946641209867,
+      "q25": 0.16922072049439782,
+      "q75": 0.23383409536250815,
+      "q99": 0.3277395367532533,
+      "pct_zero": 0.0,
+      "skew": 0.7846465201318069
+    }
+  },
+  "modality_coverage": {
+    "n_lines": 11,
+    "per_modality": {
+      "planning_doc": {
+        "present": 11,
+        "missing": 0,
+        "present_pct": 100.0
+      },
+      "generated_utc": {
+        "present": 11,
+        "missing": 0,
+        "present_pct": 100.0
+      },
+      "rows": {
+        "present": 11,
+        "missing": 0,
+        "present_pct": 100.0
+      },
+      "cols": {
+        "present": 11,
+        "missing": 0,
+        "present_pct": 100.0
+      },
+      "columns": {
+        "present": 11,
+        "missing": 0,
+        "present_pct": 100.0
+      },
+      "content_sha256_16": {
+        "present": 11,
+        "missing": 0,
+        "present_pct": 100.0
+      },
+      "path": {
+        "present": 11,
+        "missing": 0,
+        "present_pct": 100.0
+      }
+    }
+  },
+  "modality_inputs": {
+    "mutations": {
+      "n_rows": 629825,
+      "n_lines": 1697,
+      "confidence_columns": {
+        "is_mutated": {
+          "present_column": true,
+          "non_null_pct": 100.0,
+          "valuecounts": {
+            "True": [
+              629514,
+              99.95
+            ],
+            "False": [
+              311,
+              0.05
+            ]
+          }
+        },
+        "is_damaging": {
+          "present_column": true,
+          "non_null_pct": 100.0,
+          "valuecounts": {
+            "False": [
+              516881,
+              82.07
+            ],
+            "True": [
+              112944,
+              17.93
+            ]
+          }
+        },
+        "has_hotspot": {
+          "present_column": true,
+          "non_null_pct": 100.0,
+          "valuecounts": {
+            "False": [
+              626571,
+              99.48
+            ],
+            "True": [
+              3254,
+              0.52
+            ]
+          }
+        },
+        "n_altering": {
+          "present_column": true,
+          "non_null_pct": 100.0,
+          "summary": {
+            "n": 629825,
+            "min": 0.0,
+            "max": 66.0,
+            "mean": 1.4283015123248521,
+            "median": 1.0,
+            "q01": 1.0,
+            "q25": 1.0,
+            "q75": 2.0,
+            "q99": 4.0,
+            "pct_zero": 0.049378795697217474,
+            "skew": 5.884704131632579
+          }
+        },
+        "n_variants": {
+          "present_column": true,
+          "non_null_pct": 100.0,
+          "summary": {
+            "n": 629825,
+            "min": 1.0,
+            "max": 66.0,
+            "mean": 1.4289318461477394,
+            "median": 1.0,
+            "q01": 1.0,
+            "q25": 1.0,
+            "q75": 2.0,
+            "q99": 4.0,
+            "pct_zero": 0.0,
+            "skew": 5.897946938112845
+          }
+        }
+      }
+    },
+    "fusions": {
+      "n_rows": 27038,
+      "n_lines": 1419,
+      "confidence_columns": {},
+      "arriba_strength_fields_retained": {
+        "confidence": false,
+        "split_reads1": false,
+        "split_reads2": false,
+        "reading_frame": false
+      }
+    },
+    "signatures": {
+      "n_rows": 1704,
+      "n_lines": 1704,
+      "confidence_columns": {
+        "wgd": {
+          "present_column": true,
+          "non_null_pct": 83.1,
+          "valuecounts": {
+            "1.0": [
+              941,
+              55.22
+            ],
+            "0.0": [
+              475,
+              27.88
+            ],
+            "nan": [
+              288,
+              16.9
+            ]
+          }
+        },
+        "ploidy": {
+          "present_column": true,
+          "non_null_pct": 83.1,
+          "summary": {
+            "n": 1416,
+            "min": 1.77894125823019,
+            "max": 4.99477653120802,
+            "mean": 3.020569804228083,
+            "median": 2.99309133582036,
+            "q01": 1.9105025553176063,
+            "q25": 2.1686973118074375,
+            "q75": 3.6302443172449923,
+            "q99": 4.90327385466682,
+            "pct_zero": 0.0,
+            "skew": 0.38696660644237274
+          }
+        },
+        "aneuploidy": {
+          "present_column": true,
+          "non_null_pct": 83.1,
+          "summary": {
+            "n": 1416,
+            "min": 0.0,
+            "max": 39.0,
+            "mean": 16.65042372881356,
+            "median": 19.0,
+            "q01": 0.0,
+            "q25": 8.0,
+            "q75": 24.0,
+            "q99": 36.0,
+            "pct_zero": 7.980225988700565,
+            "skew": -0.2070480738113063
+          }
+        },
+        "cin": {
+          "present_column": true,
+          "non_null_pct": 83.1,
+          "summary": {
+            "n": 1416,
+            "min": 0.0,
+            "max": 0.859346843049283,
+            "mean": 0.4678808793858291,
+            "median": 0.5388878689218455,
+            "q01": 0.00024780531096577,
+            "q25": 0.26247818151692476,
+            "q75": 0.6671484840174537,
+            "q99": 0.8246244786641959,
+            "pct_zero": 0.14124293785310735,
+            "skew": -0.5298262311090343
+          }
+        }
+      }
+    }
+  }
+}

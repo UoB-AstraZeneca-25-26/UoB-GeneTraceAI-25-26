@@ -1,0 +1,360 @@
+{
+  "planning_doc": "CellLineSelector_FeatureEngineering_Phase1_Planning",
+  "generated_utc": "2026-07-22T18:26:27.294327+00:00",
+  "n_checks": 14,
+  "summary": {
+    "PASS": 3,
+    "FLAG": 3,
+    "INFO": 8,
+    "ERROR": 0
+  },
+  "results": [
+    {
+      "check": "check_acquisition_status",
+      "planning_ref": "K/L.4",
+      "status": "INFO",
+      "verdict": "not yet acquired: ['copy_number', 'crispr_dependency'] - acquire before their dependent features (D5 needs copy_number; F9 needs crispr_dependency)",
+      "details": {
+        "acquired": {},
+        "still_needed": [
+          "copy_number",
+          "crispr_dependency"
+        ],
+        "external_not_checked": [
+          "pathway_genesets",
+          "marker_panels"
+        ]
+      }
+    },
+    {
+      "check": "compare_expression_scales",
+      "planning_ref": "Q1/C.1",
+      "status": "FLAG",
+      "verdict": "expression sources are on DIFFERENT scales ({'depmap_expr': 'LIKELY_LOG', 'geo_expr': 'LIKELY_LINEAR', 'hpa_rna': 'LIKELY_LINEAR'}) - reconciliation (Q1) required before any expression feature",
+      "details": {
+        "per_source": {
+          "depmap_expr": "LIKELY_LOG",
+          "geo_expr": "LIKELY_LINEAR",
+          "hpa_rna": "LIKELY_LINEAR"
+        },
+        "comparable": false,
+        "stats": {
+          "depmap_expr": {
+            "n": 5000000,
+            "min": 0.0,
+            "max": 16.673985318388823,
+            "mean": 1.0899515282450534,
+            "median": 0.01435529297707,
+            "q99": 7.761551232444479,
+            "pct_zero": 49.84688,
+            "pct_negative": 0.0,
+            "skew": 2.0217621580991167,
+            "scale_label": "LIKELY_LOG",
+            "source": "depmap_expr"
+          },
+          "geo_expr": {
+            "n": 5000000,
+            "min": 1.16490685939789,
+            "max": 35243.796875,
+            "mean": 221.29180654835514,
+            "median": 55.539262771606445,
+            "q99": 2676.2277368163805,
+            "pct_zero": 0.0,
+            "pct_negative": 0.0,
+            "skew": 12.207560716337031,
+            "scale_label": "LIKELY_LINEAR",
+            "source": "geo_expr"
+          },
+          "hpa_rna": {
+            "n": 5000000,
+            "min": 0.0,
+            "max": 320486.1,
+            "mean": 50.36486329999997,
+            "median": 3.6,
+            "q99": 625.9009999999777,
+            "pct_zero": 26.32704,
+            "pct_negative": 0.0,
+            "skew": 117.15264934368243,
+            "scale_label": "LIKELY_LINEAR",
+            "source": "hpa_rna[ntpm]"
+          }
+        }
+      }
+    },
+    {
+      "check": "verify_proteomics_scale",
+      "planning_ref": "Q4/K",
+      "status": "PASS",
+      "verdict": "proteomics confirmed log-ratio-like (mean=-0.029, 52.6% negative)",
+      "details": {
+        "n": 3400546,
+        "min": -23.0504529986,
+        "max": 12.7843207095,
+        "mean": -0.029338258822168076,
+        "median": -0.042345321549999995,
+        "q99": 2.8241214589249988,
+        "pct_zero": 0.0,
+        "pct_negative": 52.591377972831424,
+        "skew": -0.35002640903598675
+      }
+    },
+    {
+      "check": "verify_metabolomics_scale",
+      "planning_ref": "K",
+      "status": "INFO",
+      "verdict": "metabolomics looks LIKELY_LOG (min=2.98, max=9.10, 0.0% neg, skew=-0.20) - confirm vs CCLE docs",
+      "details": {
+        "n": 208800,
+        "min": 2.9760308,
+        "max": 9.0989016,
+        "mean": 5.876960454109675,
+        "median": 5.8839763,
+        "q99": 6.941617530000001,
+        "pct_zero": 0.0,
+        "pct_negative": 0.0,
+        "skew": -0.19606813695803546,
+        "scale_label": "LIKELY_LOG"
+      }
+    },
+    {
+      "check": "verify_hpa_variants",
+      "planning_ref": "K",
+      "status": "INFO",
+      "verdict": "found HPA variants ['tpm', 'ptpm', 'ntpm']; nTPM is HPA's cross-sample-normalised value (confirm on HPA methods page)",
+      "details": {
+        "variants": {
+          "tpm": {
+            "n": 24315372,
+            "min": 0.0,
+            "max": 153461.5,
+            "mean": 38.94269157387352,
+            "median": 2.8,
+            "q99": 489.2,
+            "pct_zero": 27.960082206433036,
+            "pct_negative": 0.0,
+            "skew": 64.55521733941079
+          },
+          "ptpm": {
+            "n": 24315372,
+            "min": 0.0,
+            "max": 183797.3,
+            "mean": 49.55707399006672,
+            "median": 3.6,
+            "q99": 621.2,
+            "pct_zero": 26.360633100739726,
+            "pct_negative": 0.0,
+            "skew": 63.78733711304787
+          },
+          "ntpm": {
+            "n": 24315372,
+            "min": 0.0,
+            "max": 421173.1,
+            "mean": 50.8167119877909,
+            "median": 3.6,
+            "q99": 623.0,
+            "pct_zero": 26.329216760492084,
+            "pct_negative": 0.0,
+            "skew": 129.24893844923793
+          }
+        }
+      }
+    },
+    {
+      "check": "audit_geo_batch_fields",
+      "planning_ref": "Q14",
+      "status": "PASS",
+      "verdict": "batch-relevant fields present: {'platform_id': 2}",
+      "details": {
+        "found": {
+          "platform_id": 2
+        },
+        "available_columns": [
+          "geo_accession",
+          "cel_file_names",
+          "title",
+          "status",
+          "submission_date",
+          "last_update_date",
+          "type",
+          "channel_count",
+          "source_name_ch1",
+          "organism_ch1",
+          "characteristics_ch1",
+          "platform_id",
+          "contact_country",
+          "contact_institute",
+          "gse_id",
+          "gse_filename",
+          "cell_line",
+          "disease",
+          "origin",
+          "cellosaurus_id",
+          "cellline",
+          "matching_type",
+          "cell_line_trimmed",
+          "model_id",
+          "model_id_ambiguous"
+        ]
+      }
+    },
+    {
+      "check": "audit_lineage_vocabulary",
+      "planning_ref": "D6",
+      "status": "INFO",
+      "verdict": "lineage labels look internally consistent (still confirm mapping)",
+      "details": {
+        "fields": {
+          "lineage": {
+            "distinct_raw": 30,
+            "distinct_normalised": 30,
+            "collapsible_variants": 0
+          },
+          "lineage_subtype": {
+            "distinct_raw": 106,
+            "distinct_normalised": 106,
+            "collapsible_variants": 0
+          },
+          "subtype": {
+            "distinct_raw": 175,
+            "distinct_normalised": 175,
+            "collapsible_variants": 0
+          },
+          "primary_disease": {
+            "distinct_raw": 33,
+            "distinct_normalised": 33,
+            "collapsible_variants": 0
+          }
+        }
+      }
+    },
+    {
+      "check": "verify_mirna_identifiers",
+      "planning_ref": "Q13",
+      "status": "FLAG",
+      "verdict": "0/734 miRNA IDs are standard (examples ['nmir00001.1', 'nmir00002.1', 'nmir00003.1', 'nmir00004.1', 'nmir00005.1']) - mapping to miRBase required; keep DESCOPED/BLOCKED",
+      "details": {
+        "n_features": 734,
+        "n_standard": 0,
+        "examples": [
+          "nmir00001.1",
+          "nmir00002.1",
+          "nmir00003.1",
+          "nmir00004.1",
+          "nmir00005.1"
+        ]
+      }
+    },
+    {
+      "check": "quantify_zero_inflation",
+      "planning_ref": "C",
+      "status": "INFO",
+      "verdict": "depmap_expr: 49.8% zeros, skew=2.02",
+      "details": {
+        "source": "depmap_expr",
+        "n": 5000000,
+        "min": 0.0,
+        "max": 16.673985318388823,
+        "mean": 1.0899515282450534,
+        "median": 0.01435529297707,
+        "q99": 7.761551232444479,
+        "pct_zero": 49.84688,
+        "pct_negative": 0.0,
+        "skew": 2.0217621580991167
+      }
+    },
+    {
+      "check": "quantify_zero_inflation",
+      "planning_ref": "C",
+      "status": "INFO",
+      "verdict": "geo_expr: 0.0% zeros, skew=12.21",
+      "details": {
+        "source": "geo_expr",
+        "n": 5000000,
+        "min": 1.16490685939789,
+        "max": 35243.796875,
+        "mean": 221.29180654835514,
+        "median": 55.539262771606445,
+        "q99": 2676.2277368163805,
+        "pct_zero": 0.0,
+        "pct_negative": 0.0,
+        "skew": 12.207560716337031
+      }
+    },
+    {
+      "check": "quantify_zero_inflation",
+      "planning_ref": "C",
+      "status": "INFO",
+      "verdict": "mirna: 0.0% zeros, skew=25.04",
+      "details": {
+        "source": "mirna",
+        "n": 700236,
+        "min": 0.47,
+        "max": 283655.6,
+        "mean": 379.4558288348499,
+        "median": 21.97,
+        "q99": 7692.675500000044,
+        "pct_zero": 0.0,
+        "pct_negative": 0.0,
+        "skew": 25.036735457300747
+      }
+    },
+    {
+      "check": "quantify_zero_inflation",
+      "planning_ref": "C",
+      "status": "INFO",
+      "verdict": "metabolomics: 0.0% zeros, skew=-0.20",
+      "details": {
+        "source": "metabolomics",
+        "n": 208800,
+        "min": 2.9760308,
+        "max": 9.0989016,
+        "mean": 5.876960454109675,
+        "median": 5.8839763,
+        "q99": 6.941617530000001,
+        "pct_zero": 0.0,
+        "pct_negative": 0.0,
+        "skew": -0.19606813695803546
+      }
+    },
+    {
+      "check": "quantify_identity_ambiguity",
+      "planning_ref": "C/G.3",
+      "status": "FLAG",
+      "verdict": "5 ambiguity signals found - flag these lines/rows for the confidence layer",
+      "details": {
+        "rrids_shared_by_multiple_models": 5,
+        "ambiguous_measurement_rows": {
+          "geo_expr": 0,
+          "hpa_rna": 0
+        }
+      }
+    },
+    {
+      "check": "freeze_coverage_contract",
+      "planning_ref": "L.1",
+      "status": "PASS",
+      "verdict": "coverage contract frozen: 1840 lines x 11 cols (hash 69b281607ac58f41)",
+      "details": {
+        "planning_doc": "CellLineSelector_FeatureEngineering_Phase1_Planning",
+        "generated_utc": "2026-07-22T18:26:27.293780+00:00",
+        "rows": 1840,
+        "cols": 11,
+        "columns": [
+          "model_id",
+          "gene_expression",
+          "mutation",
+          "fusion",
+          "protein",
+          "hpa_rna",
+          "metabolomics",
+          "mirna",
+          "signatures",
+          "n_modalities",
+          "complete_cycle"
+        ],
+        "content_sha256_16": "69b281607ac58f41",
+        "path": "verification_out/coverage_contract.parquet"
+      }
+    }
+  ]
+}

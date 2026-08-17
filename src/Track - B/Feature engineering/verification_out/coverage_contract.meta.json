@@ -1,0 +1,21 @@
+{
+  "planning_doc": "CellLineSelector_FeatureEngineering_Phase1_Planning",
+  "generated_utc": "2026-07-22T18:26:27.293780+00:00",
+  "rows": 1840,
+  "cols": 11,
+  "columns": [
+    "model_id",
+    "gene_expression",
+    "mutation",
+    "fusion",
+    "protein",
+    "hpa_rna",
+    "metabolomics",
+    "mirna",
+    "signatures",
+    "n_modalities",
+    "complete_cycle"
+  ],
+  "content_sha256_16": "69b281607ac58f41",
+  "path": "verification_out/coverage_contract.parquet"
+}
