@@ -12,13 +12,16 @@ from evidence_ledger import (
 _RNA_COVERED = None  # lazily built, cached module-level (cheap: ~1495 model_ids)
 
 
-def load_data(base="src/pipeline/outputs"):
+def load_data(base="final_pipeline/outputs"):
     pred     = pd.read_parquet(f"{base}/predictions_with_confidence.parquet")
     flags    = pd.read_parquet(f"{base}/flags_with_driver.parquet")
     variants = pd.read_parquet("cleaned_track_data/mutations_variant_detail.parquet")
     harm     = pd.read_parquet(f"{base}/harmonised_enriched.parquet")
     gene_lookup = pd.read_parquet("reference/gene_lookup.parquet")
-    chronos_val = pd.read_parquet(f"{base}/chronos_validation.parquet")
+    try:
+        chronos_val = pd.read_parquet(f"{base}/chronos_validation.parquet")
+    except FileNotFoundError:
+        chronos_val = None
 
     # Canonical key case is LOWERCASE, matching the harmonisation warehouse.
     # Normalising here rather than at each use makes this idempotent: it is a
