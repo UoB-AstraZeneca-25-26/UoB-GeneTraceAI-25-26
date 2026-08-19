@@ -20,25 +20,50 @@ _SIM  = Path(os.environ.get("SIM_DIR",  str(Path(__file__).resolve().parents[2] 
 PREDICTIONS = _BASE / "predictions_with_confidence.parquet"
 GENE_LKP    = _REF  / "gene_lookup.parquet"
 CELL_LKP    = _REF  / "cell_line_lookup.parquet"
+SAMPLE_INFO = _REF  / "sample_info.parquet"
 RNA_NBRS    = _SIM  / "rna_neighbours.parquet"
 
 TOP_N    = 30
 SIM_TOPK = 5
 
-# Small lookup tables loaded once into memory (~2 MB total)
+_META_COLS = [
+    "model_id", "lineage", "lineage_subtype", "lineage_sub_subtype",
+    "lineage_molecular_subtype", "primary_disease", "subtype",
+    "sex", "age", "default_growth_pattern", "primary_or_metastasis",
+    "sample_collection_site", "cellosaurus_ncit_disease",
+]
+
+# Small lookup tables loaded once into memory (~3 MB total)
 _genes = None
 _lines = None
+_meta  = None
 _nbrs  = None
 
 
 def _load_lookups():
-    global _genes, _lines, _nbrs
+    global _genes, _lines, _meta, _nbrs
     if _genes is not None:
         return
     _genes = pd.read_parquet(GENE_LKP, columns=["ensg_id", "hgnc_symbol", "chromosomal_location"])
     _lines = pd.read_parquet(CELL_LKP, columns=["model_id", "cell_line_name"])
     _lines["model_id"] = _lines["model_id"].str.lower()
+    if SAMPLE_INFO.exists():
+        _meta = pd.read_parquet(SAMPLE_INFO, columns=_META_COLS)
+        _meta["model_id"] = _meta["model_id"].str.lower()
+    else:
+        _meta = pd.DataFrame(columns=_META_COLS)
     _nbrs  = pd.read_parquet(RNA_NBRS) if RNA_NBRS.exists() else pd.DataFrame()
+
+
+def _meta_for(model_id: str) -> dict:
+    if _meta is None or _meta.empty:
+        return {}
+    row = _meta[_meta["model_id"] == model_id.lower()]
+    if row.empty:
+        return {}
+    r = row.iloc[0]
+    return {k: v for k, v in r.to_dict().items()
+            if k != "model_id" and v is not None and str(v) not in ("", "nan", "None")}
 
 
 def _con():
@@ -122,6 +147,10 @@ def query_gene(gene: str, cell_line: str | None = None, top_n: int = TOP_N) -> d
             "tier": row.get("confidence_tier"),
             "n_layers": int(row.get("n_layers", 0)),
             "driver_alteration": bool(row.get("has_driver_alteration", False)),
+            "p_mutation": round(float(row.get("p_mutation", 0) or 0), 3) or None,
+            "p_fusion": round(float(row.get("p_fusion", 0) or 0), 3) or None,
+            "has_cna_alteration": bool(row.get("has_cna_alteration", False)),
+            "metadata": _meta_for(row["model_id"]),
             "rna_alternatives": _similar(cell_line),
         }
 
@@ -134,6 +163,7 @@ def query_gene(gene: str, cell_line: str | None = None, top_n: int = TOP_N) -> d
             "tier": r.get("confidence_tier"),
             "n_layers": int(r.get("n_layers", 0)),
             "driver_alteration": bool(r.get("has_driver_alteration", False)),
+            "metadata": _meta_for(r["model_id"]),
         }
         for i, (_, r) in enumerate(sub.head(top_n).iterrows())
     ]
@@ -197,6 +227,7 @@ def query_exclude(gene_a: str, gene_b: str, top_n: int = TOP_N) -> dict:
             f"score_{sym_a}": round(float(r["score_a"]), 4),
             f"score_{sym_b}": round(float(r["score_b"]), 4),
             "selectivity": round(float(r["selectivity"]), 4),
+            "metadata": _meta_for(r["model_id"]),
         }
         for _, r in merged.head(top_n).iterrows()
     ]

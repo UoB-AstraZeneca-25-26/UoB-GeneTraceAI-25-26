@@ -28,9 +28,8 @@ _S3_FILES = {
     "predictions_with_confidence.parquet": "pipeline-outputs/predictions_with_confidence.parquet",
     "gene_lookup.parquet":                 "final-reference/gene_lookup.parquet",
     "cell_line_lookup.parquet":            "final-reference/cell_line_lookup.parquet",
+    "sample_info.parquet":                 "final-reference/sample_info.parquet",
     "rna_neighbours.parquet":              "cell-similarity/rna_neighbours.parquet",
-    # celllineselector.db (~2 GB) omitted — too large for Lambda memory.
-    # Lineage/sex metadata fields return empty gracefully when DB is absent.
 }
 
 _files_ready = False
