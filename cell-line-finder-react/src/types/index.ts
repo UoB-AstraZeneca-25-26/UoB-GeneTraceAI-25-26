@@ -29,7 +29,7 @@ export type ViewType = 'query' | 'results' | 'profile' | 'about';
 
 export type ScoreTier = 'HIGH' | 'MEDIUM' | 'LOW';
 
-export type ResultMode = 'single' | 'selectivity';
+export type ResultMode = 'single' | 'selectivity' | 'multi';
 
 type BaseRanked = {
   rank: number;
@@ -59,14 +59,24 @@ export type SelectivityRanked = BaseRanked & {
   scoreLow: number;
 };
 
-export type RankedCellLine = SingleRanked | SelectivityRanked;
+/** Result of GET /genes?query=<A,B,...> (joint multi-gene ranking) */
+export type MultiRanked = BaseRanked & {
+  mode: 'multi';
+  jointScore: number;
+  genes: string[];                           // queried genes, in order
+  geneScores: Record<string, number | null>; // per-gene; null = NaN/no evidence
+};
+
+export type RankedCellLine = SingleRanked | SelectivityRanked | MultiRanked;
 
 export type ResultMeta = {
   mode: ResultMode;
-  primaryGene: string;   // gene_high (selectivity) or gene (single)
+  primaryGene: string;   // gene_high (selectivity), gene (single), or joined list (multi)
   ensg?: string;
   excludedGene?: string; // gene_low (selectivity only)
   formula?: string;      // selectivity only
+  genes?: string[];      // multi only
+  floor?: number;        // multi only
   total: number;
   showing: number;
 };
@@ -91,15 +101,42 @@ export type TrackScores = Partial<Record<TrackKey, TrackDatum>>;
 
 // ---- Tier presentation (separated from score, never derived from it) ----
 
-export type TierTone = 'high' | 'medium' | 'low' | 'unknown';
+export type TierTone = 'high' | 'medium' | 'low' | 'context' | 'unknown';
 export type TierPresentation = { label: string; tone: TierTone };
 
 // ---- Verdict / abstention states ----
 
-export type VerdictState = 'RANKED' | 'LOW_SEPARATION' | 'NO_EVIDENCE';
+export type VerdictState = 'RANKED' | 'LOW_SEPARATION' | 'NO_EVIDENCE' | 'PARTIAL_COVERAGE';
 export type Verdict = {
   state: VerdictState;
   headline: string;
   detail: string[];
   qualifyRanking?: boolean;
+};
+
+// ---- Cell-line detail (GET /gene?query=<GENE>&cell_line=<MODEL_ID>) ----
+
+/** What the Inspect action carries: which gene's detail to fetch, for which model. */
+export type InspectTarget = { gene: string; modelId: string; cellLine: string };
+
+export type MetadataItem = { label: string; value: string };
+export type SimilarLine = { modelId: string; name: string; similarity: number };
+
+export type CellLineDetail = {
+  gene: string;
+  ensg: string;
+  modelId: string;
+  cellLine: string;
+  rank: number;
+  total: number;
+  score: number;
+  tier: string;
+  nLayers: number;
+  driverAlteration: boolean;
+  pMutation: number | null;
+  pFusion: number | null;
+  hasCnaAlteration: boolean;
+  tracks: TrackScores;         // per-layer signals reported by this endpoint
+  metadata: MetadataItem[];    // ordered, cleaned for display
+  alternatives: SimilarLine[]; // RNA-similar models
 };

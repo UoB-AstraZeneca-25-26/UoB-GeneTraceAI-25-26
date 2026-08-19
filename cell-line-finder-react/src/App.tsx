@@ -4,9 +4,8 @@ import { QueryBuilder } from './components/views/QueryBuilder';
 import { ResultsTable } from './components/views/ResultsTable';
 import { ProfileView } from './components/views/ProfileView';
 import { AboutPage } from './components/views/AboutPage';
-import { MOCK_DATA } from './lib/mockData';
 import { fetchRanking } from './lib/api';
-import { QueryParams, RankedCellLine, ResultMeta, ViewType } from './types';
+import { InspectTarget, QueryParams, RankedCellLine, ResultMeta, ViewType } from './types';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewType>('query');
@@ -17,7 +16,7 @@ export default function App() {
     topK: 5
   });
   const [hasSearched, setHasSearched] = useState<boolean>(false);
-  const [selectedCellLine, setSelectedCellLine] = useState<string | null>(null);
+  const [inspectTarget, setInspectTarget] = useState<InspectTarget | null>(null);
 
   // Live query state
   const [results, setResults] = useState<RankedCellLine[]>([]);
@@ -41,9 +40,9 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      // One exclusion routes to the selectivity endpoint; none routes to /gene.
+      // 2+ targets -> joint ranking; 1 target + exclusion -> selectivity; else single.
       const exclusion = params.exclusions[0];
-      const { results: ranked, meta: m } = await fetchRanking(target, exclusion, controller.signal);
+      const { results: ranked, meta: m } = await fetchRanking(params.targets, exclusion, controller.signal);
       setResults(ranked);
       setMeta(m);
     } catch (e) {
@@ -63,6 +62,11 @@ export default function App() {
     void runQuery(newParams);
   };
 
+  const handleInspect = (t: InspectTarget) => {
+    setInspectTarget(t);
+    setCurrentView('profile');
+  };
+
   const handleReset = () => {
     abortRef.current?.abort();
     setQueryParams({ targets: ['BRAF'], exclusions: [], lineage: 'Any', topK: 5 });
@@ -71,7 +75,7 @@ export default function App() {
     setError(null);
     setLoading(false);
     setHasSearched(false);
-    setSelectedCellLine(null);
+    setInspectTarget(null);
     setCurrentView('query');
   };
 
@@ -103,18 +107,15 @@ export default function App() {
             loading={loading}
             error={error}
             onRetry={() => void runQuery(queryParams)}
-            onSelectCellLine={(cl) => {
-              setSelectedCellLine(cl);
-              setCurrentView('profile');
-            }}
+            onInspect={handleInspect}
           />
         )}
 
-        {currentView === 'profile' && selectedCellLine && (
+        {currentView === 'profile' && inspectTarget && (
           <ProfileView
-            cellLine={selectedCellLine}
-            dataset={MOCK_DATA}
+            target={inspectTarget}
             onBack={() => setCurrentView('results')}
+            onInspect={handleInspect}
           />
         )}
 

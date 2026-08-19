@@ -6,12 +6,14 @@ const STYLES: Record<Verdict['state'], string> = {
   LOW_SEPARATION: 'bg-amber-50 border-amber-200 text-amber-800',
   NO_EVIDENCE: 'bg-slate-50 border-slate-200 text-slate-600',
   RANKED: 'bg-emerald-50 border-emerald-200 text-emerald-800',
+  PARTIAL_COVERAGE: 'bg-amber-50 border-amber-200 text-amber-800',
 };
 
 const ICONS: Record<Verdict['state'], React.ElementType> = {
   LOW_SEPARATION: AlertTriangle,
   NO_EVIDENCE: Ban,
   RANKED: Info,
+  PARTIAL_COVERAGE: AlertTriangle,
 };
 
 /**

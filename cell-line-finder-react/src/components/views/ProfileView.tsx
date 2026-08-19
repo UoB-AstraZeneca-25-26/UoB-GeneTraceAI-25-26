@@ -1,206 +1,213 @@
-import React, { useState } from 'react';
-import { CellLineData } from '../../types';
-import { ArrowLeft, CheckCircle2, Database, Dna, Activity } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import React, { useEffect, useState } from 'react';
+import { CellLineDetail, InspectTarget } from '../../types';
+import { fetchCellLineDetail, toCellLineDetail } from '../../lib/api';
+import { confTier, pct } from '../../lib/evidence';
+import { TierPill } from '../common/TierPill';
+import { EvidenceSpine } from '../common/EvidenceSpine';
+import { ArrowLeft, AlertCircle, Loader2, Zap, ChevronRight } from 'lucide-react';
 
 interface ProfileViewProps {
-  cellLine: string;
-  dataset: CellLineData[];
+  target: InspectTarget;
   onBack: () => void;
+  onInspect: (t: InspectTarget) => void; // re-inspect an RNA alternative
 }
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ cellLine, dataset, onBack }) => {
-  const [activeTab, setActiveTab] = useState<'omics' | 'mutations' | 'alternatives'>('omics');
+export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInspect }) => {
+  const [detail, setDetail] = useState<CellLineDetail | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const clRecords = dataset.filter(d => d.cellLine === cellLine);
-  const tissue = clRecords[0]?.tissue || "Unknown";
-  const mutations = clRecords.filter(d => d.hasSomaticVariant);
+  useEffect(() => {
+    let cancelled = false;
+    const ctrl = new AbortController();
+    setLoading(true);
+    setError(null);
+    setDetail(null);
+    fetchCellLineDetail(target.gene, target.modelId, ctrl.signal)
+      .then((resp) => {
+        if (!cancelled) setDetail(toCellLineDetail(resp));
+      })
+      .catch((e: Error) => {
+        if (!cancelled && e.name !== 'AbortError') setError(e.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      ctrl.abort();
+    };
+  }, [target.gene, target.modelId]);
 
-  // Prepare chart data
-  const chartData = clRecords.map(r => ({
-    gene: r.gene,
-    TPM: r.tpmExpression,
-    Protein: r.proteinExpression,
-  }));
+  const BackButton = (
+    <button
+      onClick={onBack}
+      className="inline-flex items-center text-sm font-semibold text-slate-600 hover:text-slate-900 transition mb-3"
+    >
+      <ArrowLeft className="w-4 h-4 mr-1.5" />
+      <span>Back to Results</span>
+    </button>
+  );
+
+  if (loading) {
+    return (
+      <div className="max-w-5xl mx-auto">
+        {BackButton}
+        <div className="text-center py-24">
+          <Loader2 className="w-8 h-8 mx-auto animate-spin text-indigo-600" />
+          <p className="text-sm text-slate-500 mt-3">
+            Loading <strong className="font-mono">{target.cellLine}</strong> · {target.gene}…
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !detail) {
+    return (
+      <div className="max-w-5xl mx-auto">
+        {BackButton}
+        <div className="text-center py-16 space-y-3">
+          <div className="inline-flex p-3 bg-rose-50 text-rose-600 rounded-full">
+            <AlertCircle className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-800">Couldn't load this profile</h2>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">{error ?? 'No detail returned.'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Back Button & Header */}
       <div>
-        <button
-          onClick={onBack}
-          className="inline-flex items-center text-sm font-semibold text-slate-600 hover:text-slate-900 transition mb-3"
-        >
-          <ArrowLeft className="w-4 h-4 mr-1.5" />
-          <span>Back to Results</span>
-        </button>
-        <div className="flex items-center justify-between">
+        {BackButton}
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-extrabold text-slate-900">{cellLine}</h2>
-            <p className="text-sm text-slate-500">{tissue} Tissue • Harmonized Multi-Omics Profile</p>
+            <h2 className="text-3xl font-extrabold text-slate-900 font-display tracking-tight">{detail.cellLine}</h2>
+            <p className="text-sm text-slate-500 font-mono">
+              {detail.modelId} · {detail.gene}
+              <span className="text-slate-400"> ({detail.ensg})</span>
+            </p>
           </div>
-          <div className="flex space-x-2">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> DepMap Verified
-            </span>
-          </div>
+          <TierPill tier={detail.tier} className="mt-2" />
         </div>
       </div>
 
-      {/* Top Stat Cards */}
+      {/* Stat cards for THIS gene in THIS line */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center space-x-3">
-          <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
-            <Activity className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-xs text-slate-500 block">Tissue of Origin</span>
-            <span className="text-base font-bold text-slate-900">{tissue}</span>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center space-x-3">
-          <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg">
-            <Dna className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-xs text-slate-500 block">Target Somatic Variants</span>
-            <span className="text-base font-bold text-slate-900">{mutations.length} Detected</span>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center space-x-3">
-          <div className="p-2.5 bg-purple-50 text-purple-600 rounded-lg">
-            <Database className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-xs text-slate-500 block">Integrated Sources</span>
-            <span className="text-base font-bold text-slate-900">DepMap, HPA, CCLE</span>
-          </div>
-        </div>
+        <StatCard label={`Rank for ${detail.gene}`} value={`#${detail.rank.toLocaleString()}`} sub={`of ${detail.total.toLocaleString()}`} />
+        <StatCard label="Score" value={detail.score.toFixed(4)} sub={`${confTier(detail.tier).label} tier`} />
+        <StatCard label="Evidence layers" value={String(detail.nLayers)} sub={detail.driverAlteration ? 'driver alteration present' : 'no driver alteration'} />
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="flex border-b border-slate-200 bg-slate-50 px-4">
-          <button
-            onClick={() => setActiveTab('omics')}
-            className={`py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition ${
-              activeTab === 'omics'
-                ? 'border-indigo-600 text-indigo-600 bg-white'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            Multi-Omics Expression
-          </button>
-          <button
-            onClick={() => setActiveTab('mutations')}
-            className={`py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition ${
-              activeTab === 'mutations'
-                ? 'border-indigo-600 text-indigo-600 bg-white'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            Genomic Features
-          </button>
-          <button
-            onClick={() => setActiveTab('alternatives')}
-            className={`py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition ${
-              activeTab === 'alternatives'
-                ? 'border-indigo-600 text-indigo-600 bg-white'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            Similar Alternatives
-          </button>
+      {/* Evidence layers reported by this endpoint */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-slate-800">Alteration evidence</h3>
+          <EvidenceSpine tracks={detail.tracks} />
         </div>
-
-        <div className="p-6">
-          {/* Tab 1: Chart */}
-          {activeTab === 'omics' && (
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-bold text-slate-800">Transcriptomic (TPM) vs Proteomic Expression</h4>
-                <p className="text-xs text-slate-500">Cross-validation between DepMap RNA-seq and mass spectrometry proteomics.</p>
-              </div>
-              <div className="h-72 w-full pt-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 20 }}>
-                    <XAxis dataKey="gene" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip />
-                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                    <Bar dataKey="TPM" fill="#4f46e5" radius={[4, 4, 0, 0]} name="RNA Expression (TPM)" />
-                    <Bar dataKey="Protein" fill="#10b981" radius={[4, 4, 0, 0]} name="Protein Expression" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 2: Mutations */}
-          {activeTab === 'mutations' && (
-            <div className="space-y-4">
-              <h4 className="text-sm font-bold text-slate-800">Somatic Mutations & Gene Variants</h4>
-              {mutations.length > 0 ? (
-                <div className="border border-slate-200 rounded-lg overflow-hidden">
-                  <table className="w-full text-left text-sm text-slate-700">
-                    <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600">
-                      <tr>
-                        <th className="px-4 py-2.5">Gene Target</th>
-                        <th className="px-4 py-2.5">Variant Status</th>
-                        <th className="px-4 py-2.5">Evidence Level</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {mutations.map(m => (
-                        <tr key={m.gene}>
-                          <td className="px-4 py-2.5 font-bold text-slate-900">{m.gene}</td>
-                          <td className="px-4 py-2.5 text-rose-600 font-medium">Somatic Mutation Detected</td>
-                          <td className="px-4 py-2.5 text-slate-600">High (DepMap Omics Mutation)</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-sm text-slate-500">No targeted somatic variants recorded for this cell line.</p>
-              )}
-            </div>
-          )}
-
-          {/* Tab 3: Alternatives */}
-          {activeTab === 'alternatives' && (
-            <div className="space-y-4">
-              <h4 className="text-sm font-bold text-slate-800">Backup Cell Line Recommendations</h4>
-              <p className="text-xs text-slate-500">Alternative models with similar molecular phenotypes.</p>
-              <div className="border border-slate-200 rounded-lg overflow-hidden">
-                <table className="w-full text-left text-sm text-slate-700">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600">
-                    <tr>
-                      <th className="px-4 py-2.5">Alternative Cell Line</th>
-                      <th className="px-4 py-2.5">Phenotypic Similarity</th>
-                      <th className="px-4 py-2.5">Confidence</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    <tr>
-                      <td className="px-4 py-2.5 font-bold text-slate-900">A549</td>
-                      <td className="px-4 py-2.5 text-indigo-600 font-semibold">92% Match</td>
-                      <td className="px-4 py-2.5 text-slate-600">High</td>
-                    </tr>
-                    <tr>
-                      <td className="px-4 py-2.5 font-bold text-slate-900">Calu-3</td>
-                      <td className="px-4 py-2.5 text-indigo-600 font-semibold">84% Match</td>
-                      <td className="px-4 py-2.5 text-slate-600">Moderate</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <LayerCard
+            label="Mutation"
+            value={detail.pMutation != null ? `p = ${detail.pMutation.toFixed(3)}` : 'not reported'}
+            active={detail.pMutation != null}
+            badge={detail.driverAlteration ? 'driver' : undefined}
+          />
+          <LayerCard
+            label="Fusion"
+            value={detail.pFusion != null ? `p = ${detail.pFusion.toFixed(3)}` : 'none detected'}
+            active={detail.pFusion != null}
+          />
+          <LayerCard
+            label="Copy number"
+            value={detail.hasCnaAlteration ? 'altered' : 'no alteration'}
+            active={detail.hasCnaAlteration}
+          />
         </div>
+        <p className="text-[11px] text-slate-400">
+          These are the alteration layers this endpoint reports. Expression and proteomics contribute
+          to the score but aren't broken out per-layer here.
+        </p>
       </div>
+
+      {/* Cell-line metadata */}
+      {detail.metadata.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <h3 className="text-sm font-bold text-slate-800 mb-4">Cell-line metadata</h3>
+          <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
+            {detail.metadata.map((m) => (
+              <div key={m.label}>
+                <dt className="text-[11px] uppercase tracking-wide text-slate-400">{m.label}</dt>
+                <dd className="text-sm text-slate-800 font-medium">{m.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+
+      {/* RNA-similar alternatives */}
+      {detail.alternatives.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <h3 className="text-sm font-bold text-slate-800">RNA-similar alternatives</h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Backup models with the closest transcriptomic profile. Click to inspect the same gene in that line.
+            </p>
+          </div>
+          <ul className="divide-y divide-slate-100">
+            {detail.alternatives.map((a) => (
+              <li key={a.modelId}>
+                <button
+                  onClick={() => onInspect({ gene: detail.gene, modelId: a.modelId, cellLine: a.name })}
+                  className="w-full flex items-center justify-between px-6 py-3 hover:bg-slate-50 transition text-left"
+                >
+                  <div>
+                    <span className="font-bold text-slate-900">{a.name}</span>
+                    <span className="text-[11px] text-slate-400 font-mono ml-2">{a.modelId}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 bg-slate-200 rounded-full h-2 overflow-hidden">
+                        <div className="h-full rounded-full bg-indigo-500" style={{ width: `${pct(a.similarity)}%` }} />
+                      </div>
+                      <span className="text-xs font-mono text-slate-500 w-10 text-right">{pct(a.similarity)}%</span>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };
+
+const StatCard: React.FC<{ label: string; value: string; sub?: string }> = ({ label, value, sub }) => (
+  <div className="bg-white border border-slate-200 rounded-xl p-4">
+    <span className="text-xs text-slate-500 block">{label}</span>
+    <span className="text-2xl font-black text-slate-900 font-mono">{value}</span>
+    {sub && <span className="text-[11px] text-slate-400 block mt-0.5">{sub}</span>}
+  </div>
+);
+
+const LayerCard: React.FC<{ label: string; value: string; active: boolean; badge?: string }> = ({
+  label,
+  value,
+  active,
+  badge,
+}) => (
+  <div className={`rounded-lg border p-3 ${active ? 'border-slate-200 bg-white' : 'border-slate-100 bg-slate-50'}`}>
+    <div className="flex items-center justify-between">
+      <span className={`text-xs font-semibold ${active ? 'text-slate-700' : 'text-slate-400'}`}>{label}</span>
+      {badge && (
+        <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded">
+          <Zap className="w-2.5 h-2.5" /> {badge}
+        </span>
+      )}
+    </div>
+    <span className={`text-sm font-mono mt-1 block ${active ? 'text-slate-900' : 'text-slate-400'}`}>{value}</span>
+  </div>
+);

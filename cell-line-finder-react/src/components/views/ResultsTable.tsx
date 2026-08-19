@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { QueryParams, RankedCellLine, ResultMeta } from '../../types';
+import { InspectTarget, QueryParams, RankedCellLine, ResultMeta } from '../../types';
 import { deriveVerdict } from '../../lib/evidence';
 import { TierPill } from '../common/TierPill';
 import { EvidenceSpine } from '../common/EvidenceSpine';
 import { VerdictBanner } from '../common/VerdictBanner';
-import { Trophy, ChevronRight, AlertCircle, Loader2, Info, Zap } from 'lucide-react';
+import { NetworkGraph } from '../common/NetworkGraph';
+import { SelectivityScatter } from '../common/SelectivityScatter';
+import { Trophy, ChevronRight, AlertCircle, Loader2, Info, Zap, Table2, Network } from 'lucide-react';
 
 interface ResultsTableProps {
   queryParams: QueryParams;
@@ -13,7 +15,7 @@ interface ResultsTableProps {
   loading: boolean;
   error: string | null;
   onRetry: () => void;
-  onSelectCellLine: (cellLine: string) => void;
+  onInspect: (t: InspectTarget) => void;
 }
 
 export const ResultsTable: React.FC<ResultsTableProps> = ({
@@ -23,12 +25,13 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   loading,
   error,
   onRetry,
-  onSelectCellLine,
+  onInspect,
 }) => {
   const [selectedInDropdown, setSelectedInDropdown] = useState<string>('');
+  const [view, setView] = useState<'table' | 'map'>('table');
 
   useEffect(() => {
-    if (results.length > 0) setSelectedInDropdown(results[0].cellLine);
+    if (results.length > 0) setSelectedInDropdown(results[0].modelId);
   }, [results]);
 
   if (loading) {
@@ -74,21 +77,39 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   const mode = results[0].mode;
   const topPick = results[0];
 
+  // Map view only exists for single/selectivity; multi falls back to the table.
+  const hasMap = mode === 'single' || mode === 'selectivity';
+  const activeView = hasMap ? view : 'table';
+
   const ignoredBits: string[] = [];
   if (queryParams.lineage !== 'Any') ignoredBits.push('lineage filtering');
-  if (queryParams.targets.length > 1) ignoredBits.push('additional targets');
-  if (queryParams.exclusions.length > 1) ignoredBits.push('additional exclusions');
+  // In multi mode all targets ARE used, but exclusions can't be; in selectivity
+  // mode only the first exclusion is used.
+  if (mode === 'multi' && queryParams.exclusions.length > 0) ignoredBits.push('exclusions');
+  if (mode === 'selectivity' && queryParams.exclusions.length > 1) ignoredBits.push('additional exclusions');
+
+  // Which single gene the detail endpoint is queried for: the primary target.
+  // (multi mode's primaryGene is a joined label, so prefer the first real gene.)
+  const inspectGene = meta?.genes?.[0] ?? meta?.primaryGene ?? queryParams.targets[0];
+  const inspect = (modelId: string) => {
+    const row = results.find((r) => r.modelId === modelId);
+    onInspect({ gene: inspectGene, modelId, cellLine: row?.cellLine ?? modelId });
+  };
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">Ranked Recommendations</h2>
+        <h2 className="text-2xl font-bold text-slate-900 font-display tracking-tight">Ranked Recommendations</h2>
         <p className="text-sm text-slate-500 mt-1">
           {meta?.mode === 'selectivity' ? (
             <>
               <strong>Selective for {meta.primaryGene}</strong> against{' '}
               <strong>{meta.excludedGene}</strong>
+            </>
+          ) : meta?.mode === 'multi' ? (
+            <>
+              <strong>Joint ranking:</strong> {meta.genes?.join(' + ')}
             </>
           ) : (
             <>
@@ -97,7 +118,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             </>
           )}
           {meta && (
-            <> {' '}| Top {results.length} of {meta.total.toLocaleString()} ranked</>
+            <> {' '}| Top {results.length} of {meta.total.toLocaleString()} {meta.mode === 'multi' ? 'passing' : 'ranked'}</>
           )}
         </p>
       </div>
@@ -116,6 +137,19 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
         </div>
       )}
 
+      {/* Method banner (multi / joint) */}
+      {meta?.mode === 'multi' && (
+        <div className="flex items-start gap-2 p-3 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg text-xs">
+          <Info className="w-4 h-4 mt-0.5 shrink-0" />
+          <p>
+            Ranked by a joint score across {meta.genes?.length} genes
+            {typeof meta.floor === 'number' && <> (lines must clear a floor of {meta.floor})</>}. A{' '}
+            <span className="font-mono">—</span> means that gene has no score for that line; the joint
+            score reflects the evidence that is present, so it is not a claim that every gene is high.
+          </p>
+        </div>
+      )}
+
       {/* What's still not applied */}
       {ignoredBits.length > 0 && (
         <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-xs">
@@ -124,8 +158,49 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
         </div>
       )}
 
+      {/* View switcher */}
+      {/* View switcher — map only exists for single (network) and selectivity (scatter) */}
+      {hasMap && (
+        <div className="inline-flex bg-slate-100 rounded-lg p-0.5">
+          <button
+            onClick={() => setView('table')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition ${
+              activeView === 'table' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <Table2 className="w-4 h-4" /> Table
+          </button>
+          <button
+            onClick={() => setView('map')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition ${
+              activeView === 'map' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <Network className="w-4 h-4" /> {mode === 'selectivity' ? 'Scatter' : 'Network'}
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Table */}
+        {/* Left panel: table or map */}
+        {activeView === 'map' ? (
+          <div className="lg:col-span-2">
+            {mode === 'selectivity' ? (
+              <SelectivityScatter
+                lines={results.filter((r): r is Extract<RankedCellLine, { mode: 'selectivity' }> => r.mode === 'selectivity')}
+                geneHigh={meta?.primaryGene ?? queryParams.targets[0]}
+                geneLow={meta?.excludedGene ?? queryParams.exclusions[0] ?? ''}
+                onSelect={inspect}
+              />
+            ) : (
+              <NetworkGraph
+                gene={meta?.primaryGene ?? queryParams.targets[0]}
+                lines={results.filter((r): r is Extract<RankedCellLine, { mode: 'single' }> => r.mode === 'single')}
+                onSelect={inspect}
+              />
+            )}
+          </div>
+        ) : (
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <table className="w-full text-left text-sm text-slate-700">
             <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase">
@@ -138,10 +213,15 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                     <th className="px-4 py-3">Tier</th>
                     <th className="px-4 py-3">Score</th>
                   </>
-                ) : (
+                ) : mode === 'selectivity' ? (
                   <>
                     <th className="px-4 py-3">Component scores</th>
                     <th className="px-4 py-3">Selectivity</th>
+                  </>
+                ) : (
+                  <>
+                    <th className="px-4 py-3">Per-gene scores</th>
+                    <th className="px-4 py-3">Joint</th>
                   </>
                 )}
                 <th className="px-4 py-3 text-right">Action</th>
@@ -160,6 +240,14 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                           className="inline-flex items-center gap-0.5 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded"
                         >
                           <Zap className="w-3 h-3" /> DRIVER
+                        </span>
+                      )}
+                      {r.mode === 'multi' && r.genes.some((g) => r.geneScores[g] === null) && (
+                        <span
+                          title="Missing a score for at least one requested gene — joint score is based on partial evidence"
+                          className="inline-flex items-center text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded"
+                        >
+                          PARTIAL
                         </span>
                       )}
                     </div>
@@ -182,7 +270,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                         <ScoreBar width={r.relativeScore} color="bg-indigo-500" label={r.score.toFixed(4)} />
                       </td>
                     </>
-                  ) : (
+                  ) : r.mode === 'selectivity' ? (
                     <>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3 text-xs font-mono">
@@ -198,11 +286,29 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                         <ScoreBar width={r.relativeScore} color="bg-indigo-500" label={r.selectivity.toFixed(4)} />
                       </td>
                     </>
+                  ) : (
+                    <>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono">
+                          {r.genes.map((g) => {
+                            const v = r.geneScores[g];
+                            return (
+                              <span key={g} className={v === null ? 'text-slate-300' : 'text-slate-700'} title={`${g} score`}>
+                                {g} {v === null ? '—' : v.toFixed(3)}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <ScoreBar width={r.relativeScore} color="bg-indigo-500" label={r.jointScore.toFixed(4)} />
+                      </td>
+                    </>
                   )}
 
                   <td className="px-4 py-3 text-right">
                     <button
-                      onClick={() => onSelectCellLine(r.cellLine)}
+                      onClick={() => inspect(r.modelId)}
                       className="inline-flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-800"
                     >
                       <span>Inspect</span>
@@ -217,6 +323,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
           {/* Track legend — only meaningful in single mode */}
           {mode === 'single' && <SpineLegend />}
         </div>
+        )}
 
         {/* Top pick + quick dive */}
         <div className="space-y-4">
@@ -226,8 +333,8 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
               <span>Top Recommendation</span>
             </div>
             <div>
-              <h3 className="text-2xl font-black text-slate-900">{topPick.cellLine}</h3>
-              <p className="text-xs text-slate-600">{topPick.modelId}</p>
+              <h3 className="text-2xl font-black text-slate-900 font-display">{topPick.cellLine}</h3>
+              <p className="text-xs text-slate-600 font-mono">{topPick.modelId}</p>
             </div>
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-indigo-200/60">
               {topPick.mode === 'single' ? (
@@ -238,12 +345,20 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                   </div>
                   <Metric label="Evidence Layers" value={String(topPick.nLayers)} />
                 </>
-              ) : (
+              ) : topPick.mode === 'selectivity' ? (
                 <>
                   <Metric label="Selectivity" value={topPick.selectivity.toFixed(4)} />
                   <Metric
                     label={`${topPick.geneHigh}↑ / ${topPick.geneLow}↓`}
                     value={`${topPick.scoreHigh.toFixed(2)} / ${topPick.scoreLow.toFixed(2)}`}
+                  />
+                </>
+              ) : (
+                <>
+                  <Metric label="Joint score" value={topPick.jointScore.toFixed(4)} />
+                  <Metric
+                    label="Genes with evidence"
+                    value={`${topPick.genes.filter((g) => topPick.geneScores[g] !== null).length} / ${topPick.genes.length}`}
                   />
                 </>
               )}
@@ -258,13 +373,13 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
               className="w-full bg-slate-50 border border-slate-300 text-slate-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500"
             >
               {results.map((r) => (
-                <option key={r.modelId} value={r.cellLine}>
+                <option key={r.modelId} value={r.modelId}>
                   {r.cellLine}
                 </option>
               ))}
             </select>
             <button
-              onClick={() => onSelectCellLine(selectedInDropdown)}
+              onClick={() => inspect(selectedInDropdown)}
               className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-2 rounded-lg text-sm transition"
             >
               Inspect Profile
