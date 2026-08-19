@@ -26,16 +26,16 @@ DATA_CLEAN = Path("data/parquet/data_clean")
 VAL = Path("validation/prepared")
 
 GENES = {
-    "EGFR": "ENSG00000146648", "MAP2K1": "ENSG00000169032", "MAP2K2": "ENSG00000126934",
-    "CDK4": "ENSG00000135446", "CDK6": "ENSG00000105810", "BRAF": "ENSG00000157764",
-    "MET": "ENSG00000105976", "ERBB2": "ENSG00000141736", "BCL2": "ENSG00000171791",
+    "EGFR": "ensg00000146648", "MAP2K1": "ensg00000169032", "MAP2K2": "ensg00000126934",
+    "CDK4": "ensg00000135446", "CDK6": "ensg00000105810", "BRAF": "ensg00000157764",
+    "MET": "ensg00000105976", "ERBB2": "ensg00000141736", "BCL2": "ensg00000171791",
 }
 
 print("Loading data...")
 pred, flags, variants, harm, gene_lookup, chronos_val = load_data()
 curated = pd.read_parquet(VAL / "curated_validation_pairs.parquet")
-curated["model_id"] = curated["model_id"].str.upper()
-curated["ensg_id"] = curated["ensg_id"].str.upper()
+curated["model_id"] = curated["model_id"].str.lower()
+curated["ensg_id"] = curated["ensg_id"].str.lower()
 
 # Full expression matrix for profile clustering (same construction as 02_core_score.ipynb cell 4)
 print("Building expression matrix for profile clustering...")

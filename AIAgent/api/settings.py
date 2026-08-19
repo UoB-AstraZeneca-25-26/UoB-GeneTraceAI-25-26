@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     llm_provider: str = "groq"
     llm_model: str = "openai/gpt-oss-120b"
     llm_temperature: float = 0.0
-    llm_max_tokens: int = 512
+    llm_max_tokens: int = 2048   # reasoning tokens are billed against this
 
     # --- CORS ----------------------------------------------------------
     allowed_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173"])
@@ -49,6 +49,11 @@ class Settings(BaseSettings):
     # --- Data sources --------------------------------------------------
     gene_lookup_path: Path = _REPO_ROOT / "reference" / "gene_lookup.parquet"
     knowledge_dir: Path = _AIAGENT_DIR / "Knowledge"
+
+    # --- Scoring API -----------------------------------------------------
+    # Empty => score_explainer runs in methodology-only mode (null numerics,
+    # the LLM explains the 7-step method). Set it to switch to real values.
+    scoring_api_url: str = ""
 
     # --- Agent / timeout budget (R6) ------------------------------------
     agent_max_iterations: int = 4

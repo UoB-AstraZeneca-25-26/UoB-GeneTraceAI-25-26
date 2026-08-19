@@ -1,6 +1,8 @@
 # ── Large data files ────────────────────────────────────────────
-data/                        # all raw source files
-outputs/                     # all generated outputs
+# all raw source files
+data/
+# all generated outputs
+outputs/
 
 # ── Large zip archives (too big for GitHub, share separately) ────
 GeneTraceAI_datasets.zip
@@ -26,6 +28,8 @@ __pycache__/
 .venv
 env/
 venv/
+data/
+outputs/
 
 # ── Jupyter ──────────────────────────────────────────────────────
 .ipynb_checkpoints/

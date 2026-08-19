@@ -19,6 +19,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from groq import RateLimitError as GroqRateLimitError
 from langchain_core.messages import HumanMessage, SystemMessage
+from pydantic import ValidationError
 from sse_starlette.sse import EventSourceResponse
 
 from . import _pathsetup  # noqa: F401  side effect: sys.path for the flat modules below
@@ -28,7 +29,7 @@ from FunctionCalling import _KB  # noqa: E402
 
 from .cache import detect_fast_path, make_response_cache, normalise_query
 from .errors import UpstreamRateLimitedError
-from .schemas import HealthResponse, QueryRequest, QueryResponse, ToolCall
+from .schemas import HealthResponse, Methodology, QueryRequest, QueryResponse, ToolCall
 from .security import limiter, require_api_key
 from .settings import get_settings
 
@@ -38,6 +39,9 @@ _settings = get_settings()
 _response_cache = make_response_cache(_settings.response_cache_maxsize, _settings.response_cache_ttl)
 _TOOLS_BY_NAME = {t.name: t for t in tools}
 _DATASET_NAMES: set[str] = set(_KB.keys())
+
+# The one tool whose answer is a structured contract rather than prose.
+SCORE_EXPLAINER = "score_explainer"
 
 
 # ---------------------------------------------------------------------------
@@ -55,15 +59,30 @@ async def _invoke_tool(tool_name: str, args: dict) -> dict:
     return json.loads(raw) if isinstance(raw, str) else raw
 
 
+# score_explainer answers are consumed by the UI's methodology chart, so the
+# narration instruction has to ask for the JSON contract rather than prose --
+# otherwise the fast path contradicts the system prompt and the model splits
+# the difference.
+_NARRATION_INSTRUCTION = (
+    "Explain this result to the scientist in plain language, "
+    "following your instructions."
+)
+_STRUCTURED_INSTRUCTION = (
+    "Return the 7-step methodology as JSON, following the output contract "
+    "in your instructions. Output the JSON object only."
+)
+
+
 async def _narrate_tool_output(tool_name: str, output: dict) -> AsyncIterator[str]:
+    instruction = (
+        _STRUCTURED_INSTRUCTION if tool_name == SCORE_EXPLAINER else _NARRATION_INSTRUCTION
+    )
     messages = [
         SystemMessage(content=system_prompt),
         HumanMessage(
             content=(
                 f"The `{tool_name}` tool returned this JSON result:\n"
-                f"{json.dumps(output)}\n\n"
-                "Explain this result to the scientist in plain language, "
-                "following your instructions."
+                f"{json.dumps(output)}\n\n" + instruction
             )
         ),
     ]
@@ -71,6 +90,74 @@ async def _narrate_tool_output(tool_name: str, output: dict) -> AsyncIterator[st
         text = getattr(chunk, "content", "")
         if text:
             yield text
+
+
+_VALID_STATUS = {"active", "skipped", "inverted"}
+
+
+def _strip_reasoning(text: str) -> str:
+    """Drop a reasoning model's <think> preamble.
+
+    The default model (qwen-qwq-32b) emits its chain of thought before the
+    answer; without this the JSON object never starts at a parseable offset.
+    """
+    marker = "</think>"
+    if marker in text:
+        text = text.rsplit(marker, 1)[1]
+    return text.strip()
+
+
+def _parse_methodology(answer_text: str | None) -> Methodology | None:
+    """Read a score_explainer answer as the structured step contract.
+
+    Returns None for anything that is not the contract -- prose, a truncated
+    object, an unexpected shape -- so the caller can keep the raw text and the
+    UI falls back to rendering it as a paragraph. Deliberately tolerant of the
+    wrappers models add (code fences, a trailing sentence): the JSON object is
+    located by hand and decoded with raw_decode so trailing text is ignored.
+    """
+    if not answer_text:
+        return None
+
+    text = _strip_reasoning(answer_text)
+    start = text.find("{")
+    if start < 0:
+        return None
+    try:
+        parsed, _ = json.JSONDecoder().raw_decode(text[start:])
+    except json.JSONDecodeError:
+        return None
+
+    if not isinstance(parsed, dict):
+        return None
+    steps = parsed.get("steps")
+    if not isinstance(steps, list) or not steps:
+        return None
+
+    # An out-of-contract status is a cosmetic error, not a reason to throw the
+    # whole chart away -- fall back to the neutral node state.
+    normalised = []
+    for step in steps:
+        if not isinstance(step, dict):
+            return None
+        step = dict(step)
+        if step.get("status") not in _VALID_STATUS:
+            step["status"] = "active"
+        normalised.append(step)
+
+    try:
+        return Methodology.model_validate({"steps": normalised})
+    except ValidationError:
+        return None
+
+
+def _split_answer(answer: str | None, tool_calls: list[ToolCall]) -> tuple[str | None, Methodology | None]:
+    """Route a score_explainer answer into `methodology`, everything else
+    into `answer`. A score_explainer answer that will not parse stays prose."""
+    if not any(tc.tool == SCORE_EXPLAINER for tc in tool_calls):
+        return answer, None
+    methodology = _parse_methodology(answer)
+    return (None, methodology) if methodology is not None else (answer, None)
 
 
 def _parse_tool_output(raw_output: Any) -> dict:
@@ -180,11 +267,13 @@ async def _buffered(req: QueryRequest, request: Request) -> JSONResponse:
         degraded.append("llm_unavailable")
 
     answer = "".join(answer_chunks).strip() or None
+    answer, methodology = _split_answer(answer, tool_calls)
     data = tool_calls[-1].output if tool_calls else None
 
     response = QueryResponse(
         answer=answer,
         data=data,
+        methodology=methodology,
         request_id=request_id,
         model=settings.llm_model,
         tool_calls=tool_calls,
@@ -223,7 +312,11 @@ async def _stream_events(req: QueryRequest, request: Request) -> AsyncIterator[d
             yield {"event": "data", "data": json.dumps(evt.payload["output"])}
         elif evt.kind == "token":
             answer_chunks.append(evt.payload["text"])
-            yield {"event": "token", "data": json.dumps(evt.payload)}
+            # A score_explainer answer is a JSON object, not prose: half a
+            # JSON object is nothing a client can render, so those tokens are
+            # withheld and the parsed steps ship in the `done` event instead.
+            if not any(tc.tool == SCORE_EXPLAINER for tc in tool_calls):
+                yield {"event": "token", "data": json.dumps(evt.payload)}
         elif evt.kind == "error":
             terminal_error = evt.payload["exc"]
 
@@ -242,10 +335,12 @@ async def _stream_events(req: QueryRequest, request: Request) -> AsyncIterator[d
         degraded.append("llm_unavailable")
 
     answer = "".join(answer_chunks).strip() or None
+    answer, methodology = _split_answer(answer, tool_calls)
     data = tool_calls[-1].output if tool_calls else None
     response = QueryResponse(
         answer=answer,
         data=data,
+        methodology=methodology,
         request_id=request_id,
         model=settings.llm_model,
         tool_calls=tool_calls,

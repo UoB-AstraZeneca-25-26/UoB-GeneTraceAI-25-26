@@ -22,16 +22,29 @@ def get_llm() -> BaseChatModel:
     # R6 timeout budget: the LLM call is the innermost layer and must be
     # strictly shorter than the agent's max_execution_time (45s).
     timeout = float(os.getenv("LLM_CALL_TIMEOUT", "30.0"))
+    # 2048, not 512: the default model (openai/gpt-oss-120b) is a reasoning
+    # model whose thinking tokens are billed against max_tokens. A 512 budget
+    # was spent entirely on reasoning (finish_reason="length", 0 content), so
+    # every answer came back empty. 2048 leaves room for ~1100 reasoning
+    # tokens plus the 7-step score_explainer JSON, and still fits the 8K TPM
+    # limit alongside a ~3.3K prompt.
+    max_tokens = int(os.getenv("LLM_MAX_TOKENS", "2048"))
+    # Optional, and provider-specific: on a reasoning model "low" cuts ~1000
+    # thinking tokens (and ~1s) per call. Left unset by default because a
+    # non-reasoning model rejects the parameter outright.
+    reasoning_effort = os.getenv("LLM_REASONING_EFFORT", "").strip()
 
     if provider == "groq":
         from langchain_groq import ChatGroq
 
+        extra = {"reasoning_effort": reasoning_effort} if reasoning_effort else {}
         return ChatGroq(
             model=model,
             temperature=temperature,
             api_key=os.getenv("GROQ_API_KEY"),
-            max_tokens=512,
+            max_tokens=max_tokens,
             timeout=timeout,
+            **extra,
         )
 
     if provider == "huggingface":

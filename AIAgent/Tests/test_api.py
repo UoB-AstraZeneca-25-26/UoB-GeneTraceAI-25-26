@@ -154,3 +154,97 @@ def test_cors_preflight_allows_configured_origin(client):
 
     assert response.status_code in (200, 204)
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+
+
+# ---------------------------------------------------------------------------
+# score_explainer -> QueryResponse.methodology (the UI's step chart)
+# ---------------------------------------------------------------------------
+
+SCORE_OUTPUT = {
+    "found": True, "ensg_id": "ENSG00000157764", "model_id": "ACH-000219",
+    "core_score": None, "confidence_tier": None, "is_tsg": False,
+    "driver_gated": False, "message": "Methodology explanation.",
+}
+
+
+def _methodology_json(status: str = "skipped") -> str:
+    return json.dumps({
+        "steps": [
+            {"key": f"Step {i}", "value": f"Explanation number {i}.", "formula": "f(x)",
+             "status": status if i == 5 else "active"}
+            for i in range(1, 8)
+        ]
+    })
+
+
+def _score_client(monkeypatch, *answer_chunks):
+    events = [_tool_end_event("score_explainer", {"ensg_id": "ENSG00000157764", "model_id": "ACH-000219"}, SCORE_OUTPUT)]
+    events += [_token_event(chunk) for chunk in answer_chunks]
+    monkeypatch.setattr(routes_module, "executor", FakeExecutor(events=events))
+    routes_module._response_cache.clear()
+    return TestClient(app)
+
+
+def test_score_explainer_json_answer_becomes_methodology(monkeypatch):
+    with _score_client(monkeypatch, _methodology_json()) as c:
+        response = c.post("/v1/agent/query", json={"query": "Explain the score for ENSG00000157764 in ACH-000219"})
+
+    body = QueryResponse.model_validate(response.json())
+    assert body.answer is None                      # prose suppressed: the UI draws the chart
+    assert len(body.methodology.steps) == 7
+    assert body.methodology.steps[4].status == "skipped"
+    assert body.data == SCORE_OUTPUT                # deterministic payload still returned
+
+
+def test_score_explainer_json_survives_fences_and_reasoning(monkeypatch):
+    wrapped = "<think>weighing the layers</think>\n```json\n" + _methodology_json("inverted") + "\n```"
+    with _score_client(monkeypatch, wrapped) as c:
+        response = c.post("/v1/agent/query", json={"query": "Explain the score for ENSG00000141510 in ACH-000219"})
+
+    body = QueryResponse.model_validate(response.json())
+    assert body.methodology is not None
+    assert body.methodology.steps[4].status == "inverted"
+
+
+def test_score_explainer_prose_falls_back_to_answer(monkeypatch):
+    with _score_client(monkeypatch, "Step 1 - raw measurements are ", "converted to percentiles.") as c:
+        response = c.post("/v1/agent/query", json={"query": "Explain the score for ENSG00000157764 in ACH-000000"})
+
+    body = QueryResponse.model_validate(response.json())
+    assert body.methodology is None
+    assert body.answer == "Step 1 - raw measurements are converted to percentiles."
+
+
+def test_non_score_tool_never_populates_methodology(client):
+    response = client.post("/v1/agent/query", json={"query": "Tell me about TP53"})
+
+    body = QueryResponse.model_validate(response.json())
+    assert body.methodology is None
+    assert body.answer == "TP53 is also known as p53."
+
+
+@pytest.mark.asyncio
+async def test_sse_withholds_json_tokens_and_ships_methodology_on_done(monkeypatch):
+    """Half a JSON object is not renderable text, so the SSE path must not
+    stream score_explainer tokens — the parsed steps ride the `done` event."""
+    from api.schemas import QueryRequest
+
+    chunks = _methodology_json()
+    events = [_tool_end_event("score_explainer", {"ensg_id": "ENSG00000157764", "model_id": "ACH-000219"}, SCORE_OUTPUT)]
+    events += [_token_event(chunks[i:i + 60]) for i in range(0, len(chunks), 60)]
+    monkeypatch.setattr(routes_module, "executor", FakeExecutor(events=events))
+    routes_module._response_cache.clear()
+
+    request = SimpleNamespace(state=SimpleNamespace(request_id="sse-test-id"))
+    emitted = [
+        evt async for evt in routes_module._stream_events(
+            QueryRequest(query="Explain the score for ENSG00000157764 in ACH-000219"), request
+        )
+    ]
+
+    # FakeExecutor emits no on_tool_start, so there is no leading "resolving"
+    # status: the tool result lands first, then "explaining", then done.
+    assert [e["event"] for e in emitted] == ["accepted", "data", "status", "done"]
+    body = QueryResponse.model_validate_json(emitted[-1]["data"])
+    assert body.answer is None
+    assert len(body.methodology.steps) == 7

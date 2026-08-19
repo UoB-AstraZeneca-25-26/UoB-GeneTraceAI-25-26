@@ -36,6 +36,28 @@ def _print_result(label: str, result: dict) -> None:
     print(f"  final output: {result['output']}")
 
 
+_STATUSES = {"active", "skipped", "inverted"}
+
+
+def _parse_steps(output: str):
+    """Pull the step contract out of a score_explainer answer.
+
+    Mirrors api.routes._parse_methodology: tolerate a reasoning preamble and
+    code fences, and return None for anything that is not the contract.
+    """
+    if "</think>" in output:
+        output = output.rsplit("</think>", 1)[1]
+    start = output.find("{")
+    if start < 0:
+        return None
+    try:
+        parsed, _ = json.JSONDecoder().raw_decode(output[start:])
+    except json.JSONDecodeError:
+        return None
+    steps = parsed.get("steps") if isinstance(parsed, dict) else None
+    return steps if isinstance(steps, list) and steps else None
+
+
 @pytest.mark.asyncio
 async def test_agent_calls_gene_alias_lookup(executor):
     result = await executor.ainvoke({"input": "What are the aliases for TP53?"})
@@ -60,6 +82,9 @@ async def test_agent_calls_dataset_info(executor):
 
 @pytest.mark.asyncio
 async def test_agent_calls_score_explainer(executor):
+    """BC2. With no scoring API connected the tool returns null numerics, so
+    the answer has to be the methodology — and for score_explainer that answer
+    is the structured 7-step contract the UI's chart renders, not prose."""
     await asyncio.sleep(20)
     result = await executor.ainvoke(
         {"input": "Explain the score for ENSG00000141510 in ACH-000001"}
@@ -69,6 +94,21 @@ async def test_agent_calls_score_explainer(executor):
     tool_names = {step[0].tool for step in steps}
 
     assert "score_explainer" in tool_names
+
+    parsed = _parse_steps(result["output"])
+    assert parsed is not None, "score_explainer answer is not the JSON step contract"
+    assert len(parsed) == 7, f"expected 7 steps, got {len(parsed)}"
+    assert all({"key", "value"} <= set(step) for step in parsed)
+    assert all(step.get("status", "active") in _STATUSES for step in parsed)
+
+    # TP53 is a tumour suppressor, so the inversion step applies to it.
+    inversion = next((s for s in parsed if "inver" in s["key"].lower()), None)
+    assert inversion is not None, "no TSG inversion step in the answer"
+    assert inversion.get("status") == "inverted"
+
+    blob = json.dumps(parsed).lower()
+    for keyword in ("pit", "percentile", "correlation", "weight"):
+        assert keyword in blob, f"methodology term {keyword!r} missing from the answer"
 
 
 @pytest.mark.asyncio

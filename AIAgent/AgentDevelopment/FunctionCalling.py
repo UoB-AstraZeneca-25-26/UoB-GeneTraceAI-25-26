@@ -6,6 +6,7 @@ Every @tool function returns a JSON string (a serialised Pydantic model).
 
 import asyncio
 import json
+import os
 from pathlib import Path
 
 from langchain_core.tools import tool
@@ -203,50 +204,147 @@ class ScoreResult(BaseModel):
     message: str = ""
 
 
-# Hardcoded mock data for initial scaffold.
-# TODO: replace with a parquet read from the pipeline scoring output
-# (plan.md Step 6 — still PARTIAL; not part of the production-readiness gap
-# list, which targets the gene lookup, not the scoring pipeline output).
-_MOCK_SCORES = {
-    ("ENSG00000141510", "ACH-000001"): {
-        "raw_expression": 4.32,
-        "raw_proteomics": 0.85,
-        "pit_expression": 0.72,
-        "pit_proteomics": 0.68,
-        "rho_ep": 0.41,
-        "weight_expression": 0.55,
-        "weight_proteomics": 0.45,
-        "core_score": 0.702,
-        "confidence_tier": "high",
-        "is_tsg": True,
-        "driver_gated": True,
-    },
-}
+# The scoring pipeline's intermediates are served by a separate scoring API
+# (SCORING_API_URL). Until that endpoint is wired up, the tool runs in
+# methodology-only mode: it returns the pair's identity with every numeric
+# field null, and the LLM explains the 7-step method from the mathematical
+# reference in the system prompt rather than narrating a specific result.
+# No scores are ever synthesised here.
+
+_API_NUMERIC_FIELDS = (
+    "raw_expression",
+    "raw_proteomics",
+    "pit_expression",
+    "pit_proteomics",
+    "rho_ep",
+    "weight_expression",
+    "weight_proteomics",
+    "core_score",
+)
+
+_METHODOLOGY_MESSAGE = (
+    "Methodology explanation — scoring API not connected. "
+    "Explaining the 7-step pipeline methodology for this gene."
+)
+_METHODOLOGY_MESSAGE_DEGRADED = (
+    "Methodology explanation — the scoring API returned no data for this "
+    "pair. Explaining the 7-step pipeline methodology for this gene."
+)
 
 
-def _load_scores(ensg_id: str, model_id: str) -> ScoreResult:
-    row = _MOCK_SCORES.get((ensg_id, model_id))
-    if row is None:
+def _scoring_api_url() -> str:
+    """Resolve the scoring endpoint, empty string meaning methodology mode.
+
+    ``os.environ`` wins so a container env var (or a test) can flip modes
+    without touching .env; the validated ``Settings`` object is the fallback
+    so a value set only in AIAgent/.env is still picked up. Settings is
+    imported lazily because this module also runs standalone, outside the
+    FastAPI process that owns the `api` package.
+    """
+    url = os.getenv("SCORING_API_URL", "").strip()
+    if url:
+        return url
+    try:
+        from api.settings import get_settings
+
+        return get_settings().scoring_api_url.strip()
+    except Exception:  # noqa: BLE001 - no settings available => methodology mode
+        return ""
+
+
+def _as_float(value: object) -> float | None:
+    try:
+        return float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+
+
+def _result_from_api(ensg_id: str, model_id: str, payload: dict, *, is_tsg: bool) -> ScoreResult:
+    """Map a scoring-API payload onto ScoreResult.
+
+    The API is expected to return the ScoreResult field names; anything it
+    omits stays null rather than being filled in with a guess.
+    """
+    numerics = {name: _as_float(payload.get(name)) for name in _API_NUMERIC_FIELDS}
+    tier = payload.get("confidence_tier")
+
+    return ScoreResult(
+        found=bool(payload.get("found", True)),
+        ensg_id=ensg_id,
+        model_id=model_id,
+        confidence_tier=str(tier) if tier is not None else None,
+        is_tsg=bool(payload.get("is_tsg", is_tsg)),
+        driver_gated=bool(payload.get("driver_gated", False)),
+        message=str(payload.get("message") or "Scoring intermediates retrieved."),
+        **numerics,
+    )
+
+
+def _methodology_result(ensg_id: str, model_id: str, *, is_tsg: bool, message: str) -> ScoreResult:
+    """A ScoreResult carrying only the pair's identity and gene class.
+
+    Every numeric field is null on purpose: the LLM has the formulas in its
+    system prompt and explains the method, so there is nothing to invent.
+    """
+    return ScoreResult(
+        found=True,
+        ensg_id=ensg_id,
+        model_id=model_id,
+        raw_expression=None,
+        raw_proteomics=None,
+        pit_expression=None,
+        pit_proteomics=None,
+        rho_ep=None,
+        weight_expression=None,
+        weight_proteomics=None,
+        core_score=None,
+        confidence_tier=None,
+        is_tsg=is_tsg,
+        driver_gated=False,
+        message=message,
+    )
+
+
+@tool
+async def score_explainer(ensg_id: str, model_id: str) -> str:
+    """Retrieve scoring intermediates for a gene-cell line pair and explain
+    the 7-step scoring methodology. If the scoring API is connected, returns
+    the real pipeline values. Otherwise explains the mathematical
+    methodology without specific numbers."""
+    ensg_id = ensg_id.strip().upper()
+    model_id = model_id.strip().upper()
+
+    # Reject genes outside the panel up front so an unknown/mistyped ID gets
+    # found=False instead of a methodology essay about a gene that does not
+    # exist. Skipped when the index is empty (reference parquet missing),
+    # where every gene would otherwise look unknown.
+    index = _get_gene_index()
+    record = index.lookup(ensg_id)
+    if record is None and len(index) > 0:
         return ScoreResult(
             found=False,
             ensg_id=ensg_id,
             model_id=model_id,
             message=f"No scoring data found for {ensg_id} in {model_id}.",
-        )
-    return ScoreResult(
-        found=True,
-        ensg_id=ensg_id,
-        model_id=model_id,
-        message="Scoring intermediates retrieved.",
-        **row,
-    )
+        ).model_dump_json()
 
+    # gene_role comes from reference/gene_lookup.parquet; "both" genes act as
+    # tumour suppressors too, so Step 5's inversion applies to them.
+    is_tsg = record is not None and record.gene_role in ("tsg", "both")
 
-@tool
-def score_explainer(ensg_id: str, model_id: str) -> str:
-    """Retrieve scoring intermediates for a gene-cell line pair.
-    Returns raw values, PIT ranks, weights, core score, and tier."""
-    return _load_scores(ensg_id, model_id).model_dump_json()
+    scoring_url = _scoring_api_url()
+    if scoring_url:
+        url = f"{scoring_url}?gene={ensg_id}&model={model_id}"
+        data = await safe_get(url, headers={"Accept": "application/json"})
+        if data:
+            return _result_from_api(ensg_id, model_id, data, is_tsg=is_tsg).model_dump_json()
+        message = _METHODOLOGY_MESSAGE_DEGRADED
+    else:
+        message = _METHODOLOGY_MESSAGE
+
+    return _methodology_result(
+        ensg_id, model_id, is_tsg=is_tsg, message=message
+    ).model_dump_json()
 
 
 # ---------------------------------------------------------------------------

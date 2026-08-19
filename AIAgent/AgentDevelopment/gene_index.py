@@ -24,6 +24,9 @@ class GeneRecord:
     full_name: str | None
     previous_symbols: list[str]
     synonyms: list[str]
+    # "oncogene" | "tsg" | "both" | "unknown" — drives score_explainer's
+    # is_tsg flag (Step 5's TSG inversion).
+    gene_role: str = "unknown"
 
 
 @dataclass
@@ -74,6 +77,8 @@ def load_gene_index(path: Path) -> GeneIndex:
         aliases = _split_list(getattr(row, "alias_symbols", None))
         full_name = getattr(row, "approved_name", None)
         full_name = str(full_name).strip() if full_name and str(full_name) != "nan" else None
+        gene_role = getattr(row, "gene_role", None)
+        gene_role = str(gene_role).strip().lower() if gene_role and str(gene_role) != "nan" else "unknown"
 
         record = GeneRecord(
             ensg_id=ensg_id,
@@ -81,6 +86,7 @@ def load_gene_index(path: Path) -> GeneIndex:
             full_name=full_name,
             previous_symbols=prev,
             synonyms=aliases,
+            gene_role=gene_role,
         )
 
         index.by_ensg[ensg_id.upper()] = record

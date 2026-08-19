@@ -1,4 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import { searchGene, queryAgent } from "./api/client";
+import MethodologyChart, { MethodologyChartSkeleton } from "./components/MethodologyChart";
 
 /* ------------------------------------------------------------------ */
 /*  Evidence tracks — the six layers every cell line is scored on     */
@@ -51,78 +53,70 @@ const LIN_COLOR = (l) => ({
 }[l] || "#5D7183");
 
 /* ------------------------------------------------------------------ */
-/*  Data — grounded in real cell-line biology                          */
-/* ------------------------------------------------------------------ */
-/* ------------------------------------------------------------------ */
-/*  Data layer — real pipeline output, fetched as static JSON          */
+/*  Data layer — live API (AWS Lambda scoring endpoint)                 */
 /*                                                                     */
-/*  Written by:  python src/pipeline/export_web.py --genes BRAF ...    */
-/*  Served from: public/data/<SYMBOL>.json  (Vite serves public/ at /) */
+/*  GET /gene?query=BRAF  returns { gene, ensg, total, showing,        */
+/*       lines: [{ rank, model_id, name, score, tier, n_layers,        */
+/*                 driver_alteration }],                                */
+/*       rna_alternatives_for_rank1: [...] }                           */
 /*                                                                     */
-/*  No backend: core_score.parquet is 29.8M rows, but one gene's       */
-/*  top-N slice is ~48 KB, so each gene is a static file.              */
+/*  adaptApiResponse() bridges the flat API shape to the richer        */
+/*  object that the UI components (CellLineRow, NetworkGraph, etc.)    */
+/*  expect.  Fields the API does not carry (lineage, tracks, reason,   */
+/*  metadata) are filled with safe defaults.                           */
 /* ------------------------------------------------------------------ */
-const DATA_BASE = "/data";
 
-/* Per-track values are REAL: expression and proteomics are within-gene
-   percentiles of the measured quantity, copy number is deviation from
-   diploid, and the three categorical layers carry a call rather than an
-   invented magnitude. See `kind` on TRACKS above. */
-function adaptTracks(t) {
-  if (!t) return {};
-  const out = {};
+
+
+/* Hardcoded examples shown on the landing and no-result pages.
+   The scoring API does not expose an index endpoint. */
+const EXAMPLE_GENES = ["BRAF", "EGFR", "TP53", "KRAS", "PIK3CA"];
+
+/* Build a tracks object from the flat API fields.
+   Only driver_alteration is surfaced; other tracks default to empty. */
+function buildTracksFromApi(line) {
+  const empty = { present: false, score: 0, finding: "not available via summary API" };
+  const tracks = {};
   for (const tr of TRACKS) {
-    const d = t[tr.key] || {};
-    out[tr.key] = { ...d, score: d.present ? (d.score ?? 0) : 0,
-                    finding: trackFinding(tr.key, d) };
+    tracks[tr.key] = { ...empty };
   }
-  return out;
+  if (line.driver_alteration) {
+    tracks.mutation = {
+      present: true, score: 1,
+      driver_alteration: true,
+      finding: "driver alteration present in this line",
+    };
+  }
+  return tracks;
 }
 
-/* core_score is a WITHIN-GENE percentile in [0,1]. It is a real measured
-   quantity and is what drives every bar width and node radius below.
-   It is NOT a calibrated confidence — the ordinal tier carries that, and
-   the pipeline deliberately exports no 0-1 confidence float (design
-   record C1/C5). */
-function adaptPayload(j) {
+/* Map the scoring API response to the shape geneData / UI components expect. */
+function adaptApiResponse(apiData) {
   return {
-    symbol: j.symbol,
-    ensg: j.ensg,
-    name: j.gene?.name || "",
-    role: j.gene?.["COSMIC role"] || "unknown",
-    chr: j.gene?.["locus type"] || "",
-    geneMeta: j.gene || {},
-    klass: j.class,
-    nCandidates: j.n_candidates,
-    verdict: j.verdict,
-    lines: (j.lines || []).map((l) => ({
+    symbol: apiData.gene,
+    ensg: apiData.ensg,
+    name: "",
+    role: "unknown",
+    chr: "",
+    geneMeta: {},
+    klass: "",
+    nCandidates: apiData.total,
+    verdict: null,
+    lines: (apiData.lines || []).map((l) => ({
       name: l.name || l.model_id,
       model_id: (l.model_id || "").toUpperCase(),
-      lineage: cap(l.lineage) || "Unknown",
-      subtype: l.subtype || l.disease || "—",
-      score: l.core_score,          // real: within-gene percentile
-      tier: l.confidence_tier,      // ordinal band from Stage 5
-      reason: l.confidence_reason,
+      lineage: "Unknown",
+      subtype: "\u2014",
+      score: l.score,
+      tier: (l.tier || "unknown").toLowerCase(),
+      reason: "",
       nLayers: l.n_layers,
-      nModalities: l.n_modalities,
-      metadata: l.metadata || {},
-      tracks: adaptTracks(l.tracks),
+      nModalities: l.n_layers,
+      metadata: {},
+      tracks: buildTracksFromApi(l),
     })),
+    rnaAlternatives: apiData.rna_alternatives_for_rank1 || [],
   };
-}
-
-const cap = (x) => (x ? String(x).replace(/\b\w/g, (c) => c.toUpperCase()) : x);
-
-async function fetchIndex() {
-  const r = await fetch(`${DATA_BASE}/index.json`);
-  if (!r.ok) throw new Error(`index.json ${r.status}`);
-  return (await r.json()).genes || [];
-}
-
-async function fetchGene(symbol) {
-  const r = await fetch(`${DATA_BASE}/${symbol}.json`);
-  if (!r.ok) return null;
-  return adaptPayload(await r.json());
 }
 
 /* ------------------------------------------------------------------ */
@@ -133,11 +127,13 @@ async function fetchGene(symbol) {
    from a number would re-introduce exactly the calibrated-confidence claim
    the pipeline refuses to make. */
 const confTier = (tier) => ({
-  high:     { label: "High confidence", cls: "high" },
-  moderate: { label: "Moderate",        cls: "strong" },
-  low:      { label: "Low",             cls: "mod" },
-  prior:    { label: "Prior only",      cls: "mod" },
-  unknown:  { label: "Unvalidated",     cls: "weak" },
+  high:     { label: "High confidence",   cls: "high" },
+  moderate: { label: "Moderate",          cls: "strong" },
+  medium:   { label: "Medium",            cls: "strong" },
+  context:  { label: "Context-dependent", cls: "mod" },
+  low:      { label: "Low",               cls: "mod" },
+  prior:    { label: "Prior only",        cls: "mod" },
+  unknown:  { label: "Unvalidated",       cls: "weak" },
 }[tier] || { label: tier || "Unvalidated", cls: "weak" });
 const pct = (c) => Math.round((c || 0) * 100);
 const segAlpha = (s) => 0.28 + 0.72 * s;
@@ -407,6 +403,39 @@ function OmicsMap({ gene, lines, selected, onSelect }) {
 /*  Detail panel                                                       */
 /* ------------------------------------------------------------------ */
 function DetailPanel({ gene, line, onClose }) {
+  /* Agent-generated methodology explanation for this gene x cell-line pair.
+     The agent answers score_explainer as structured steps (response.methodology),
+     which render as the interactive chart; `explanation` is the prose fallback
+     for when it could not, so the panel degrades instead of going blank.
+     Hooks live above the early return so the hook order stays stable. */
+  const [methodology, setMethodology] = useState(null);
+  const [explanation, setExplanation] = useState(null);
+  const [explaining, setExplaining] = useState(false);
+
+  /* A different row is a different question -- drop the previous answer. */
+  useEffect(() => {
+    setMethodology(null);
+    setExplanation(null);
+    setExplaining(false);
+  }, [line?.model_id]);
+
+  async function handleExplain() {
+    setExplaining(true);
+    try {
+      const result = await queryAgent(
+        `Explain the score for ${gene?.ensg} in ${line?.model_id}`
+      );
+      if (result?.methodology?.steps?.length) {
+        setMethodology(result.methodology);
+      } else {
+        setExplanation(result?.answer || "Explanation unavailable.");
+      }
+    } catch {
+      setExplanation("Agent unavailable — see math_reference.md for methodology.");
+    }
+    setExplaining(false);
+  }
+
   if (!line) {
     return (
       <aside className="detail empty">
@@ -490,6 +519,42 @@ function DetailPanel({ gene, line, onClose }) {
         lines scored for {gene.symbol}. It is comparable between cell lines for this gene, not between
         genes, and it is not a calibrated probability — the tier above carries the confidence judgement.
       </p>
+
+      <div style={{ marginTop: 16, borderTop: "1px solid #e5e7eb", paddingTop: 12 }}>
+        {!methodology && !explanation && !explaining && (
+          <button
+            onClick={handleExplain}
+            style={{
+              background: "none",
+              border: "1px solid #0d9488",
+              borderRadius: 6,
+              color: "#0d9488",
+              padding: "6px 14px",
+              cursor: "pointer",
+              fontSize: 13,
+              fontWeight: 500,
+              width: "100%",
+            }}
+          >
+            Explain scoring methodology
+          </button>
+        )}
+
+        {/* The skeleton is the chart's own shape, so the panel does not
+            reflow when the agent (~8s) finally answers. */}
+        {explaining && <MethodologyChartSkeleton />}
+
+        {methodology?.steps?.length ? (
+          <MethodologyChart steps={methodology.steps} geneName={gene?.symbol} />
+        ) : explanation ? (
+          <div style={{ fontSize: 13, lineHeight: 1.6, color: "#374151", marginTop: 8 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6, color: "#0d9488" }}>
+              Scoring methodology
+            </div>
+            {explanation}
+          </div>
+        ) : null}
+      </div>
     </aside>
   );
 }
@@ -600,21 +665,36 @@ export default function App() {
   const [geneData, setGeneData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(null);
+  const [aliasData, setAliasData] = useState(null);
 
-  // which genes have been exported. `python src/pipeline/export_web.py --genes ...`
-  useEffect(() => {
-    fetchIndex().then(setIndex).catch((e) => setLoadError(String(e)));
-  }, []);
+  // No index endpoint — autocomplete relies on the (currently empty) index state.
+  // A future agent alias lookup could populate it.
 
   useEffect(() => {
     if (!gene) { setGeneData(null); return; }
     let cancelled = false;
+    setGeneData(null);                // clear previous results
     setLoading(true); setLoadError(null);
-    fetchGene(gene)
-      .then((d) => { if (!cancelled) { setGeneData(d); setLoading(false); } })
+    searchGene(gene)
+      .then((d) => { if (!cancelled) { setGeneData(adaptApiResponse(d)); setLoading(false); } })
       .catch((e) => { if (!cancelled) { setLoadError(String(e)); setLoading(false); } });
     return () => { cancelled = true; };
   }, [gene]);
+
+  /* Alias enrichment from the agent. Fires once the scoring API has returned a
+     symbol; failure is silent because the alias line is enrichment, not result. */
+  useEffect(() => {
+    const symbol = geneData?.symbol;
+    setAliasData(null);
+    if (!symbol) return;
+    let cancelled = false;
+    queryAgent(`What are the aliases for ${symbol}`)
+      .then((result) => {
+        if (!cancelled && result?.data?.found) setAliasData(result.data);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [geneData?.symbol]);
 
   const submit = (term) => {
     const key = String(term).trim().toUpperCase();
@@ -661,7 +741,7 @@ export default function App() {
             <div className="landing-search"><SearchBox value={query} onChange={setQuery} onSubmit={submit} big index={index} /></div>
             <div className="examples">
               <span className="ex-label">Try</span>
-              {index.map((g) => <button key={g.symbol} className="ex-chip" onClick={() => { setQuery(g.symbol); submit(g.symbol); }}>{g.symbol}</button>)}
+              {EXAMPLE_GENES.map((g) => <button key={g} className="ex-chip" onClick={() => { setQuery(g); submit(g); }}>{g}</button>)}
             </div>
             <div className="stat-strip">
               <div className="stat"><span className="stat-n mono">19,176</span><span className="stat-l">scored genes</span></div>
@@ -682,10 +762,10 @@ export default function App() {
         <main className="noresult">
           <div className="noresult-inner">
             <div className="nr-glyph">{gene.slice(0, 2)}</div>
-            <h2>No models on record for “{gene}”.</h2>
-            <p>We don’t yet have cell-line evidence for this gene. Check the symbol, or try one of the examples below.</p>
+            <h2>{loadError ? "Unable to reach the scoring API" : <>No models on record for “{gene}”.</>}</h2>
+            <p>{loadError || "Check the symbol, or try one of the examples below."}</p>
             <div className="examples center">
-              {index.map((g) => <button key={g.symbol} className="ex-chip" onClick={() => { setQuery(g.symbol); submit(g.symbol); }}>{g.symbol}</button>)}
+              {EXAMPLE_GENES.map((g) => <button key={g} className="ex-chip" onClick={() => { setQuery(g); submit(g); }}>{g}</button>)}
             </div>
           </div>
         </main>
@@ -706,6 +786,18 @@ export default function App() {
                     <span className="gene-chr mono">spread: {geneData.geneMeta["signal spread"]}</span>
                   )}
                 </div>
+                {aliasData && (
+                  <div style={{ marginTop: 4, fontSize: 13, color: "#6b7280" }}>
+                    <span style={{ fontWeight: 500 }}>
+                      {aliasData.full_name}
+                    </span>
+                    {aliasData.synonyms?.length > 0 && (
+                      <span style={{ marginLeft: 8 }}>
+                        Also known as: {aliasData.synonyms.join(", ")}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div className="gene-name">{geneData.name}</div>
               </div>
               <div className="gene-head-right">
@@ -731,7 +823,7 @@ export default function App() {
                   <div><b>Proteomics</b><span>Protein-level corroboration where measured.</span></div>
                   <div><b>Convergence</b><span>How many independent tracks agree — more agreement lifts confidence.</span></div>
                 </div>
-                <p className="sp-note">Demo scores are illustrative, assembled from established cell-line biology (DepMap / CCLE / COSMIC-type evidence) — not live pipeline output.</p>
+                <p className="sp-note">Scores are generated by the GeneTraceAI pipeline from harmonised DepMap, CCLE, COSMIC and proteomics data sources.</p>
               </div>
             )}
 
