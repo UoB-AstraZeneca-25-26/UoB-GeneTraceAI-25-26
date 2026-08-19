@@ -1,0 +1,52 @@
+520fa4491cd3ea242b03ce74dc116d44933e8588
+100644 21be55e2c4cfadef149fa98f80e1a70f10027fcd 2	AIAgent/AgentDevelopment/FunctionCalling.py
+100644 f7ba7988c76108dde35b07b84a4ebf39f693bad3 3	AIAgent/AgentDevelopment/FunctionCalling.py
+100644 7ae6b428d2cd64315639e667bccc2020f577ec3b 2	AIAgent/AgentDevelopment/gene_index.py
+100644 48b50d10f6ecf830ed1eb1002229440862c1dd41 3	AIAgent/AgentDevelopment/gene_index.py
+100644 0a4d4d2b93c2102f13ce9d91f31d947e0da98e62 2	AIAgent/AgentDevelopment/llm.py
+100644 f8bd3d4d0a5bba03bab275f33e6254af03069365 3	AIAgent/AgentDevelopment/llm.py
+100644 f790a215febcf132eb32f838d6a024772970b31f 2	AIAgent/Knowledge/math_reference.md
+100644 af2cc7707ac0e557dc4c320882fe17657bf35294 3	AIAgent/Knowledge/math_reference.md
+100644 fc17641d701202e210114bd807bd327f162f270a 2	AIAgent/Schema/Prompts.py
+100644 718f2d165ec6438b161cd4c00c689aa84073e193 3	AIAgent/Schema/Prompts.py
+100644 319b1f1e7c7da6a0d25580eb10c6d7f612e403f7 2	AIAgent/Tests/test_agent.py
+100644 afbcaee9de14d355a22e59f9d4cfd6d11ef84375 3	AIAgent/Tests/test_agent.py
+100644 2c8b3d91cf18cf00bc75ba816ef08655d2dfa609 2	AIAgent/Tests/test_api.py
+100644 647d8e191b087c5ab82019b166de6dd20957a2ad 3	AIAgent/Tests/test_api.py
+100644 7c26b501144f6dbeba8ab673d41c1f4f28ec3030 2	AIAgent/Tests/test_score_explainer.py
+100644 e61540c40f919a5bed03b61357c57f5e124c05a0 3	AIAgent/Tests/test_score_explainer.py
+100644 69b253524f6f97f9a5deeb5ba0ff733418379a7d 2	AIAgent/api/routes.py
+100644 6f4198554959c1ee2ea54a5094a3b498f6356697 3	AIAgent/api/routes.py
+100644 72b70fd4a2efb7b2e0c43b417d7020dd4b2cbf84 2	AIAgent/api/schemas.py
+100644 00349841e79dde0c6083dd0e58c760f82c987005 3	AIAgent/api/schemas.py
+100644 b558da2f1006064386674a53c067fffd4f191ed9 2	AIAgent/api/settings.py
+100644 c0a4af262d91f877557aac8fa2ce61a61152b75e 3	AIAgent/api/settings.py
+100644 c23d367eab021d615296a8b00a6fbee9c809008c 2	integration_contract.md
+100644 72c6432195578099279fb2af9f6618dfc0a09310 3	integration_contract.md
+
+Auto-merging AIAgent/AgentDevelopment/FunctionCalling.py
+CONFLICT (add/add): Merge conflict in AIAgent/AgentDevelopment/FunctionCalling.py
+Auto-merging AIAgent/AgentDevelopment/gene_index.py
+CONFLICT (add/add): Merge conflict in AIAgent/AgentDevelopment/gene_index.py
+Auto-merging AIAgent/AgentDevelopment/llm.py
+CONFLICT (add/add): Merge conflict in AIAgent/AgentDevelopment/llm.py
+Auto-merging AIAgent/Knowledge/math_reference.md
+CONFLICT (add/add): Merge conflict in AIAgent/Knowledge/math_reference.md
+Auto-merging AIAgent/Schema/Prompts.py
+CONFLICT (add/add): Merge conflict in AIAgent/Schema/Prompts.py
+Auto-merging AIAgent/Tests/test_agent.py
+CONFLICT (add/add): Merge conflict in AIAgent/Tests/test_agent.py
+Auto-merging AIAgent/Tests/test_api.py
+CONFLICT (add/add): Merge conflict in AIAgent/Tests/test_api.py
+Auto-merging AIAgent/Tests/test_score_explainer.py
+CONFLICT (add/add): Merge conflict in AIAgent/Tests/test_score_explainer.py
+Auto-merging AIAgent/api/routes.py
+CONFLICT (add/add): Merge conflict in AIAgent/api/routes.py
+Auto-merging AIAgent/api/schemas.py
+CONFLICT (add/add): Merge conflict in AIAgent/api/schemas.py
+Auto-merging AIAgent/api/settings.py
+CONFLICT (add/add): Merge conflict in AIAgent/api/settings.py
+Auto-merging integration_contract.md
+CONFLICT (add/add): Merge conflict in integration_contract.md
+Auto-merging src/Track - A/04_track_a_harmonization.ipynb
+Auto-merging src/pipeline/00_harmonisation.ipynb
