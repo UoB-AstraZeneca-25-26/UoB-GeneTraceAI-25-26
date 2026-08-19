@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { QueryParams, RankedCellLine, ResultMeta, ScoreTier } from '../../types';
+import { QueryParams, RankedCellLine, ResultMeta } from '../../types';
+import { deriveVerdict } from '../../lib/evidence';
+import { TierPill } from '../common/TierPill';
+import { EvidenceSpine } from '../common/EvidenceSpine';
+import { VerdictBanner } from '../common/VerdictBanner';
 import { Trophy, ChevronRight, AlertCircle, Loader2, Info, Zap } from 'lucide-react';
 
 interface ResultsTableProps {
@@ -11,12 +15,6 @@ interface ResultsTableProps {
   onRetry: () => void;
   onSelectCellLine: (cellLine: string) => void;
 }
-
-const TIER_STYLES: Record<ScoreTier, string> = {
-  HIGH: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  MEDIUM: 'bg-amber-50 text-amber-700 border-amber-200',
-  LOW: 'bg-slate-100 text-slate-600 border-slate-200',
-};
 
 export const ResultsTable: React.FC<ResultsTableProps> = ({
   queryParams,
@@ -63,16 +61,12 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
     );
   }
 
+  const verdict = deriveVerdict(results);
+
   if (results.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto text-center py-16 space-y-4">
-        <div className="inline-flex p-3 bg-amber-50 text-amber-600 rounded-full">
-          <AlertCircle className="w-8 h-8" />
-        </div>
-        <h2 className="text-xl font-bold text-slate-800">No Matching Cell Lines</h2>
-        <p className="text-sm text-slate-500 max-w-md mx-auto">
-          The ranking service returned no cell lines for this query.
-        </p>
+      <div className="max-w-3xl mx-auto py-16">
+        <VerdictBanner verdict={verdict} />
       </div>
     );
   }
@@ -80,7 +74,6 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   const mode = results[0].mode;
   const topPick = results[0];
 
-  // What the live endpoints still ignore.
   const ignoredBits: string[] = [];
   if (queryParams.lineage !== 'Any') ignoredBits.push('lineage filtering');
   if (queryParams.targets.length > 1) ignoredBits.push('additional targets');
@@ -109,7 +102,10 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
         </p>
       </div>
 
-      {/* Formula / method banner */}
+      {/* Abstention / low-separation verdict, surfaced above the table */}
+      <VerdictBanner verdict={verdict} />
+
+      {/* Method banner (selectivity) */}
       {meta?.mode === 'selectivity' && (
         <div className="flex items-start gap-2 p-3 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg text-xs">
           <Info className="w-4 h-4 mt-0.5 shrink-0" />
@@ -138,6 +134,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                 <th className="px-4 py-3">Cell Line</th>
                 {mode === 'single' ? (
                   <>
+                    <th className="px-4 py-3 text-center">Evidence</th>
                     <th className="px-4 py-3">Tier</th>
                     <th className="px-4 py-3">Score</th>
                   </>
@@ -166,18 +163,20 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] text-slate-400">
-                      {r.modelId}
-                      {r.mode === 'single' && <> · {r.nLayers} layer{r.nLayers === 1 ? '' : 's'}</>}
-                    </span>
+                    <span className="text-[11px] text-slate-400">{r.modelId}</span>
                   </td>
 
                   {r.mode === 'single' ? (
                     <>
                       <td className="px-4 py-3">
-                        <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border ${TIER_STYLES[r.tier]}`}>
-                          {r.tier}
-                        </span>
+                        <EvidenceSpine
+                          tracks={r.tracks}
+                          nLayers={r.nLayers}
+                          driverAlteration={r.driverAlteration}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <TierPill tier={r.tier} />
                       </td>
                       <td className="px-4 py-3">
                         <ScoreBar width={r.relativeScore} color="bg-indigo-500" label={r.score.toFixed(4)} />
@@ -214,6 +213,9 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
               ))}
             </tbody>
           </table>
+
+          {/* Track legend — only meaningful in single mode */}
+          {mode === 'single' && <SpineLegend />}
         </div>
 
         {/* Top pick + quick dive */}
@@ -230,7 +232,10 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-indigo-200/60">
               {topPick.mode === 'single' ? (
                 <>
-                  <Metric label="Tier" value={topPick.tier} />
+                  <div>
+                    <span className="text-[11px] text-slate-500 block mb-1">Confidence</span>
+                    <TierPill tier={topPick.tier} />
+                  </div>
                   <Metric label="Evidence Layers" value={String(topPick.nLayers)} />
                 </>
               ) : (
@@ -284,5 +289,12 @@ const Metric: React.FC<{ label: string; value: string }> = ({ label, value }) =>
   <div>
     <span className="text-[11px] text-slate-500 block">{label}</span>
     <span className="text-base font-bold text-slate-800">{value}</span>
+  </div>
+);
+
+const SpineLegend: React.FC = () => (
+  <div className="px-4 py-3 border-t border-slate-100 text-[11px] text-slate-400">
+    Each filled bar is one evidence layer backing the model. Which specific layers
+    fired appears here once cell-line detail is available.
   </div>
 );

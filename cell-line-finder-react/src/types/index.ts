@@ -46,6 +46,7 @@ export type SingleRanked = BaseRanked & {
   tier: ScoreTier;
   nLayers: number;
   driverAlteration: boolean;
+  tracks?: TrackScores;    // per-layer detail; populated by a future /cellline endpoint
 };
 
 /** Result of GET /prod/exclude?gene_a=<HIGH>&gene_b=<LOW> */
@@ -68,4 +69,37 @@ export type ResultMeta = {
   formula?: string;      // selectivity only
   total: number;
   showing: number;
+};
+
+// ---- Evidence tracks (adopted from GeneTraceAI's layer model) ----
+
+export type TrackKey = 'expression' | 'proteomics' | 'cna' | 'mutation' | 'fusion' | 'signature';
+
+/** What the track's number actually is — so views never imply a magnitude the
+ *  pipeline doesn't have. level/ratio are real gradients; call is categorical. */
+export type TrackKind = 'level' | 'ratio' | 'call';
+
+export type EvidenceTrack = {
+  key: TrackKey;
+  label: string;
+  color: string;
+  kind: TrackKind;
+};
+
+export type TrackDatum = { present: boolean; score: number; finding?: string };
+export type TrackScores = Partial<Record<TrackKey, TrackDatum>>;
+
+// ---- Tier presentation (separated from score, never derived from it) ----
+
+export type TierTone = 'high' | 'medium' | 'low' | 'unknown';
+export type TierPresentation = { label: string; tone: TierTone };
+
+// ---- Verdict / abstention states ----
+
+export type VerdictState = 'RANKED' | 'LOW_SEPARATION' | 'NO_EVIDENCE';
+export type Verdict = {
+  state: VerdictState;
+  headline: string;
+  detail: string[];
+  qualifyRanking?: boolean;
 };
