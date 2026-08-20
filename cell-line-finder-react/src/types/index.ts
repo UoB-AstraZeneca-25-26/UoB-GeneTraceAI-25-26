@@ -35,18 +35,15 @@ type BaseRanked = {
   rank: number;
   modelId: string;   // DepMap ACH id
   cellLine: string;  // display name
+  lineage: string;   // tissue lineage, e.g. "skin"
   relativeScore: number; // min-max normalized within the set, for bar width
 };
 
-/** Result of GET /gene?query=<SYMBOL> */
+/** Result of /prod/gene (joint shape with a single gene). tier / n_layers /
+ *  driver are no longer in the list response — they live in the detail endpoint. */
 export type SingleRanked = BaseRanked & {
   mode: 'single';
-  score: number;           // raw 0..1
-  confidenceScore: number; // score * 100
-  tier: ScoreTier;
-  nLayers: number;
-  driverAlteration: boolean;
-  tracks?: TrackScores;    // per-layer detail; populated by a future /cellline endpoint
+  score: number; // joint_score for the single gene
 };
 
 /** Result of GET /prod/exclude?gene_a=<HIGH>&gene_b=<LOW> */
@@ -65,6 +62,7 @@ export type MultiRanked = BaseRanked & {
   jointScore: number;
   genes: string[];                           // queried genes, in order
   geneScores: Record<string, number | null>; // per-gene; null = NaN/no evidence
+  limitingGene: string | null;               // gene that caps the joint score
 };
 
 export type RankedCellLine = SingleRanked | SelectivityRanked | MultiRanked;

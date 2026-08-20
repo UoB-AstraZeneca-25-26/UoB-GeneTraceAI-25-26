@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { InspectTarget, QueryParams, RankedCellLine, ResultMeta } from '../../types';
-import { deriveVerdict } from '../../lib/evidence';
-import { TierPill } from '../common/TierPill';
-import { EvidenceSpine } from '../common/EvidenceSpine';
-import { VerdictBanner } from '../common/VerdictBanner';
 import { NetworkGraph } from '../common/NetworkGraph';
 import { SelectivityScatter } from '../common/SelectivityScatter';
 import { OmicsMap } from '../common/OmicsMap';
-import { Trophy, ChevronRight, AlertCircle, Loader2, Info, Zap, Table2, Network, GitFork, Sparkles } from 'lucide-react';
+import { LineagePanel } from '../common/LineagePanel';
+import { Trophy, ChevronRight, AlertCircle, Loader2, Info, Table2, Network, GitFork, Sparkles, Layers } from 'lucide-react';
 
 interface ResultsTableProps {
   queryParams: QueryParams;
@@ -67,12 +64,16 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
     );
   }
 
-  const verdict = deriveVerdict(results);
-
   if (results.length === 0) {
     return (
-      <div className="max-w-3xl mx-auto py-16">
-        <VerdictBanner verdict={verdict} />
+      <div className="max-w-3xl mx-auto py-16 text-center space-y-3">
+        <div className="inline-flex p-3 bg-amber-50 text-amber-600 rounded-full">
+          <AlertCircle className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-800">No Matching Cell Lines</h2>
+        <p className="text-sm text-slate-500 max-w-md mx-auto">
+          The ranking service returned no cell lines for this query.
+        </p>
       </div>
     );
   }
@@ -81,23 +82,23 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   const topPick = results[0];
 
   // Views available per mode. 'omics' (Sankey) and 'network' are single-gene only;
-  // selectivity gets the scatter; multi is table-only.
+  // selectivity gets the scatter; 'lineages' works for every mode.
   const VIEW_META: Record<string, { label: string; icon: React.ElementType }> = {
     table: { label: 'Table', icon: Table2 },
     network: { label: 'Network', icon: Network },
     omics: { label: 'Omics map', icon: GitFork },
     scatter: { label: 'Scatter', icon: Network },
+    lineages: { label: 'Lineages', icon: Layers },
   };
   const views =
     mode === 'single'
-      ? ['table', 'network', 'omics']
+      ? ['table', 'network', 'omics', 'lineages']
       : mode === 'selectivity'
-      ? ['table', 'scatter']
-      : ['table'];
+      ? ['table', 'scatter', 'lineages']
+      : ['table', 'lineages'];
   const activeView = views.includes(view) ? view : 'table';
 
   const ignoredBits: string[] = [];
-  if (queryParams.lineage !== 'Any') ignoredBits.push('lineage filtering');
   // In multi mode all targets ARE used, but exclusions can't be; in selectivity
   // mode only the first exclusion is used.
   if (mode === 'multi' && queryParams.exclusions.length > 0) ignoredBits.push('exclusions');
@@ -137,9 +138,6 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
           )}
         </p>
       </div>
-
-      {/* Abstention / low-separation verdict, surfaced above the table */}
-      <VerdictBanner verdict={verdict} />
 
       {/* Method banner (selectivity) */}
       {meta?.mode === 'selectivity' && (
@@ -232,6 +230,9 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                 onSelect={inspect}
               />
             )}
+            {activeView === 'lineages' && (
+              <LineagePanel gene={inspectGene} lines={results} onSelect={inspect} />
+            )}
           </div>
         ) : (
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -242,8 +243,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                 <th className="px-4 py-3">Cell Line</th>
                 {mode === 'single' ? (
                   <>
-                    <th className="px-4 py-3 text-center">Evidence</th>
-                    <th className="px-4 py-3">Tier</th>
+                    <th className="px-4 py-3">Lineage</th>
                     <th className="px-4 py-3">Score</th>
                   </>
                 ) : mode === 'selectivity' ? (
@@ -267,14 +267,6 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-slate-900">{r.cellLine}</span>
-                      {r.mode === 'single' && r.driverAlteration && (
-                        <span
-                          title="Driver alteration present"
-                          className="inline-flex items-center gap-0.5 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded"
-                        >
-                          <Zap className="w-3 h-3" /> DRIVER
-                        </span>
-                      )}
                       {r.mode === 'multi' && r.genes.some((g) => r.geneScores[g] === null) && (
                         <span
                           title="Missing a score for at least one requested gene — joint score is based on partial evidence"
@@ -284,21 +276,12 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] text-slate-400">{r.modelId}</span>
+                    <span className="text-[11px] text-slate-400 font-mono">{r.modelId}</span>
                   </td>
 
                   {r.mode === 'single' ? (
                     <>
-                      <td className="px-4 py-3">
-                        <EvidenceSpine
-                          tracks={r.tracks}
-                          nLayers={r.nLayers}
-                          driverAlteration={r.driverAlteration}
-                        />
-                      </td>
-                      <td className="px-4 py-3">
-                        <TierPill tier={r.tier} />
-                      </td>
+                      <td className="px-4 py-3 capitalize text-slate-600">{r.lineage}</td>
                       <td className="px-4 py-3">
                         <ScoreBar width={r.relativeScore} color="bg-indigo-500" label={r.score.toFixed(4)} />
                       </td>
@@ -325,9 +308,15 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono">
                           {r.genes.map((g) => {
                             const v = r.geneScores[g];
+                            const limits = r.limitingGene === g;
                             return (
-                              <span key={g} className={v === null ? 'text-slate-300' : 'text-slate-700'} title={`${g} score`}>
+                              <span
+                                key={g}
+                                className={v === null ? 'text-slate-300' : limits ? 'text-amber-700 font-semibold' : 'text-slate-700'}
+                                title={limits ? `${g} limits the joint score` : `${g} score`}
+                              >
                                 {g} {v === null ? '—' : v.toFixed(3)}
+                                {limits && <span className="ml-0.5 text-[9px]">▼</span>}
                               </span>
                             );
                           })}
@@ -352,9 +341,6 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
               ))}
             </tbody>
           </table>
-
-          {/* Track legend — only meaningful in single mode */}
-          {mode === 'single' && <SpineLegend />}
         </div>
         )}
 
@@ -372,11 +358,8 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-indigo-200/60">
               {topPick.mode === 'single' ? (
                 <>
-                  <div>
-                    <span className="text-[11px] text-slate-500 block mb-1">Confidence</span>
-                    <TierPill tier={topPick.tier} />
-                  </div>
-                  <Metric label="Evidence Layers" value={String(topPick.nLayers)} />
+                  <Metric label="Lineage" value={topPick.lineage} />
+                  <Metric label="Score" value={topPick.score.toFixed(4)} />
                 </>
               ) : topPick.mode === 'selectivity' ? (
                 <>
@@ -437,12 +420,5 @@ const Metric: React.FC<{ label: string; value: string }> = ({ label, value }) =>
   <div>
     <span className="text-[11px] text-slate-500 block">{label}</span>
     <span className="text-base font-bold text-slate-800">{value}</span>
-  </div>
-);
-
-const SpineLegend: React.FC = () => (
-  <div className="px-4 py-3 border-t border-slate-100 text-[11px] text-slate-400">
-    Each filled bar is one evidence layer backing the model. Which specific layers
-    fired appears here once cell-line detail is available.
   </div>
 );

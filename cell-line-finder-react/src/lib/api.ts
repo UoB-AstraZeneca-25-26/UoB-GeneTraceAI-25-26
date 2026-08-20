@@ -11,7 +11,6 @@ import {
   MultiRanked,
   RankedCellLine,
   ResultMeta,
-  ScoreTier,
   SelectivityRanked,
   SingleRanked,
   TrackScores,
@@ -23,74 +22,69 @@ import {
 const BASE = import.meta.env.DEV
   ? '/api'
   : 'https://9368clqa34.execute-api.eu-north-1.amazonaws.com';
-const GENE_URL = `${BASE}/gene`;
-const EXCLUDE_URL = `${BASE}/exclude`;
-const GENES_URL = `${BASE}/genes`;
+
+// The whole API lives under the /prod stage.
+const API = `${BASE}/prod`;
+const GENE_URL = `${API}/gene`;
+const GENES_URL = `${API}/genes`;
+const EXCLUDE_URL = `${API}/exclude`;
+const DETAIL_URL = `${API}/gene/detail`;
+
+// How many lines to request from the server (client slices further for display).
+const TOP_N = 30;
 
 // ---- Offline mock mode -------------------------------------------------------
-// Flip to false to use the live API again. When true, all fetchers below return
-// local mock data (same shapes) instead of hitting the network — lets you build
-// the UI while the endpoints are down.
-export const USE_MOCK = true;
+// Flip to false to use the live API. When true, all fetchers return local mock
+// data in the same shapes as the live endpoints.
+export const USE_MOCK = false;
 
+// ---------- shared line metadata ----------
+export interface LineMetadata {
+  lineage?: string;
+  lineage_subtype?: string;
+  primary_disease?: string;
+  sex?: string;
+}
 
-// ---------- /gene ----------
-
-export interface GeneApiLine {
-  rank: number;
+// ---------- /prod/gene and /prod/genes (joint shape) ----------
+// Single-gene and multi-gene ranking now return the same shape. Per-gene scores
+// may be NaN (no evidence); "None"/null names fall back to model_id.
+export interface JointApiLine {
   model_id: string;
-  name: string;
-  score: number;
-  tier: string;
-  n_layers: number;
-  driver_alteration: boolean;
+  name: string | null;
+  joint_score: number;
+  limiting_gene?: string;
+  scores: Record<string, number | null>;
+  metadata?: LineMetadata;
 }
 
-export interface GeneApiResponse {
-  gene: string;
-  ensg: string;
-  total: number;
-  showing: number;
-  lines: GeneApiLine[];
+export interface JointApiResponse {
+  genes: string[];
+  lineage?: string[];
+  floor: number;
+  total_passing: number;
+  lines: JointApiLine[];
 }
 
-// ---------- /prod/exclude ----------
-// score_<gene> keys are dynamic — read them via gene_high / gene_low.
-
+// ---------- /prod/exclude (selectivity) ----------
 export interface ExcludeApiLine {
   model_id: string;
-  name: string;
+  name: string | null;
+  score_a: number;
+  score_b: number;
   selectivity: number;
-  [scoreKey: `score_${string}`]: number;
+  metadata?: LineMetadata;
 }
 
 export interface ExcludeApiResponse {
-  gene_high: string;
-  gene_low: string;
-  formula: string;
+  gene_a: string;
+  gene_b: string;
+  lineage?: string[];
   total_ranked: number;
   lines: ExcludeApiLine[];
 }
 
-// ---------- /genes (joint multi-gene) ----------
-// Per-gene scores may be NaN (no evidence). "None" names fall back to model_id.
-
-export interface GenesApiLine {
-  model_id: string;
-  name: string;
-  joint_score: number;
-  scores: Record<string, number | null>;
-}
-
-export interface GenesApiResponse {
-  genes: string[];
-  floor: number;
-  total_passing: number;
-  lines: GenesApiLine[];
-}
-
-// ---------- /gene?...&cell_line=<id> (per-line detail) ----------
-
+// ---------- /prod/gene/detail (per-line detail) ----------
 export interface CellLineDetailApiResponse {
   gene: string;
   ensg: string;
@@ -108,26 +102,22 @@ export interface CellLineDetailApiResponse {
   rna_alternatives: { model_id: string; name: string; similarity: number }[];
 }
 
-// ---------- fetchers ----------
+// ---------- fetch helpers ----------
 
-/* The /genes endpoint emits bare NaN/Infinity, which are invalid JSON and make
-   JSON.parse throw — losing the whole payload, not just the bad cell. This repairs
-   those tokens to null, but ONLY in value positions (preceded by : [ , and followed
-   by , } ]) so quoted strings are never touched. The proper fix is server-side. */
+/* Some endpoints can emit bare NaN/Infinity, which are invalid JSON and make
+   JSON.parse throw. This repairs those tokens to null, only in value positions,
+   so quoted strings are never touched. The proper fix is server-side. */
 function parseLenientJson<T>(text: string): T {
   const repaired = text.replace(/(?<=[:[,]\s*)(?:-?Infinity|NaN)(?=\s*[,}\]])/g, 'null');
   return JSON.parse(repaired) as T;
 }
 
-/** On a non-OK response, include the response body (often an AWS error message
- *  like "Endpoint request timed out" or a throttling notice) so the failure is
- *  diagnosable instead of a bare status. */
 async function errorFrom(res: Response): Promise<Error> {
   let detail = '';
   try {
     detail = (await res.text()).trim().slice(0, 300);
   } catch {
-    /* body already consumed or unavailable */
+    /* body unavailable */
   }
   return new Error(`API error: ${res.status} ${res.statusText}${detail ? ` — ${detail}` : ''}`);
 }
@@ -144,18 +134,33 @@ async function getJsonLenient<T>(url: string, signal?: AbortSignal): Promise<T> 
   return parseLenientJson<T>(await res.text());
 }
 
-export async function fetchGeneRanking(
-  gene: string,
-  signal?: AbortSignal
-): Promise<GeneApiResponse> {
+// ---------- fetchers ----------
+
+export async function fetchGeneRanking(gene: string, signal?: AbortSignal): Promise<JointApiResponse> {
   const symbol = gene.trim();
   if (!symbol) throw new Error('No gene symbol provided.');
-  if (USE_MOCK) { await mockDelay(); return mockGeneResponse(symbol); }
-  const data = await getJson<GeneApiResponse>(
-    `${GENE_URL}?query=${encodeURIComponent(symbol)}`,
+  if (USE_MOCK) {
+    await mockDelay();
+    return mockGeneResponse(symbol);
+  }
+  const data = await getJsonLenient<JointApiResponse>(
+    `${GENE_URL}?gene=${encodeURIComponent(symbol)}&top_n=${TOP_N}`,
     signal
   );
   if (!data || !Array.isArray(data.lines)) throw new Error('Unexpected /gene response shape.');
+  return data;
+}
+
+export async function fetchMultiRanking(genes: string[], signal?: AbortSignal): Promise<JointApiResponse> {
+  const clean = genes.map((g) => g.trim()).filter(Boolean);
+  if (clean.length < 2) throw new Error('Provide at least two target genes for a joint ranking.');
+  if (USE_MOCK) {
+    await mockDelay();
+    return mockGenesResponse(clean);
+  }
+  const query = clean.map(encodeURIComponent).join(',');
+  const data = await getJsonLenient<JointApiResponse>(`${GENES_URL}?genes=${query}&top_n=${TOP_N}`, signal);
+  if (!data || !Array.isArray(data.lines)) throw new Error('Unexpected /genes response shape.');
   return data;
 }
 
@@ -167,35 +172,19 @@ export async function fetchSelectivityRanking(
   const a = geneA.trim();
   const b = geneB.trim();
   if (!a || !b) throw new Error('Both a target and an exclusion gene are required.');
-  if (USE_MOCK) { await mockDelay(); return mockExcludeResponse(a, b); }
+  if (USE_MOCK) {
+    await mockDelay();
+    return mockExcludeResponse(a, b);
+  }
   const data = await getJson<ExcludeApiResponse>(
-    `${EXCLUDE_URL}?gene_a=${encodeURIComponent(a)}&gene_b=${encodeURIComponent(b)}`,
+    `${EXCLUDE_URL}?gene_a=${encodeURIComponent(a)}&gene_b=${encodeURIComponent(b)}&top_n=${TOP_N}`,
     signal
   );
   if (!data || !Array.isArray(data.lines)) throw new Error('Unexpected /exclude response shape.');
   return data;
 }
 
-export async function fetchMultiRanking(
-  genes: string[],
-  signal?: AbortSignal
-): Promise<GenesApiResponse> {
-  const clean = genes.map((g) => g.trim()).filter(Boolean);
-  if (clean.length < 2) throw new Error('Provide at least two target genes for a joint ranking.');
-  if (USE_MOCK) { await mockDelay(); return mockGenesResponse(clean); }
-  // Encode each symbol but keep commas literal to match the endpoint's format.
-  const query = clean.map(encodeURIComponent).join(',');
-  const data = await getJsonLenient<GenesApiResponse>(`${GENES_URL}?query=${query}`, signal);
-  if (!data || !Array.isArray(data.lines)) throw new Error('Unexpected /genes response shape.');
-  return data;
-}
-
-// ---------- adapters ----------
-
-function normalizeTier(raw: string): ScoreTier {
-  const t = (raw || '').toUpperCase();
-  return t === 'HIGH' || t === 'MEDIUM' || t === 'LOW' ? t : 'LOW';
-}
+// ---------- helpers ----------
 
 /** Spread near-identical scores across 5..100% for a readable bar. */
 function relativize(values: number[], value: number): number {
@@ -205,85 +194,81 @@ function relativize(values: number[], value: number): number {
   return span > 0 ? Math.round((5 + ((value - min) / span) * 95) * 10) / 10 : 100;
 }
 
-export function toSingleRanked(resp: GeneApiResponse): SingleRanked[] {
-  const scores = resp.lines.map((l) => l.score);
-  return resp.lines.map((l) => ({
-    mode: 'single',
-    rank: l.rank,
-    modelId: l.model_id,
-    cellLine: l.name.toUpperCase(),
-    score: l.score,
-    confidenceScore: Math.round(l.score * 1000) / 10,
-    relativeScore: relativize(scores, l.score),
-    tier: normalizeTier(l.tier),
-    nLayers: l.n_layers,
-    driverAlteration: l.driver_alteration,
-  }));
+/** Normalize a raw lineage string ("central_nervous_system" -> "Central nervous system"). */
+function lineageOf(raw?: string | null): string {
+  const v = (raw ?? '').trim().replace(/_/g, ' ');
+  return v ? v.charAt(0).toUpperCase() + v.slice(1) : 'Unknown';
 }
 
-export function toSelectivityRanked(resp: ExcludeApiResponse): SelectivityRanked[] {
-  const highKey: `score_${string}` = `score_${resp.gene_high}`;
-  const lowKey: `score_${string}` = `score_${resp.gene_low}`;
-  const sels = resp.lines.map((l) => l.selectivity);
+const displayName = (name: string | null, modelId: string) =>
+  name && name !== 'None' ? name.toUpperCase() : modelId;
+
+// ---------- adapters ----------
+
+export function toSingleRanked(resp: JointApiResponse): SingleRanked[] {
+  const joints = resp.lines.map((l) => l.joint_score);
   return resp.lines.map((l, i) => ({
-    mode: 'selectivity',
-    rank: i + 1, // no rank field; lines arrive pre-sorted by selectivity
+    mode: 'single',
+    rank: i + 1,
     modelId: l.model_id,
-    cellLine: l.name.toUpperCase(),
-    selectivity: l.selectivity,
-    scoreHigh: Number(l[highKey] ?? 0),
-    scoreLow: Number(l[lowKey] ?? 0),
-    geneHigh: resp.gene_high,
-    geneLow: resp.gene_low,
-    relativeScore: relativize(sels, l.selectivity),
+    cellLine: displayName(l.name, l.model_id),
+    lineage: lineageOf(l.metadata?.lineage),
+    score: l.joint_score,
+    relativeScore: relativize(joints, l.joint_score),
   }));
 }
 
-export function metaFromGene(resp: GeneApiResponse): ResultMeta {
-  return {
-    mode: 'single',
-    primaryGene: resp.gene,
-    ensg: resp.ensg,
-    total: resp.total,
-    showing: resp.showing,
-  };
-}
-
-export function metaFromExclude(resp: ExcludeApiResponse): ResultMeta {
-  return {
-    mode: 'selectivity',
-    primaryGene: resp.gene_high,
-    excludedGene: resp.gene_low,
-    formula: resp.formula,
-    total: resp.total_ranked,
-    showing: resp.lines.length,
-  };
-}
-
-export function toMultiRanked(resp: GenesApiResponse): MultiRanked[] {
+export function toMultiRanked(resp: JointApiResponse): MultiRanked[] {
   const joints = resp.lines.map((l) => l.joint_score);
   return resp.lines.map((l, i) => {
     const geneScores: Record<string, number | null> = {};
     for (const g of resp.genes) {
       const v = l.scores?.[g];
-      // NaN survives as null after lenient parse; guard anyway.
       geneScores[g] = typeof v === 'number' && Number.isFinite(v) ? v : null;
     }
-    const name = l.name && l.name !== 'None' ? l.name.toUpperCase() : l.model_id;
     return {
       mode: 'multi',
-      rank: i + 1, // no rank field; lines arrive pre-sorted by joint_score
+      rank: i + 1,
       modelId: l.model_id,
-      cellLine: name,
+      cellLine: displayName(l.name, l.model_id),
+      lineage: lineageOf(l.metadata?.lineage),
       jointScore: l.joint_score,
       genes: resp.genes,
       geneScores,
+      limitingGene: l.limiting_gene ?? null,
       relativeScore: relativize(joints, l.joint_score),
     };
   });
 }
 
-export function metaFromGenes(resp: GenesApiResponse): ResultMeta {
+export function toSelectivityRanked(resp: ExcludeApiResponse): SelectivityRanked[] {
+  const sels = resp.lines.map((l) => l.selectivity);
+  return resp.lines.map((l, i) => ({
+    mode: 'selectivity',
+    rank: i + 1,
+    modelId: l.model_id,
+    cellLine: displayName(l.name, l.model_id),
+    lineage: lineageOf(l.metadata?.lineage),
+    selectivity: l.selectivity,
+    scoreHigh: l.score_a,
+    scoreLow: l.score_b,
+    geneHigh: resp.gene_a,
+    geneLow: resp.gene_b,
+    relativeScore: relativize(sels, l.selectivity),
+  }));
+}
+
+export function metaFromGene(resp: JointApiResponse): ResultMeta {
+  return {
+    mode: 'single',
+    primaryGene: resp.genes[0] ?? '',
+    genes: resp.genes,
+    total: resp.total_passing,
+    showing: resp.lines.length,
+  };
+}
+
+export function metaFromGenes(resp: JointApiResponse): ResultMeta {
   return {
     mode: 'multi',
     primaryGene: resp.genes.join(' + '),
@@ -294,11 +279,22 @@ export function metaFromGenes(resp: GenesApiResponse): ResultMeta {
   };
 }
 
+export function metaFromExclude(resp: ExcludeApiResponse): ResultMeta {
+  return {
+    mode: 'selectivity',
+    primaryGene: resp.gene_a,
+    excludedGene: resp.gene_b,
+    formula: `score_${resp.gene_a} × (1 − score_${resp.gene_b})`,
+    total: resp.total_ranked,
+    showing: resp.lines.length,
+  };
+}
+
 /**
  * High-level entry point. Routes by what's selected:
- *   2+ targets            -> /genes  (joint multi-gene ranking; exclusions ignored)
- *   1 target + exclusion  -> /exclude (selectivity)
- *   1 target              -> /gene   (single)
+ *   2+ targets            -> /prod/genes   (joint multi-gene; exclusions ignored)
+ *   1 target + exclusion  -> /prod/exclude (selectivity)
+ *   1 target              -> /prod/gene    (single, joint shape with one gene)
  */
 export async function fetchRanking(
   targets: string[],
@@ -332,17 +328,19 @@ export async function fetchCellLineDetail(
   const g = gene.trim();
   const id = modelId.trim();
   if (!g || !id) throw new Error('Both a gene and a cell-line model id are required.');
-  if (USE_MOCK) { await mockDelay(); return mockCellLineDetailResponse(g, id); }
+  if (USE_MOCK) {
+    await mockDelay();
+    return mockCellLineDetailResponse(g, id);
+  }
   const data = await getJson<CellLineDetailApiResponse>(
-    `${GENE_URL}?query=${encodeURIComponent(g)}&cell_line=${encodeURIComponent(id)}`,
+    `${DETAIL_URL}?gene=${encodeURIComponent(g)}&model_id=${encodeURIComponent(id)}`,
     signal
   );
   if (!data || !data.cell_line) throw new Error('Unexpected cell-line detail response shape.');
   return data;
 }
 
-// Human-readable labels for the metadata block, in display order. Keys not in
-// this map are skipped so the panel stays clean and predictable.
+// Human-readable labels for the metadata block, in display order.
 const METADATA_LABELS: [string, string][] = [
   ['lineage', 'Lineage'],
   ['lineage_subtype', 'Lineage subtype'],
@@ -361,15 +359,12 @@ function cleanMetadata(meta: Record<string, string | number | null>): MetadataIt
   for (const [key, label] of METADATA_LABELS) {
     const raw = meta?.[key];
     if (raw === null || raw === undefined || raw === '' || raw === 'None') continue;
-    items.push({ label, value: String(raw) });
+    items.push({ label, value: String(raw).replace(/_/g, ' ') });
   }
   return items;
 }
 
 export function toCellLineDetail(resp: CellLineDetailApiResponse): CellLineDetail {
-  // Only the layers this endpoint actually reports get a track. Expression,
-  // proteomics and signature aren't returned per-line, so they stay absent
-  // rather than being shown as "no signal".
   const tracks: TrackScores = {};
   if (typeof resp.p_mutation === 'number' && Number.isFinite(resp.p_mutation)) {
     tracks.mutation = {
@@ -387,9 +382,7 @@ export function toCellLineDetail(resp: CellLineDetailApiResponse): CellLineDetai
     finding: resp.has_cna_alteration ? 'altered' : 'none',
   };
 
-  const name = resp.cell_line.name && resp.cell_line.name !== 'None'
-    ? resp.cell_line.name.toUpperCase()
-    : resp.cell_line.model_id;
+  const name = displayName(resp.cell_line.name, resp.cell_line.model_id);
 
   return {
     gene: resp.gene,
@@ -409,7 +402,7 @@ export function toCellLineDetail(resp: CellLineDetailApiResponse): CellLineDetai
     metadata: cleanMetadata(resp.metadata),
     alternatives: (resp.rna_alternatives || []).map((a) => ({
       modelId: a.model_id,
-      name: a.name && a.name !== 'None' ? a.name.toUpperCase() : a.model_id,
+      name: displayName(a.name, a.model_id),
       similarity: a.similarity,
     })),
   };

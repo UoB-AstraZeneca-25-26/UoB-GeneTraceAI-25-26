@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { SingleRanked } from '../../types';
-import { TIER_HEX, tierToneOf, confTier, pct } from '../../lib/evidence';
+import { lineageColor, pct } from '../../lib/evidence';
 
 interface NetworkGraphProps {
   gene: string;
@@ -73,14 +73,14 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({ gene, lines, onSelec
   const [hover, setHover] = useState<string | null>(null);
   const nodes = useLayout(lines, W, H);
 
-  const tones = Array.from(new Set(lines.map((l) => tierToneOf(l.tier))));
+  const lineages = Array.from(new Set(lines.map((l) => l.lineage)));
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
       <p className="text-xs text-slate-500 mb-2 px-1">
         Each cell line sits at a distance set by its rank for{' '}
         <strong>{gene}</strong> — nearest the centre is highest-ranked. Node size follows the same
-        order; colour marks confidence tier. Distance is a ranking, not a probability.
+        order; colour marks tissue lineage. Distance is a ranking, not a probability.
       </p>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={`Ranking network for ${gene}`}>
         {nodes.map(({ line, x, y }) => {
@@ -115,7 +115,7 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({ gene, lines, onSelec
           const active = hover === line.modelId;
           const dim = hover && !active;
           const r = 8 + ((line.relativeScore ?? 0) / 100) * 12;
-          const fill = TIER_HEX[tierToneOf(line.tier)];
+          const fill = lineageColor(line.lineage);
           return (
             <g
               key={line.modelId}
@@ -139,11 +139,11 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({ gene, lines, onSelec
         })}
       </svg>
 
-      <div className="flex flex-wrap gap-3 mt-2 px-1 text-xs text-slate-500">
-        {tones.map((tone) => (
-          <span key={tone} className="inline-flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ background: TIER_HEX[tone] }} />
-            {confTier(tone === 'high' ? 'HIGH' : tone === 'medium' ? 'MEDIUM' : tone === 'low' ? 'LOW' : '').label}
+      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 px-1 text-xs text-slate-500">
+        {lineages.map((lin) => (
+          <span key={lin} className="inline-flex items-center gap-1.5 capitalize">
+            <span className="w-2.5 h-2.5 rounded-full" style={{ background: lineageColor(lin) }} />
+            {lin}
           </span>
         ))}
       </div>

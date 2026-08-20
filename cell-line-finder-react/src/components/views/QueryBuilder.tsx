@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ALL_GENES, ALL_LINEAGES } from '../../lib/mockData';
+import { ALL_GENES } from '../../lib/mockData';
 import { QueryParams } from '../../types';
 import { GeneSearch } from '../common/GeneSearch';
 import { Search, X } from 'lucide-react';
@@ -12,7 +12,6 @@ interface QueryBuilderProps {
 export const QueryBuilder: React.FC<QueryBuilderProps> = ({ initialParams, onSubmit }) => {
   const [targets, setTargets] = useState<string[]>(initialParams.targets);
   const [exclusions, setExclusions] = useState<string[]>(initialParams.exclusions);
-  const [lineage, setLineage] = useState<string>(initialParams.lineage);
   const [topK, setTopK] = useState<number>(initialParams.topK);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +35,7 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({ initialParams, onSub
       return;
     }
     setError(null);
-    onSubmit({ targets, exclusions, lineage, topK });
+    onSubmit({ targets, exclusions, lineage: 'Any', topK });
   };
 
   // Genes not in the quick-pick grid are shown as removable chips.
@@ -151,24 +150,9 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({ initialParams, onSub
           </p>
         </div>
 
-        {/* Lineage & Top K */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
-          <div>
-            <label className="block text-sm font-semibold text-slate-800 mb-2">3. Tissue / Lineage Context</label>
-            <select
-              value={lineage}
-              onChange={(e) => setLineage(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-300 text-slate-800 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-            >
-              {ALL_LINEAGES.map((l) => (
-                <option key={l} value={l}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
+        {/* Number of recommendations */}
+        <div className="pt-4 border-t border-slate-100">
+          <div className="max-w-md">
             <div className="flex justify-between items-center mb-2">
               <label className="text-sm font-semibold text-slate-800">Number of Recommendations</label>
               <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded font-mono">Top {topK}</span>
@@ -176,15 +160,15 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({ initialParams, onSub
             <input
               type="range"
               min={3}
-              max={10}
+              max={30}
               value={topK}
               onChange={(e) => setTopK(Number(e.target.value))}
               className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2"
             />
             <div className="flex justify-between text-[11px] text-slate-600 mt-1 font-mono">
               <span>3</span>
-              <span>5</span>
-              <span>10</span>
+              <span>15</span>
+              <span>30</span>
             </div>
           </div>
         </div>

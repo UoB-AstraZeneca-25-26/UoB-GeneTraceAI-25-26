@@ -74,6 +74,17 @@ export const TIER_HEX: Record<TierTone, string> = {
 
 export const tierToneOf = (tier: ScoreTier | string): TierTone => confTier(tier).tone;
 
+/* Deterministic color per lineage (for the network graph legend/nodes). */
+const LINEAGE_PALETTE = [
+  '#4f46e5', '#059669', '#0891b2', '#e11d48', '#9333ea', '#d97706',
+  '#0284c7', '#db2777', '#65a30d', '#7c3aed', '#0d9488', '#c026d3',
+];
+export function lineageColor(lineage: string): string {
+  let h = 0;
+  for (const c of lineage) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return LINEAGE_PALETTE[h % LINEAGE_PALETTE.length];
+}
+
 /* Client-side abstention check. The pipeline doesn't (yet) return a verdict block,
    but the ranking metric is a within-gene percentile, so when the shown models
    cluster tightly at the ceiling the rank order carries little signal — the same

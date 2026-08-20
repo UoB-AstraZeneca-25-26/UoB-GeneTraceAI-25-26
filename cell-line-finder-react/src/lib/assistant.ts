@@ -20,7 +20,7 @@ export function buildAssistantContext(
       cellLine: r.cellLine,
       modelId: r.modelId,
       score: r.mode === 'selectivity' ? r.selectivity : r.mode === 'multi' ? r.jointScore : r.score,
-      tier: r.mode === 'single' ? r.tier : null,
+      tier: null,
     })),
   };
 }
