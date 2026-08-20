@@ -19,8 +19,6 @@ GeneTraceAI_datasets.zip
 
 # ── Parquet files ────────────────────────────────────────────────
 *.parquet
-!reference/*.parquet
-!cleaned_track_data/*.parquet
 
 # ── Python ───────────────────────────────────────────────────────
 __pycache__/

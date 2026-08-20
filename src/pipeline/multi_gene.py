@@ -159,12 +159,16 @@ def co_select(gene_inputs, pred, gene_lookup, resolve_gene, dispersion=None,
     score_cols = [sym for _, sym in resolved]
     # Frechet-Hoeffding lower bound: the conjunction is only as strong as its
     # weakest component
-    wide["joint_score"] = wide[score_cols].min(axis=1)
-    wide["limiting_gene"] = wide[score_cols].idxmin(axis=1)
-    wide["spread"] = wide[score_cols].max(axis=1) - wide[score_cols].min(axis=1)
-
-    passing = wide[wide["joint_score"] >= floor].copy()
-    shortlist = (passing if len(passing) else wide).sort_values(
+    wide["joint_score"] = wide[score_cols].min(axis=1, skipna=False)
+    # idxmin raises on all-NaN rows; compute on scoreable rows only
+    scoreable = wide["joint_score"].notna()
+    wide.loc[scoreable, "limiting_gene"] = wide.loc[scoreable, score_cols].idxmin(axis=1)
+    wide.loc[scoreable, "spread"] = (
+        wide.loc[scoreable, score_cols].max(axis=1) -
+        wide.loc[scoreable, score_cols].min(axis=1)
+    )
+    passing = wide[scoreable & (wide["joint_score"] >= floor)].copy()
+    shortlist = (passing if len(passing) else wide[scoreable]).sort_values(
         "joint_score", ascending=False).head(top_n)
 
     # ---- redundancy check (L6) ------------------------------------------

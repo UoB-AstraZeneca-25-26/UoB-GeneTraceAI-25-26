@@ -23,6 +23,66 @@ _SIM_NOTE  = "+0.186 drug-response concordance vs same-tissue baseline"
 
 # ── helpers ────────────────────────────────────────────────────────────────
 
+def _parse_args(raw: list[str]) -> tuple[list[str], list[str]]:
+    """Split a raw arg list into positional args and --lineage values.
+
+    --lineage lung --lineage skin  ->  lineages = ["lung", "skin"]
+    Lineage terms match against both `lineage` and `lineage_subtype` columns
+    (case-insensitive, substring match), so "nsclc" or "lung" both work.
+    """
+    positional, lineages = [], []
+    i = 0
+    while i < len(raw):
+        if raw[i] == "--lineage" and i + 1 < len(raw):
+            lineages.append(raw[i + 1].strip().lower())
+            i += 2
+        else:
+            positional.append(raw[i])
+            i += 1
+    return positional, lineages
+
+
+def _lineage_model_ids(terms: list[str]) -> set[str] | None:
+    """Return model_ids matching any of the lineage terms, or None (no filter).
+
+    Matches against lineage OR lineage_subtype (case-insensitive substring).
+    Returns None when terms is empty so callers can skip the filter entirely.
+    """
+    if not terms:
+        return None
+    if not DB.exists():
+        print("[WARNING] DuckDB not found — lineage filter skipped.")
+        return None
+    try:
+        con = duckdb.connect(str(DB), read_only=True)
+        # Build a LIKE clause for each term against both columns
+        clauses = " OR ".join(
+            f"(lower(lineage) LIKE '%{t}%' OR lower(lineage_subtype) LIKE '%{t}%')"
+            for t in terms
+        )
+        rows = con.execute(
+            f"SELECT lower(model_id) AS model_id FROM sample_info WHERE {clauses}"
+        ).fetchall()
+        con.close()
+        matched = {r[0] for r in rows}
+        if not matched:
+            print(f"[WARNING] No lines matched lineage filter: {terms!r}")
+        else:
+            print(f"[LINEAGE] {', '.join(terms)!r} -> {len(matched):,} lines in scope")
+        return matched
+    except Exception as exc:
+        print(f"[WARNING] Lineage filter failed ({exc}) — no filter applied.")
+        return None
+
+
+def _apply_lineage(df: pd.DataFrame, model_ids: set[str] | None,
+                   col: str = "model_id") -> pd.DataFrame:
+    """Filter a DataFrame to the lineage model_id set. No-op when model_ids is None."""
+    if model_ids is None:
+        return df
+    return df[df[col].str.lower().isin(model_ids)]
+
+
 def _load_genes() -> pd.DataFrame:
     return pd.read_parquet(GENE_LKP, columns=["ensg_id", "hgnc_symbol",
                                                "chromosomal_location"])
@@ -152,14 +212,17 @@ def _lineage_meta(model_id: str) -> dict:
 # ── commands ───────────────────────────────────────────────────────────────
 
 def cmd_gene(args: list) -> None:
+    args, lineages = _parse_args(args)
     if not args:
-        raise SystemExit("Usage: cli.py gene <GENE> [ACH-ID]")
+        raise SystemExit("Usage: cli.py gene <GENE> [ACH-ID] [--lineage <tissue>]")
     _check_outputs()
 
     genes = _load_genes()
     y_set = _y_linked_set(genes)
     ensg, sym = _resolve(args[0], genes)
+    lineage_ids = _lineage_model_ids(lineages)
     pred = pd.read_parquet(PREDICTIONS)
+    pred = _apply_lineage(pred, lineage_ids)
     sub  = pred[pred.ensg_id == ensg].copy()
     if sub.empty:
         raise SystemExit(f"No predictions for {sym} ({ensg})")
@@ -222,7 +285,8 @@ def cmd_gene(args: list) -> None:
         return
 
     # ── List view ────────────────────────────────────────────────────────────
-    print(f"\nGene: {sym}  ({ensg})")
+    lineage_tag = f"  |  Lineage: {', '.join(lineages)}" if lineages else ""
+    print(f"\nGene: {sym}  ({ensg}){lineage_tag}")
     print(DIV)
     print(f"  {'ACH ID':<13} {'Cell Line Name':<30} {'Score':>6}  Tier")
     print(DIV)
@@ -237,8 +301,9 @@ def cmd_gene(args: list) -> None:
 
 
 def cmd_genes(gene_queries: list) -> None:
+    gene_queries, lineages = _parse_args(gene_queries)
     if len(gene_queries) < 2:
-        raise SystemExit("Usage: cli.py genes <GENE_A> <GENE_B> [GENE_C ...]")
+        raise SystemExit("Usage: cli.py genes <GENE_A> <GENE_B> [GENE_C ...] [--lineage <tissue>]")
     _check_outputs()
 
     genes = _load_genes()
@@ -247,7 +312,9 @@ def cmd_genes(gene_queries: list) -> None:
     ensgs = [e for e, _ in resolved]
     syms  = [s for _, s in resolved]
 
+    lineage_ids = _lineage_model_ids(lineages)
     pred  = pd.read_parquet(PREDICTIONS, columns=["model_id", "ensg_id", "core_score"])
+    pred  = _apply_lineage(pred, lineage_ids)
     lines = _load_lines()
 
     wide = None
@@ -278,13 +345,14 @@ def cmd_genes(gene_queries: list) -> None:
         wide = wide.drop(columns=["sex"])
 
     JOINT_FLOOR = 0.50
-    wide["joint_score"] = wide[syms].min(axis=1)
+    wide["joint_score"] = wide[syms].min(axis=1, skipna=False)
     wide = wide[wide["joint_score"].notna() & (wide["joint_score"] >= JOINT_FLOOR)]
     wide = wide.sort_values("joint_score", ascending=False)
     wide = wide.merge(lines, on="model_id", how="left").reset_index(drop=True)
 
     sym_hdrs = "  ".join(f"{s[:7]:>7}" for s in syms)
-    print(f"\nCo-selection: {' AND '.join(syms)}")
+    lineage_tag = f"  |  Lineage: {', '.join(lineages)}" if lineages else ""
+    print(f"\nCo-selection: {' AND '.join(syms)}{lineage_tag}")
     print(f"Score = min({', '.join(syms)})  |  Floor = {JOINT_FLOOR}")
     print(DIV)
     print(f"  {'ACH ID':<13} {'Cell Line Name':<28} {'Joint':>6}  {sym_hdrs}")
@@ -297,8 +365,9 @@ def cmd_genes(gene_queries: list) -> None:
 
 
 def cmd_exclude(args: list) -> None:
+    args, lineages = _parse_args(args)
     if len(args) < 2:
-        raise SystemExit("Usage: cli.py exclude <GENE_A> <GENE_B>")
+        raise SystemExit("Usage: cli.py exclude <GENE_A> <GENE_B> [--lineage <tissue>]")
     _check_outputs()
 
     genes = _load_genes()
@@ -306,7 +375,9 @@ def cmd_exclude(args: list) -> None:
     ensg_a, sym_a = _resolve(args[0], genes)
     ensg_b, sym_b = _resolve(args[1], genes)
 
+    lineage_ids = _lineage_model_ids(lineages)
     pred  = pd.read_parquet(PREDICTIONS, columns=["model_id", "ensg_id", "core_score"])
+    pred  = _apply_lineage(pred, lineage_ids)
     lines = _load_lines()
 
     a = pred[pred.ensg_id == ensg_a][["model_id", "core_score"]].rename(columns={"core_score": "score_a"})

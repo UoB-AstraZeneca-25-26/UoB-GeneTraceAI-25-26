@@ -84,7 +84,7 @@ class_C = si[si["rrid_norm"].isna()].copy()
 
 assert len(class_A) + len(class_B) + len(class_C) == 1840, "Classes don't sum to 1840"
 assert si["model_id"].is_unique, "model_id not unique across sample_info"
-if len(class_C) != 22:
+if len(class_C) != 22: # why 22 specifically 
     print(f"WARNING: expected 22 gap-class rows, got {len(class_C)}")
 
 print(f"Class A (resolved)           : {len(class_A)}")
