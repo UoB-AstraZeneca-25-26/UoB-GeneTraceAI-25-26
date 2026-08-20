@@ -46,6 +46,7 @@ class ExcludeResponse(BaseModel):
     lineage_distribution: dict[str, int] = {}
 
 
+<<<<<<< Updated upstream
 class DetailResponse(BaseModel):
     gene: str
     ensg_id: str
@@ -55,6 +56,30 @@ class DetailResponse(BaseModel):
     rank: int
     total_lines: int
     lineage: dict
+=======
+class CellLineRef(BaseModel):
+    model_id: str
+    name: str | None = None
+
+
+class DetailResponse(BaseModel):
+    gene: str
+    ensg: str
+    cell_line: CellLineRef
+    rank: int
+    total: int
+    score: float
+    tier: str
+    n_layers: int
+    driver_alteration: bool
+    p_mutation: float | None = None
+    p_fusion: float | None = None
+    has_cna_alteration: bool
+    expression_level: float | None = None
+    proteomics_level: float | None = None
+    metadata: dict = {}
+    rna_alternatives: list = []
+>>>>>>> Stashed changes
 
 
 class HealthResponse(BaseModel):

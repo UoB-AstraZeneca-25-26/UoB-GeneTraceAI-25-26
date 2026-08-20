@@ -10,6 +10,10 @@ pure in-memory pandas — no network, no LLM.
 from __future__ import annotations
 
 import logging
+<<<<<<< Updated upstream
+=======
+import math
+>>>>>>> Stashed changes
 import os
 from collections import Counter
 from pathlib import Path
@@ -51,13 +55,21 @@ _cell_lkp: pd.DataFrame | None = None
 _cell_name: dict[str, str] = {}  # lower(model_id) -> cell_line_name
 _lineage_map: dict[str, str] = {}  # lower(model_id) -> lineage
 _meta_map: dict[str, dict] = {}  # lower(model_id) -> {lineage, subtype, disease, sex}
+<<<<<<< Updated upstream
+=======
+_pred_path: Path | None = None  # kept so /gene/detail can pull the full row on demand
+>>>>>>> Stashed changes
 _db_path: Path | None = None
 
 
 def load_ranking_data(predictions_path: Path, gene_lookup_path: Path,
                       cell_lookup_path: Path, db_path: Path) -> None:
     global _pred, _sym_index, _ensg_index, _gene_lkp, _cell_lkp, _cell_name
+<<<<<<< Updated upstream
     global _lineage_map, _meta_map, _db_path
+=======
+    global _lineage_map, _meta_map, _pred_path, _db_path
+>>>>>>> Stashed changes
 
     if not predictions_path.exists():
         logger.warning("predictions not found at %s — /v1/rank will 503", predictions_path)
@@ -73,6 +85,10 @@ def load_ranking_data(predictions_path: Path, gene_lookup_path: Path,
     pred["model_id"] = pred["model_id"].astype("category")
     pred["ensg_id"] = pred["ensg_id"].astype("category")
     _pred = pred.set_index("ensg_id").sort_index()
+<<<<<<< Updated upstream
+=======
+    _pred_path = predictions_path
+>>>>>>> Stashed changes
     logger.info("prediction index built: %d genes", _pred.index.nunique())
 
     _gene_lkp = pd.read_parquet(gene_lookup_path, columns=["ensg_id", "hgnc_symbol"])
@@ -311,7 +327,101 @@ def _lineage_meta(model_id: str) -> dict:
     return {}
 
 
+<<<<<<< Updated upstream
 def detail(gene: str, model_id: str) -> dict:
+=======
+# sample_info columns surfaced in the detail metadata block, in the order the
+# UI labels them. Kept flat (single dict) because that's what the UI expects.
+_DETAIL_META_COLS = [
+    "lineage", "lineage_subtype", "primary_disease", "subtype",
+    "cellosaurus_ncit_disease", "primary_or_metastasis",
+    "sample_collection_site", "default_growth_pattern", "sex", "age",
+]
+
+
+def _full_metadata(mid: str) -> dict:
+    """Flat metadata dict for one line, keyed as the UI's detail view expects."""
+    if _db_path is None:
+        return {}
+    try:
+        import duckdb
+        con = duckdb.connect(str(_db_path), read_only=True)
+        cols = ", ".join(_DETAIL_META_COLS)
+        row = con.execute(
+            f"SELECT {cols} FROM main.sample_info WHERE lower(model_id) = ?",
+            [mid.lower()],
+        ).fetchone()
+        con.close()
+        if row:
+            return {k: v for k, v in zip(_DETAIL_META_COLS, row) if v is not None}
+    except Exception as exc:
+        logger.warning("full metadata failed: %s", exc)
+    return {}
+
+
+def _prediction_row(ensg: str, mid: str) -> dict:
+    """Pull the full prediction row for one (gene, line) straight from the
+    parquet via DuckDB predicate pushdown — reads only the matching row, so it
+    adds nothing to steady-state memory."""
+    if _pred_path is None:
+        return {}
+    try:
+        import duckdb
+        con = duckdb.connect()
+        row = con.execute(
+            "SELECT n_layers, p_mutation, p_fusion, has_cna_alteration, "
+            "has_driver_alteration, confidence_tier "
+            "FROM read_parquet(?) WHERE ensg_id = ? AND lower(model_id) = ?",
+            [str(_pred_path), ensg, mid.lower()],
+        ).fetchone()
+        con.close()
+        if row:
+            keys = ["n_layers", "p_mutation", "p_fusion", "has_cna_alteration",
+                    "has_driver_alteration", "confidence_tier"]
+            return dict(zip(keys, row))
+    except Exception as exc:
+        logger.warning("prediction row lookup failed: %s", exc)
+    return {}
+
+
+def _z_to_level(z) -> float | None:
+    """Map an expression/proteomics z-score to a 0-1 level (normal-CDF percentile).
+    z=0 -> 0.50, z=+2 -> ~0.98, z=-2 -> ~0.02. Gives the omics map a real gradient."""
+    if z is None or pd.isna(z):
+        return None
+    return round(0.5 * (1.0 + math.erf(float(z) / math.sqrt(2.0))), 6)
+
+
+def _omics_levels(ensg: str, mid: str) -> dict:
+    """Per-line RNA and protein expression level (0-1), joined from the z-score
+    parquets that sit beside the predictions file. Pulled on demand via DuckDB."""
+    out = {"expression_level": None, "proteomics_level": None}
+    if _pred_path is None:
+        return out
+    base = _pred_path.parent
+    sources = {"expression_level": base / "bulk_rna_z.parquet",
+               "proteomics_level": base / "bulk_prot_z.parquet"}
+    try:
+        import duckdb
+        con = duckdb.connect()
+        for key, path in sources.items():
+            if not path.exists():
+                continue
+            row = con.execute(
+                "SELECT z_t FROM read_parquet(?) WHERE gene_id = ? AND lower(model_id) = ?",
+                [str(path), ensg, mid.lower()],
+            ).fetchone()
+            if row:
+                out[key] = _z_to_level(row[0])
+        con.close()
+    except Exception as exc:
+        logger.warning("omics levels lookup failed: %s", exc)
+    return out
+
+
+def detail(gene: str, model_id: str) -> dict:
+    """Rich per-line detail matching the UI's CellLineDetailApiResponse shape."""
+>>>>>>> Stashed changes
     ensg, sym = _resolve(gene)
     mid = model_id.strip().lower()
 
@@ -326,6 +436,7 @@ def detail(gene: str, model_id: str) -> dict:
     rank_pos = int((s.dropna() > score).sum()) + 1
     total = int(s.notna().sum())
 
+<<<<<<< Updated upstream
     name = _cell_name.get(mid)
     lin = _lineage_meta(mid)
 
@@ -338,4 +449,30 @@ def detail(gene: str, model_id: str) -> dict:
         "rank": rank_pos,
         "total_lines": total,
         "lineage": lin,
+=======
+    name = _cell_name.get(mid) or mid.upper()
+    pr = _prediction_row(ensg, mid)
+    omics = _omics_levels(ensg, mid)
+
+    def _num(v):
+        return float(v) if v is not None and pd.notna(v) else None
+
+    return {
+        "gene": sym,
+        "ensg": ensg,
+        "cell_line": {"model_id": mid.upper(), "name": name},
+        "rank": rank_pos,
+        "total": total,
+        "score": round(float(score), 6),
+        "tier": pr.get("confidence_tier") or "unknown",
+        "n_layers": int(pr.get("n_layers") or 0),
+        "driver_alteration": bool(pr.get("has_driver_alteration") or False),
+        "p_mutation": _num(pr.get("p_mutation")),
+        "p_fusion": _num(pr.get("p_fusion")),
+        "has_cna_alteration": bool(pr.get("has_cna_alteration") or False),
+        "expression_level": omics["expression_level"],
+        "proteomics_level": omics["proteomics_level"],
+        "metadata": _full_metadata(mid),
+        "rna_alternatives": [],
+>>>>>>> Stashed changes
     }
