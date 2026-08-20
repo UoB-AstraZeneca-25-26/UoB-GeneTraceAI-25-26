@@ -10,10 +10,7 @@ pure in-memory pandas — no network, no LLM.
 from __future__ import annotations
 
 import logging
-<<<<<<< Updated upstream
-=======
 import math
->>>>>>> Stashed changes
 import os
 from collections import Counter
 from pathlib import Path
@@ -55,21 +52,14 @@ _cell_lkp: pd.DataFrame | None = None
 _cell_name: dict[str, str] = {}  # lower(model_id) -> cell_line_name
 _lineage_map: dict[str, str] = {}  # lower(model_id) -> lineage
 _meta_map: dict[str, dict] = {}  # lower(model_id) -> {lineage, subtype, disease, sex}
-<<<<<<< Updated upstream
-=======
 _pred_path: Path | None = None  # kept so /gene/detail can pull the full row on demand
->>>>>>> Stashed changes
 _db_path: Path | None = None
 
 
 def load_ranking_data(predictions_path: Path, gene_lookup_path: Path,
                       cell_lookup_path: Path, db_path: Path) -> None:
     global _pred, _sym_index, _ensg_index, _gene_lkp, _cell_lkp, _cell_name
-<<<<<<< Updated upstream
-    global _lineage_map, _meta_map, _db_path
-=======
     global _lineage_map, _meta_map, _pred_path, _db_path
->>>>>>> Stashed changes
 
     if not predictions_path.exists():
         logger.warning("predictions not found at %s — /v1/rank will 503", predictions_path)
@@ -85,10 +75,7 @@ def load_ranking_data(predictions_path: Path, gene_lookup_path: Path,
     pred["model_id"] = pred["model_id"].astype("category")
     pred["ensg_id"] = pred["ensg_id"].astype("category")
     _pred = pred.set_index("ensg_id").sort_index()
-<<<<<<< Updated upstream
-=======
     _pred_path = predictions_path
->>>>>>> Stashed changes
     logger.info("prediction index built: %d genes", _pred.index.nunique())
 
     _gene_lkp = pd.read_parquet(gene_lookup_path, columns=["ensg_id", "hgnc_symbol"])
@@ -327,9 +314,6 @@ def _lineage_meta(model_id: str) -> dict:
     return {}
 
 
-<<<<<<< Updated upstream
-def detail(gene: str, model_id: str) -> dict:
-=======
 # sample_info columns surfaced in the detail metadata block, in the order the
 # UI labels them. Kept flat (single dict) because that's what the UI expects.
 _DETAIL_META_COLS = [
@@ -421,7 +405,6 @@ def _omics_levels(ensg: str, mid: str) -> dict:
 
 def detail(gene: str, model_id: str) -> dict:
     """Rich per-line detail matching the UI's CellLineDetailApiResponse shape."""
->>>>>>> Stashed changes
     ensg, sym = _resolve(gene)
     mid = model_id.strip().lower()
 
@@ -436,20 +419,6 @@ def detail(gene: str, model_id: str) -> dict:
     rank_pos = int((s.dropna() > score).sum()) + 1
     total = int(s.notna().sum())
 
-<<<<<<< Updated upstream
-    name = _cell_name.get(mid)
-    lin = _lineage_meta(mid)
-
-    return {
-        "gene": sym,
-        "ensg_id": ensg,
-        "model_id": mid.upper(),
-        "name": name,
-        "score": round(float(score), 6),
-        "rank": rank_pos,
-        "total_lines": total,
-        "lineage": lin,
-=======
     name = _cell_name.get(mid) or mid.upper()
     pr = _prediction_row(ensg, mid)
     omics = _omics_levels(ensg, mid)
@@ -474,5 +443,4 @@ def detail(gene: str, model_id: str) -> dict:
         "proteomics_level": omics["proteomics_level"],
         "metadata": _full_metadata(mid),
         "rna_alternatives": [],
->>>>>>> Stashed changes
     }

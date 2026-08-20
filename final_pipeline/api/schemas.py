@@ -46,17 +46,6 @@ class ExcludeResponse(BaseModel):
     lineage_distribution: dict[str, int] = {}
 
 
-<<<<<<< Updated upstream
-class DetailResponse(BaseModel):
-    gene: str
-    ensg_id: str
-    model_id: str
-    name: str | None = None
-    score: float
-    rank: int
-    total_lines: int
-    lineage: dict
-=======
 class CellLineRef(BaseModel):
     model_id: str
     name: str | None = None
@@ -79,7 +68,6 @@ class DetailResponse(BaseModel):
     proteomics_level: float | None = None
     metadata: dict = {}
     rna_alternatives: list = []
->>>>>>> Stashed changes
 
 
 class HealthResponse(BaseModel):

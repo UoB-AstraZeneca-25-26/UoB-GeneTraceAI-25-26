@@ -13,10 +13,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-<<<<<<< Updated upstream
-=======
 from fastapi.middleware.cors import CORSMiddleware
->>>>>>> Stashed changes
 
 from .ranking import ensure_loaded
 from .routes import router
@@ -37,8 +34,6 @@ def create_app() -> FastAPI:
         version="1.0.0",
         lifespan=lifespan,
     )
-<<<<<<< Updated upstream
-=======
     # The hosted UI runs on a different origin than this API, so browsers require
     # CORS headers on every response or they block the call. GET-only, no cookies,
     # so a permissive allow-list is fine.
@@ -48,7 +43,6 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "OPTIONS"],
         allow_headers=["*"],
     )
->>>>>>> Stashed changes
     app.include_router(router)
     return app
 
