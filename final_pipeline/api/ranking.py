@@ -10,12 +10,38 @@ pure in-memory pandas — no network, no LLM.
 from __future__ import annotations
 
 import logging
+import os
 from collections import Counter
 from pathlib import Path
 
 import pandas as pd
 
 logger = logging.getLogger(__name__)
+
+_PIPELINE = Path(__file__).resolve().parent.parent
+
+
+def _env_path(env_var: str, default: Path) -> Path:
+    val = os.getenv(env_var)
+    return Path(val) if val else default
+
+
+def ensure_loaded() -> None:
+    """Idempotent data load. Safe to call from either the HTTP lifespan or the
+    Bedrock handler — loads once, no-ops thereafter. Paths come from env vars
+    (Lambda/EFS overrides) or the bundled defaults."""
+    if is_ready():
+        return
+    load_ranking_data(
+        predictions_path=_env_path("PREDICTIONS_PATH",
+                                   _PIPELINE / "outputs" / "predictions_with_confidence.parquet"),
+        gene_lookup_path=_env_path("GENE_LOOKUP_PATH",
+                                   _PIPELINE / "reference" / "gene_lookup.parquet"),
+        cell_lookup_path=_env_path("CELL_LOOKUP_PATH",
+                                   _PIPELINE / "reference" / "cell_line_lookup.parquet"),
+        db_path=_env_path("RANKING_DB_PATH",
+                          _PIPELINE / "outputs" / "celllineselector.db"),
+    )
 
 _pred: pd.DataFrame | None = None  # index=ensg_id (categorical, sorted), cols: model_id, core_score
 _sym_index: dict[str, tuple[str, str]] = {}  # upper(symbol) -> (ensg_id, hgnc_symbol)
@@ -24,12 +50,14 @@ _gene_lkp: pd.DataFrame | None = None
 _cell_lkp: pd.DataFrame | None = None
 _cell_name: dict[str, str] = {}  # lower(model_id) -> cell_line_name
 _lineage_map: dict[str, str] = {}  # lower(model_id) -> lineage
+_meta_map: dict[str, dict] = {}  # lower(model_id) -> {lineage, subtype, disease, sex}
 _db_path: Path | None = None
 
 
 def load_ranking_data(predictions_path: Path, gene_lookup_path: Path,
                       cell_lookup_path: Path, db_path: Path) -> None:
-    global _pred, _sym_index, _ensg_index, _gene_lkp, _cell_lkp, _cell_name, _lineage_map, _db_path
+    global _pred, _sym_index, _ensg_index, _gene_lkp, _cell_lkp, _cell_name
+    global _lineage_map, _meta_map, _db_path
 
     if not predictions_path.exists():
         logger.warning("predictions not found at %s — /v1/rank will 503", predictions_path)
@@ -69,13 +97,26 @@ def load_ranking_data(predictions_path: Path, gene_lookup_path: Path,
             import duckdb
             con = duckdb.connect(str(_db_path), read_only=True)
             rows = con.execute(
-                "SELECT lower(model_id), lineage FROM sample_info WHERE lineage IS NOT NULL"
+                "SELECT lower(model_id), lineage, lineage_subtype, "
+                "primary_disease, sex FROM sample_info"
             ).fetchall()
             con.close()
-            _lineage_map = {r[0]: r[1] for r in rows}
-            logger.info("lineage map loaded: %d lines", len(_lineage_map))
+            for mid, lineage, subtype, disease, sex in rows:
+                meta = {}
+                if lineage:
+                    meta["lineage"] = lineage
+                    _lineage_map[mid] = lineage
+                if subtype:
+                    meta["lineage_subtype"] = subtype
+                if disease:
+                    meta["primary_disease"] = disease
+                if sex:
+                    meta["sex"] = sex
+                if meta:
+                    _meta_map[mid] = meta
+            logger.info("metadata map loaded: %d lines", len(_meta_map))
         except Exception as exc:
-            logger.warning("lineage map load failed: %s", exc)
+            logger.warning("metadata map load failed: %s", exc)
 
 
 def is_ready() -> bool:
@@ -109,6 +150,11 @@ def _lineage_model_ids(terms: list[str]) -> set[str] | None:
     except Exception as exc:
         logger.warning("lineage filter failed: %s", exc)
         return None
+
+
+def _meta(model_id: str) -> dict:
+    """Per-line metadata (lineage, subtype, disease, sex) or {} if unknown."""
+    return _meta_map.get(model_id.lower(), {})
 
 
 def _lineage_dist(model_ids) -> dict[str, int]:
@@ -162,6 +208,7 @@ def rank(gene_syms: list[str], lineages: list[str],
                 "joint_score": round(float(r["core_score"]), 6),
                 "limiting_gene": sym,
                 "scores": {sym: round(float(r["core_score"]), 6)},
+                "metadata": _meta(r["model_id"]),
             }
             for _, r in sub.iterrows()
         ]
@@ -199,6 +246,7 @@ def rank(gene_syms: list[str], lineages: list[str],
             "joint_score": round(float(row["joint_score"]), 6),
             "limiting_gene": row.get("limiting_gene"),
             "scores": {s: round(float(row[s]), 6) for s in syms if pd.notna(row[s])},
+            "metadata": _meta(row["model_id"]),
         })
 
     return {"genes": syms, "lineage": lineages, "floor": floor,
@@ -233,6 +281,7 @@ def exclude(gene_a: str, gene_b: str, lineages: list[str], top_n: int) -> dict:
             "score_a": round(float(row["score_a"]), 6),
             "score_b": round(float(row["score_b"]), 6),
             "selectivity": round(float(row["selectivity"]), 6),
+            "metadata": _meta(row["model_id"]),
         })
 
     return {"gene_a": sym_a, "gene_b": sym_b, "lineage": lineages,

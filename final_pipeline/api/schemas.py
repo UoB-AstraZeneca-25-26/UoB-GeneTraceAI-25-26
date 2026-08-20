@@ -16,6 +16,7 @@ class RankLine(BaseModel):
     joint_score: float
     limiting_gene: str | None = None
     scores: dict[str, float]
+    metadata: dict = {}
 
 
 class RankResponse(BaseModel):
@@ -33,6 +34,7 @@ class ExcludeLine(BaseModel):
     score_a: float
     score_b: float
     selectivity: float
+    metadata: dict = {}
 
 
 class ExcludeResponse(BaseModel):
