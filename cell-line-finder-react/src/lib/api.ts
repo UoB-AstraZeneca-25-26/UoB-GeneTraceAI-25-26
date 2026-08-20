@@ -1,4 +1,11 @@
 import {
+  mockGeneResponse,
+  mockExcludeResponse,
+  mockGenesResponse,
+  mockCellLineDetailResponse,
+  mockDelay,
+} from './mockApi';
+import {
   CellLineDetail,
   MetadataItem,
   MultiRanked,
@@ -10,10 +17,22 @@ import {
   TrackScores,
 } from '../types';
 
-const BASE = 'https://9368clqa34.execute-api.eu-north-1.amazonaws.com';
+// In dev, use the same-origin '/api' path so the Vite proxy handles the request
+// (sidestepping the missing CORS headers). In a production build, call the API
+// directly — which requires the API to send CORS headers, or same-origin hosting.
+const BASE = import.meta.env.DEV
+  ? '/api'
+  : 'https://9368clqa34.execute-api.eu-north-1.amazonaws.com';
 const GENE_URL = `${BASE}/gene`;
 const EXCLUDE_URL = `${BASE}/exclude`;
 const GENES_URL = `${BASE}/genes`;
+
+// ---- Offline mock mode -------------------------------------------------------
+// Flip to false to use the live API again. When true, all fetchers below return
+// local mock data (same shapes) instead of hitting the network — lets you build
+// the UI while the endpoints are down.
+export const USE_MOCK = true;
+
 
 // ---------- /gene ----------
 
@@ -100,15 +119,28 @@ function parseLenientJson<T>(text: string): T {
   return JSON.parse(repaired) as T;
 }
 
+/** On a non-OK response, include the response body (often an AWS error message
+ *  like "Endpoint request timed out" or a throttling notice) so the failure is
+ *  diagnosable instead of a bare status. */
+async function errorFrom(res: Response): Promise<Error> {
+  let detail = '';
+  try {
+    detail = (await res.text()).trim().slice(0, 300);
+  } catch {
+    /* body already consumed or unavailable */
+  }
+  return new Error(`API error: ${res.status} ${res.statusText}${detail ? ` — ${detail}` : ''}`);
+}
+
 async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   const res = await fetch(url, { signal });
-  if (!res.ok) throw new Error(`API error: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw await errorFrom(res);
   return (await res.json()) as T;
 }
 
 async function getJsonLenient<T>(url: string, signal?: AbortSignal): Promise<T> {
   const res = await fetch(url, { signal });
-  if (!res.ok) throw new Error(`API error: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw await errorFrom(res);
   return parseLenientJson<T>(await res.text());
 }
 
@@ -118,6 +150,7 @@ export async function fetchGeneRanking(
 ): Promise<GeneApiResponse> {
   const symbol = gene.trim();
   if (!symbol) throw new Error('No gene symbol provided.');
+  if (USE_MOCK) { await mockDelay(); return mockGeneResponse(symbol); }
   const data = await getJson<GeneApiResponse>(
     `${GENE_URL}?query=${encodeURIComponent(symbol)}`,
     signal
@@ -134,6 +167,7 @@ export async function fetchSelectivityRanking(
   const a = geneA.trim();
   const b = geneB.trim();
   if (!a || !b) throw new Error('Both a target and an exclusion gene are required.');
+  if (USE_MOCK) { await mockDelay(); return mockExcludeResponse(a, b); }
   const data = await getJson<ExcludeApiResponse>(
     `${EXCLUDE_URL}?gene_a=${encodeURIComponent(a)}&gene_b=${encodeURIComponent(b)}`,
     signal
@@ -148,6 +182,7 @@ export async function fetchMultiRanking(
 ): Promise<GenesApiResponse> {
   const clean = genes.map((g) => g.trim()).filter(Boolean);
   if (clean.length < 2) throw new Error('Provide at least two target genes for a joint ranking.');
+  if (USE_MOCK) { await mockDelay(); return mockGenesResponse(clean); }
   // Encode each symbol but keep commas literal to match the endpoint's format.
   const query = clean.map(encodeURIComponent).join(',');
   const data = await getJsonLenient<GenesApiResponse>(`${GENES_URL}?query=${query}`, signal);
@@ -297,6 +332,7 @@ export async function fetchCellLineDetail(
   const g = gene.trim();
   const id = modelId.trim();
   if (!g || !id) throw new Error('Both a gene and a cell-line model id are required.');
+  if (USE_MOCK) { await mockDelay(); return mockCellLineDetailResponse(g, id); }
   const data = await getJson<CellLineDetailApiResponse>(
     `${GENE_URL}?query=${encodeURIComponent(g)}&cell_line=${encodeURIComponent(id)}`,
     signal

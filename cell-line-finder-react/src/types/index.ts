@@ -23,7 +23,7 @@ export type ScoredResult = {
   exclusionPenalty: number;
 };
 
-export type ViewType = 'query' | 'results' | 'profile' | 'about';
+export type ViewType = 'query' | 'results' | 'profile' | 'about' | 'assistant';
 
 // ---- Live API result model ----
 
@@ -139,4 +139,22 @@ export type CellLineDetail = {
   tracks: TrackScores;         // per-layer signals reported by this endpoint
   metadata: MetadataItem[];    // ordered, cleaned for display
   alternatives: SimilarLine[]; // RNA-similar models
+};
+
+// ---- Assistant / chat ----
+
+export type ChatRole = 'user' | 'assistant';
+export type ChatMessage = { role: ChatRole; content: string };
+
+/** Snapshot of the current query + top results, handed to the agent so it can
+ *  explain the ranking with real numbers. */
+export type AssistantContext = {
+  mode: ResultMode | null;
+  genes: string[];
+  exclusions: string[];
+  lineage: string;
+  primaryGene: string | null;
+  total: number | null;
+  formula: string | null;
+  topLines: { rank: number; cellLine: string; modelId: string; score: number; tier: string | null }[];
 };

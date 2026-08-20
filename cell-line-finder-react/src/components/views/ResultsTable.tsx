@@ -6,7 +6,8 @@ import { EvidenceSpine } from '../common/EvidenceSpine';
 import { VerdictBanner } from '../common/VerdictBanner';
 import { NetworkGraph } from '../common/NetworkGraph';
 import { SelectivityScatter } from '../common/SelectivityScatter';
-import { Trophy, ChevronRight, AlertCircle, Loader2, Info, Zap, Table2, Network } from 'lucide-react';
+import { OmicsMap } from '../common/OmicsMap';
+import { Trophy, ChevronRight, AlertCircle, Loader2, Info, Zap, Table2, Network, GitFork, Sparkles } from 'lucide-react';
 
 interface ResultsTableProps {
   queryParams: QueryParams;
@@ -16,6 +17,7 @@ interface ResultsTableProps {
   error: string | null;
   onRetry: () => void;
   onInspect: (t: InspectTarget) => void;
+  onAskAssistant?: () => void;
 }
 
 export const ResultsTable: React.FC<ResultsTableProps> = ({
@@ -26,9 +28,10 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   error,
   onRetry,
   onInspect,
+  onAskAssistant,
 }) => {
   const [selectedInDropdown, setSelectedInDropdown] = useState<string>('');
-  const [view, setView] = useState<'table' | 'map'>('table');
+  const [view, setView] = useState<string>('table');
 
   useEffect(() => {
     if (results.length > 0) setSelectedInDropdown(results[0].modelId);
@@ -77,9 +80,21 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   const mode = results[0].mode;
   const topPick = results[0];
 
-  // Map view only exists for single/selectivity; multi falls back to the table.
-  const hasMap = mode === 'single' || mode === 'selectivity';
-  const activeView = hasMap ? view : 'table';
+  // Views available per mode. 'omics' (Sankey) and 'network' are single-gene only;
+  // selectivity gets the scatter; multi is table-only.
+  const VIEW_META: Record<string, { label: string; icon: React.ElementType }> = {
+    table: { label: 'Table', icon: Table2 },
+    network: { label: 'Network', icon: Network },
+    omics: { label: 'Omics map', icon: GitFork },
+    scatter: { label: 'Scatter', icon: Network },
+  };
+  const views =
+    mode === 'single'
+      ? ['table', 'network', 'omics']
+      : mode === 'selectivity'
+      ? ['table', 'scatter']
+      : ['table'];
+  const activeView = views.includes(view) ? view : 'table';
 
   const ignoredBits: string[] = [];
   if (queryParams.lineage !== 'Any') ignoredBits.push('lineage filtering');
@@ -158,44 +173,62 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
         </div>
       )}
 
-      {/* View switcher */}
-      {/* View switcher — map only exists for single (network) and selectivity (scatter) */}
-      {hasMap && (
-        <div className="inline-flex bg-slate-100 rounded-lg p-0.5">
+      {/* View switcher + assistant shortcut */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        {views.length > 1 ? (
+          <div className="inline-flex bg-slate-100 rounded-lg p-0.5">
+            {views.map((v) => {
+              const Icon = VIEW_META[v].icon;
+              return (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition ${
+                    activeView === v ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" /> {VIEW_META[v].label}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <span />
+        )}
+
+        {onAskAssistant && (
           <button
-            onClick={() => setView('table')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition ${
-              activeView === 'table' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
+            onClick={onAskAssistant}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition"
           >
-            <Table2 className="w-4 h-4" /> Table
+            <Sparkles className="w-4 h-4" /> Explain this ranking
           </button>
-          <button
-            onClick={() => setView('map')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition ${
-              activeView === 'map' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Network className="w-4 h-4" /> {mode === 'selectivity' ? 'Scatter' : 'Network'}
-          </button>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left panel: table or map */}
-        {activeView === 'map' ? (
+        {/* Left panel: table or a visualization */}
+        {activeView !== 'table' ? (
           <div className="lg:col-span-2">
-            {mode === 'selectivity' ? (
+            {activeView === 'scatter' && (
               <SelectivityScatter
                 lines={results.filter((r): r is Extract<RankedCellLine, { mode: 'selectivity' }> => r.mode === 'selectivity')}
                 geneHigh={meta?.primaryGene ?? queryParams.targets[0]}
                 geneLow={meta?.excludedGene ?? queryParams.exclusions[0] ?? ''}
                 onSelect={inspect}
               />
-            ) : (
+            )}
+            {activeView === 'network' && (
               <NetworkGraph
                 gene={meta?.primaryGene ?? queryParams.targets[0]}
                 lines={results.filter((r): r is Extract<RankedCellLine, { mode: 'single' }> => r.mode === 'single')}
+                onSelect={inspect}
+              />
+            )}
+            {activeView === 'omics' && (
+              <OmicsMap
+                gene={inspectGene}
+                lines={results.slice(0, 6).map((r) => ({ modelId: r.modelId, cellLine: r.cellLine }))}
                 onSelect={inspect}
               />
             )}

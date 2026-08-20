@@ -1,10 +1,12 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { QueryBuilder } from './components/views/QueryBuilder';
 import { ResultsTable } from './components/views/ResultsTable';
 import { ProfileView } from './components/views/ProfileView';
 import { AboutPage } from './components/views/AboutPage';
+import { AssistantPanel } from './components/views/AssistantPanel';
 import { fetchRanking } from './lib/api';
+import { buildAssistantContext } from './lib/assistant';
 import { InspectTarget, QueryParams, RankedCellLine, ResultMeta, ViewType } from './types';
 
 export default function App() {
@@ -82,6 +84,11 @@ export default function App() {
   // topK isn't a server param; slice for display.
   const visibleResults = results.slice(0, queryParams.topK);
 
+  const assistantContext = useMemo(
+    () => buildAssistantContext(queryParams, meta, visibleResults),
+    [queryParams, meta, visibleResults]
+  );
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-900">
       <Sidebar
@@ -108,6 +115,7 @@ export default function App() {
             error={error}
             onRetry={() => void runQuery(queryParams)}
             onInspect={handleInspect}
+            onAskAssistant={() => setCurrentView('assistant')}
           />
         )}
 
@@ -118,6 +126,8 @@ export default function App() {
             onInspect={handleInspect}
           />
         )}
+
+        {currentView === 'assistant' && <AssistantPanel context={assistantContext} />}
 
         {currentView === 'about' && <AboutPage />}
       </main>
