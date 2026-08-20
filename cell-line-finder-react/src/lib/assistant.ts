@@ -31,6 +31,7 @@ export type SendMessage = (
 ) => Promise<string>;
 
 /* ---------------------------------------------------------------------------
+<<<<<<< Updated upstream
  * INTEGRATION SEAM — point this at your own agent.
  *
  * Never call an LLM provider directly from the browser (it would expose your API
@@ -78,6 +79,46 @@ export const sendMessage: SendMessage = async (messages, context) => {
   }
 
   return "I'm the built-in demo assistant — I can sketch how the current ranking works, but I'm not wired to a real model yet. Point `sendMessage` in src/lib/assistant.ts at your agent endpoint to enable full answers. Meanwhile, try asking \u201chow was this ranking done?\u201d";
+=======
+ * Wired to the GeneTraceAI agent (Claude on Bedrock) behind a Lambda Function
+ * URL. We POST a single { query } string and read back the { answer } field.
+ * The current on-screen ranking is folded into the query so questions like
+ * "why is the top hit #1?" resolve to concrete cell lines and genes.
+ *
+ * NOTE: the agent Lambda's Function URL must have CORS enabled (AllowOrigins),
+ * or the browser will block this call in the hosted site.
+ * ------------------------------------------------------------------------- */
+
+const AGENT_URL =
+  'https://kpqr75ugvaeq5oijot3b27d5sq0xagsw.lambda-url.eu-west-2.on.aws/v1/agent/query';
+
+export const sendMessage: SendMessage = async (messages, context) => {
+  const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+  const question = (lastUser?.content ?? '').trim();
+  if (!question) return 'Ask me anything about the ranking or the underlying data.';
+
+  let query = question;
+  if (context && context.topLines.length > 0) {
+    const genes = context.genes.join(', ');
+    const top = context.topLines
+      .slice(0, 5)
+      .map((l) => `#${l.rank} ${l.cellLine} (${l.modelId}) score=${l.score.toFixed(3)}`)
+      .join('; ');
+    query = `Current ${context.mode ?? 'ranking'} for ${genes}. Top lines: ${top}. Question: ${question}`;
+  }
+
+  const res = await fetch(AGENT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`Agent error: ${res.status}${detail ? ` — ${detail.slice(0, 200)}` : ''}`);
+  }
+  const data = await res.json();
+  return (data.answer as string) ?? 'The agent returned no answer.';
+>>>>>>> Stashed changes
 };
 
 export const SUGGESTED_PROMPTS = [
