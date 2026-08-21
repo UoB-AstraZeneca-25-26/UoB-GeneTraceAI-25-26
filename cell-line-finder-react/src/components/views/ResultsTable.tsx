@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { InspectTarget, QueryParams, RankedCellLine, ResultMeta } from '../../types';
+import { GeneAliasInfo, InspectTarget, QueryParams, RankedCellLine, ResultMeta } from '../../types';
 import { NetworkGraph } from '../common/NetworkGraph';
-import { SelectivityScatter } from '../common/SelectivityScatter';
 import { OmicsMap } from '../common/OmicsMap';
 import { LineagePanel } from '../common/LineagePanel';
-import { Trophy, ChevronRight, AlertCircle, Loader2, Info, Table2, Network, GitFork, Sparkles, Layers } from 'lucide-react';
+import { Trophy, ChevronRight, AlertCircle, Loader2, Table2, Network, GitFork, Layers } from 'lucide-react';
+import { AGENT_API_URL } from '../../config';
 
 interface ResultsTableProps {
   queryParams: QueryParams;
@@ -14,7 +14,6 @@ interface ResultsTableProps {
   error: string | null;
   onRetry: () => void;
   onInspect: (t: InspectTarget) => void;
-  onAskAssistant?: () => void;
 }
 
 export const ResultsTable: React.FC<ResultsTableProps> = ({
@@ -25,14 +24,49 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   error,
   onRetry,
   onInspect,
-  onAskAssistant,
 }) => {
   const [selectedInDropdown, setSelectedInDropdown] = useState<string>('');
   const [view, setView] = useState<string>('table');
+  const [aliasInfo, setAliasInfo] = useState<Record<string, GeneAliasInfo>>({});
+  const [aliasFailed, setAliasFailed] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (results.length > 0) setSelectedInDropdown(results[0].modelId);
   }, [results]);
+
+  // Gene full-name / alias enrichment — purely additive, never blocks or alters the ranking.
+  const aliasGenes = React.useMemo(() => {
+    const genes =
+      meta?.mode === 'multi'
+        ? meta.genes ?? []
+        : [meta?.primaryGene ?? queryParams.targets[0], meta?.excludedGene];
+    return Array.from(new Set(genes.filter((g): g is string => Boolean(g))));
+  }, [meta, queryParams.targets]);
+
+  useEffect(() => {
+    aliasGenes.forEach((gene) => {
+      fetch(`${AGENT_API_URL}/v1/agent/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: `What are the aliases for ${gene}` }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.data?.found) {
+            setAliasInfo((prev) => ({ ...prev, [gene]: data.data }));
+          } else {
+            setAliasFailed((prev) => ({ ...prev, [gene]: true }));
+          }
+        })
+        .catch((err) => {
+          // Alias info is enrichment only — fail quietly, but stop showing
+          // the loading shimmer so it doesn't spin forever.
+          console.error(`Alias fetch failed for ${gene}:`, err);
+          setAliasFailed((prev) => ({ ...prev, [gene]: true }));
+        });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aliasGenes.join(',')]);
 
   if (loading) {
     return (
@@ -81,28 +115,22 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   const mode = results[0].mode;
   const topPick = results[0];
 
-  // Views available per mode. 'omics' (Sankey) and 'network' are single-gene only;
-  // selectivity gets the scatter; 'lineages' works for every mode.
+  // Views available per mode. 'omics' (Sankey) needs per-line detail fetches, so
+  // it's single/multi only; 'network' (radial rank graph) works for every mode
+  // that has a comparable per-line score; 'lineages' works for every mode.
   const VIEW_META: Record<string, { label: string; icon: React.ElementType }> = {
     table: { label: 'Table', icon: Table2 },
     network: { label: 'Network', icon: Network },
     omics: { label: 'Omics map', icon: GitFork },
-    scatter: { label: 'Scatter', icon: Network },
     lineages: { label: 'Lineages', icon: Layers },
   };
   const views =
-    mode === 'single'
+    mode === 'single' || mode === 'multi'
       ? ['table', 'network', 'omics', 'lineages']
       : mode === 'selectivity'
-      ? ['table', 'scatter', 'lineages']
+      ? ['table', 'network', 'lineages']
       : ['table', 'lineages'];
   const activeView = views.includes(view) ? view : 'table';
-
-  const ignoredBits: string[] = [];
-  // In multi mode all targets ARE used, but exclusions can't be; in selectivity
-  // mode only the first exclusion is used.
-  if (mode === 'multi' && queryParams.exclusions.length > 0) ignoredBits.push('exclusions');
-  if (mode === 'selectivity' && queryParams.exclusions.length > 1) ignoredBits.push('additional exclusions');
 
   // Which single gene the detail endpoint is queried for: the primary target.
   // (multi mode's primaryGene is a joined label, so prefer the first real gene.)
@@ -137,41 +165,38 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             <> {' '}| Top {results.length} of {meta.total.toLocaleString()} {meta.mode === 'multi' ? 'passing' : 'ranked'}</>
           )}
         </p>
+
+        {/* Gene alias info — agent enrichment, renders below the ranking subtitle */}
+        {aliasGenes.some((g) => aliasInfo[g] || !aliasFailed[g]) && (
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-x-6 sm:gap-y-2 mt-2 text-[13px] text-slate-500">
+            {aliasGenes.map((gene) => {
+              if (aliasInfo[gene]) {
+                return (
+                  <div key={gene} className="flex items-center flex-wrap gap-1.5">
+                    <span className="font-semibold text-slate-800">{gene}</span>
+                    <span className="text-slate-300">—</span>
+                    <span>{aliasInfo[gene].full_name}</span>
+                    {aliasInfo[gene].synonyms && aliasInfo[gene].synonyms!.length > 0 && (
+                      <span className="px-2 py-0.5 bg-slate-100 rounded text-xs">
+                        aka {aliasInfo[gene].synonyms!.slice(0, 3).join(', ')}
+                      </span>
+                    )}
+                  </div>
+                );
+              }
+              if (aliasFailed[gene]) return null; // enrichment only — simply omit it
+              return (
+                <div
+                  key={gene}
+                  className="h-4 w-full sm:w-72 rounded bg-gradient-to-r from-slate-100 via-slate-200 to-slate-100 animate-shimmer"
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Method banner (selectivity) */}
-      {meta?.mode === 'selectivity' && (
-        <div className="flex items-start gap-2 p-3 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg text-xs">
-          <Info className="w-4 h-4 mt-0.5 shrink-0" />
-          <p>
-            Ranked by selectivity: <code className="font-mono">{meta.formula}</code> — rewards high{' '}
-            {meta.primaryGene} and low {meta.excludedGene}.
-          </p>
-        </div>
-      )}
-
-      {/* Method banner (multi / joint) */}
-      {meta?.mode === 'multi' && (
-        <div className="flex items-start gap-2 p-3 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg text-xs">
-          <Info className="w-4 h-4 mt-0.5 shrink-0" />
-          <p>
-            Ranked by a joint score across {meta.genes?.length} genes
-            {typeof meta.floor === 'number' && <> (lines must clear a floor of {meta.floor})</>}. A{' '}
-            <span className="font-mono">—</span> means that gene has no score for that line; the joint
-            score reflects the evidence that is present, so it is not a claim that every gene is high.
-          </p>
-        </div>
-      )}
-
-      {/* What's still not applied */}
-      {ignoredBits.length > 0 && (
-        <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-xs">
-          <Info className="w-4 h-4 mt-0.5 shrink-0" />
-          <p>Not applied by the live endpoint yet: {ignoredBits.join(', ')}.</p>
-        </div>
-      )}
-
-      {/* View switcher + assistant shortcut */}
+      {/* View switcher */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         {views.length > 1 ? (
           <div className="inline-flex bg-slate-100 rounded-lg p-0.5">
@@ -193,33 +218,16 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
         ) : (
           <span />
         )}
-
-        {onAskAssistant && (
-          <button
-            onClick={onAskAssistant}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition"
-          >
-            <Sparkles className="w-4 h-4" /> Explain this ranking
-          </button>
-        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left panel: table or a visualization */}
         {activeView !== 'table' ? (
           <div className="lg:col-span-2">
-            {activeView === 'scatter' && (
-              <SelectivityScatter
-                lines={results.filter((r): r is Extract<RankedCellLine, { mode: 'selectivity' }> => r.mode === 'selectivity')}
-                geneHigh={meta?.primaryGene ?? queryParams.targets[0]}
-                geneLow={meta?.excludedGene ?? queryParams.exclusions[0] ?? ''}
-                onSelect={inspect}
-              />
-            )}
             {activeView === 'network' && (
               <NetworkGraph
-                gene={meta?.primaryGene ?? queryParams.targets[0]}
-                lines={results.filter((r): r is Extract<RankedCellLine, { mode: 'single' }> => r.mode === 'single')}
+                gene={meta?.primaryGene ?? queryParams.targets.join(' + ')}
+                lines={results}
                 onSelect={inspect}
               />
             )}

@@ -173,6 +173,8 @@ export function mockCellLineDetailResponse(geneRaw: string, modelId: string): Ce
     p_mutation: driver ? round(0.6 + rand('pm' + p.model_id) * 0.39, 3) : (rand('pm' + p.model_id) > 0.5 ? round(rand('pm2' + p.model_id) * 0.4, 3) : null),
     p_fusion: rand('pf' + p.model_id) > 0.75 ? round(rand('pf2' + p.model_id), 3) : null,
     has_cna_alteration: rand('cna' + gene + p.model_id) > 0.6,
+    expression_level: round(0.3 + rand('rna' + gene + p.model_id) * 0.69, 3),
+    proteomics_level: rand('prot' + gene + p.model_id) > 0.3 ? round(0.2 + rand('prot2' + gene + p.model_id) * 0.79, 3) : null,
     metadata: {
       lineage: p.lineage,
       lineage_subtype: p.lineage_subtype,

@@ -98,6 +98,8 @@ export interface CellLineDetailApiResponse {
   p_mutation: number | null;
   p_fusion: number | null;
   has_cna_alteration: boolean;
+  expression_level: number | null;
+  proteomics_level: number | null;
   metadata: Record<string, string | number | null>;
   rna_alternatives: { model_id: string; name: string; similarity: number }[];
 }
@@ -381,6 +383,14 @@ export function toCellLineDetail(resp: CellLineDetailApiResponse): CellLineDetai
     score: resp.has_cna_alteration ? 1 : 0,
     finding: resp.has_cna_alteration ? 'altered' : 'none',
   };
+  // Expression (RNA) and proteomics levels are 0-1 percentiles of the per-gene
+  // z-score — real gradients, so the omics map shows more than just alterations.
+  if (typeof resp.expression_level === 'number' && Number.isFinite(resp.expression_level)) {
+    tracks.expression = { present: true, score: resp.expression_level };
+  }
+  if (typeof resp.proteomics_level === 'number' && Number.isFinite(resp.proteomics_level)) {
+    tracks.proteomics = { present: true, score: resp.proteomics_level };
+  }
 
   const name = displayName(resp.cell_line.name, resp.cell_line.model_id);
 

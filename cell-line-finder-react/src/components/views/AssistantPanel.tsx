@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { AssistantContext, ChatMessage } from '../../types';
-import { sendMessage as defaultSend, SendMessage, SUGGESTED_PROMPTS } from '../../lib/assistant';
+import { sendMessage as defaultSend, SendMessage } from '../../lib/assistant';
 import { Sparkles, Send, Loader2, User } from 'lucide-react';
 
 interface AssistantPanelProps {
@@ -109,21 +109,6 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({ context, send = 
 
         {error && <div className="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-lg p-2">{error}</div>}
       </div>
-
-      {/* Suggested prompts */}
-      {messages.length === 0 && (
-        <div className="flex flex-wrap gap-2 mt-3">
-          {SUGGESTED_PROMPTS.map((p) => (
-            <button
-              key={p}
-              onClick={() => submit(p)}
-              className="text-xs bg-white border border-slate-200 hover:border-indigo-300 hover:text-indigo-700 text-slate-600 rounded-full px-3 py-1.5 transition"
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Input */}
       <div className="mt-3 flex items-end gap-2">

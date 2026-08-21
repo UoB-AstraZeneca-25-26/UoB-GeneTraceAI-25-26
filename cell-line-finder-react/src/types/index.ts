@@ -31,7 +31,7 @@ export type ScoreTier = 'HIGH' | 'MEDIUM' | 'LOW';
 
 export type ResultMode = 'single' | 'selectivity' | 'multi';
 
-type BaseRanked = {
+export type BaseRanked = {
   rank: number;
   modelId: string;   // DepMap ACH id
   cellLine: string;  // display name
@@ -155,4 +155,21 @@ export type AssistantContext = {
   total: number | null;
   formula: string | null;
   topLines: { rank: number; cellLine: string; modelId: string; score: number; tier: string | null }[];
+};
+
+// ---- Agent-backed methodology / gene alias enrichment ----
+
+export type MethodologyStepStatus = 'active' | 'skipped' | 'inverted';
+
+export type MethodologyStep = {
+  key: string;
+  formula?: string;
+  value?: string;
+  status?: MethodologyStepStatus;
+};
+
+export type GeneAliasInfo = {
+  found?: boolean;
+  full_name?: string;
+  synonyms?: string[];
 };

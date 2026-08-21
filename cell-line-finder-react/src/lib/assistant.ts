@@ -1,4 +1,5 @@
 import { AssistantContext, ChatMessage, QueryParams, RankedCellLine, ResultMeta } from '../types';
+import { AGENT_API_URL } from '../config';
 
 /** Build the context snapshot handed to the agent. Summarises the current query
  *  and the top handful of results so the agent can explain the ranking. */
@@ -31,53 +32,67 @@ export type SendMessage = (
 ) => Promise<string>;
 
 /* ---------------------------------------------------------------------------
- * INTEGRATION SEAM — point this at your own agent.
- *
- * Never call an LLM provider directly from the browser (it would expose your API
- * key). POST to your own backend / agent endpoint, which holds the key and can
- * run retrieval, tools, etc. Example:
- *
- *   export const sendMessage: SendMessage = async (messages, context) => {
- *     const res = await fetch('/api/agent', {
- *       method: 'POST',
- *       headers: { 'Content-Type': 'application/json' },
- *       body: JSON.stringify({ messages, context }),
- *     });
- *     if (!res.ok) throw new Error(`Agent error: ${res.status}`);
- *     const data = await res.json();
- *     return data.reply as string;
- *   };
- *
- * The default below is a local stub so the UI is fully usable with no backend.
- * It answers a few ranking questions from the context and otherwise explains how
- * to wire the real agent. Replace it when your agent is ready.
+ * Wired to the GeneTraceAI agent (Claude Haiku on Bedrock) behind a Lambda
+ * Function URL, via the shared AGENT_API_URL (see ../config.ts) — the dev
+ * build routes through Vite's same-origin proxy since the Lambda's CORS
+ * allowlist doesn't cover localhost; a production build calls it directly.
+ * We POST a single { query } string and read back the { answer } field. The
+ * current on-screen ranking is folded into the query so questions like "why
+ * is the top hit #1?" resolve to concrete cell lines and genes.
  * ------------------------------------------------------------------------- */
 
-const MODE_BLURB: Record<string, (c: AssistantContext) => string> = {
-  single: (c) =>
-    `This is a single-gene ranking for ${c.primaryGene}. Each of the ${c.total ?? 'many'} cell lines was scored on how strongly it supports ${c.primaryGene} across the available evidence layers, then ranked by that score. Tier (HIGH / MEDIUM / LOW / CONTEXT) is a separate confidence band — it is not derived from the score.`,
-  selectivity: (c) =>
-    `This is a selectivity ranking. Lines are scored by ${c.formula ?? 'score_high × (1 − score_low)'} — rewarding a high ${c.primaryGene} score together with a low score for the excluded gene. So the top hits are lines where your target is high and the thing you want to avoid is low.`,
-  multi: (c) =>
-    `This is a joint multi-gene ranking for ${c.genes.join(', ')}. Each line's joint score combines its per-gene scores. Note: a line missing a score for one of the genes is ranked on the genes it does have — so a high rank doesn't always mean the line is high across all of them. Watch for the "partial coverage" flag.`,
-};
+const AGENT_URL = `${AGENT_API_URL}/v1/agent/query`;
+
+export type GeneSuggestion = { found: boolean; symbol: string | null; fullName: string | null };
+
+/** Resolve a gene name the scoring API rejected as unknown, via the agent's
+ *  gene_alias_lookup (local 19,213-gene panel + Ensembl/HGNC fallback). Used
+ *  to offer "did you mean <SYMBOL>?" instead of a bare 404. */
+export async function lookupGeneSuggestion(query: string): Promise<GeneSuggestion> {
+  try {
+    const res = await fetch(AGENT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: `What are the aliases for ${query}` }),
+    });
+    if (!res.ok) return { found: false, symbol: null, fullName: null };
+    const data = await res.json();
+    return {
+      found: Boolean(data?.data?.found),
+      symbol: data?.data?.symbol ?? null,
+      fullName: data?.data?.full_name ?? null,
+    };
+  } catch {
+    return { found: false, symbol: null, fullName: null };
+  }
+}
 
 export const sendMessage: SendMessage = async (messages, context) => {
-  await new Promise((r) => setTimeout(r, 450)); // mimic network latency
+  const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+  const question = (lastUser?.content ?? '').trim();
+  if (!question) return 'Ask me anything about the ranking or the underlying data.';
 
-  const last = (messages[messages.length - 1]?.content ?? '').toLowerCase();
-  const asksRanking = /(rank|score|why|how|selectiv|tier|joint|work)/.test(last);
-
-  if (context && context.topLines.length > 0 && asksRanking) {
-    const top = context.topLines[0];
-    const blurb = MODE_BLURB[context.mode ?? 'single']?.(context) ?? '';
-    const topLine = `Right now the top hit is ${top.cellLine} (${top.modelId})${
-      top.tier ? `, tier ${top.tier}` : ''
-    }, with a score of ${top.score.toFixed(4)}.`;
-    return `${blurb}\n\n${topLine}\n\n(This is the built-in demo assistant. Wire your own agent in src/lib/assistant.ts to get real answers and follow-up reasoning.)`;
+  let query = question;
+  if (context && context.topLines.length > 0) {
+    const genes = context.genes.join(', ');
+    const top = context.topLines
+      .slice(0, 5)
+      .map((l) => `#${l.rank} ${l.cellLine} (${l.modelId}) score=${l.score.toFixed(3)}`)
+      .join('; ');
+    query = `Current ${context.mode ?? 'ranking'} for ${genes}. Top lines: ${top}. Question: ${question}`;
   }
 
-  return "I'm the built-in demo assistant — I can sketch how the current ranking works, but I'm not wired to a real model yet. Point `sendMessage` in src/lib/assistant.ts at your agent endpoint to enable full answers. Meanwhile, try asking \u201chow was this ranking done?\u201d";
+  const res = await fetch(AGENT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`Agent error: ${res.status}${detail ? ` — ${detail.slice(0, 200)}` : ''}`);
+  }
+  const data = await res.json();
+  return (data.answer as string) ?? 'The agent returned no answer.';
 };
 
 export const SUGGESTED_PROMPTS = [

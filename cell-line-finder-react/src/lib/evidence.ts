@@ -11,12 +11,15 @@ import {
 /* The six evidence layers every cell line is scored on. `kind` records what the
    number actually is, so the UI never implies a magnitude the pipeline lacks:
      level -> within-gene percentile of a measured quantity (real gradient)
-     ratio -> deviation from diploid copy number (real gradient)
+     ratio -> deviation from diploid copy number (real gradient) — not currently
+              produced by any track; the pipeline calls CNA categorically (see
+              final_pipeline/03_Altercations/cna_layer.py) to avoid a ploidy
+              confound, so it's a 'call' like mutation/fusion, not a gradient.
      call  -> categorical evidence, shown full/half strength, never interpolated */
 export const TRACKS: EvidenceTrack[] = [
   { key: 'expression', label: 'Expression', color: '#4f46e5', kind: 'level' },
   { key: 'proteomics', label: 'Proteomics', color: '#059669', kind: 'level' },
-  { key: 'cna', label: 'Copy number', color: '#0891b2', kind: 'ratio' },
+  { key: 'cna', label: 'Copy number', color: '#0891b2', kind: 'call' },
   { key: 'mutation', label: 'Mutation', color: '#e11d48', kind: 'call' },
   { key: 'fusion', label: 'Fusion', color: '#9333ea', kind: 'call' },
   { key: 'signature', label: 'Signature', color: '#d97706', kind: 'call' },

@@ -1,13 +1,17 @@
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { QueryBuilder } from './components/views/QueryBuilder';
 import { ResultsTable } from './components/views/ResultsTable';
 import { ProfileView } from './components/views/ProfileView';
 import { AboutPage } from './components/views/AboutPage';
-import { AssistantPanel } from './components/views/AssistantPanel';
+// Assistant chatbot page removed from routing/navigation — kept for possible reuse.
+// import { AssistantPanel } from './components/views/AssistantPanel';
 import { fetchRanking } from './lib/api';
-import { buildAssistantContext } from './lib/assistant';
+import { lookupGeneSuggestion } from './lib/assistant';
 import { InspectTarget, QueryParams, RankedCellLine, ResultMeta, ViewType } from './types';
+
+// Matches the scoring API's 422 body, e.g. {"detail":"Gene not found: 'p53'"}
+const GENE_NOT_FOUND = /Gene not found: '([^']+)'/;
 
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewType>('query');
@@ -49,7 +53,22 @@ export default function App() {
       setMeta(m);
     } catch (e) {
       if ((e as Error).name === 'AbortError') return;
-      setError(e instanceof Error ? e.message : 'Failed to fetch ranking.');
+      const message = e instanceof Error ? e.message : 'Failed to fetch ranking.';
+      const notFound = GENE_NOT_FOUND.exec(message);
+      if (notFound) {
+        // Ask the agent whether the typed name is a known alias/synonym before
+        // giving up — "Gene not found" alone isn't actionable for the user.
+        const suggestion = await lookupGeneSuggestion(notFound[1]);
+        setError(
+          suggestion.found && suggestion.symbol
+            ? `Is this the gene you're trying to look for — ${suggestion.symbol}${
+                suggestion.fullName ? ` (${suggestion.fullName})` : ''
+              }?`
+            : 'This gene is not present in the gene pool.'
+        );
+      } else {
+        setError(message);
+      }
       setResults([]);
       setMeta(null);
     } finally {
@@ -84,11 +103,6 @@ export default function App() {
   // topK isn't a server param; slice for display.
   const visibleResults = results.slice(0, queryParams.topK);
 
-  const assistantContext = useMemo(
-    () => buildAssistantContext(queryParams, meta, visibleResults),
-    [queryParams, meta, visibleResults]
-  );
-
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-900">
       <Sidebar
@@ -115,7 +129,6 @@ export default function App() {
             error={error}
             onRetry={() => void runQuery(queryParams)}
             onInspect={handleInspect}
-            onAskAssistant={() => setCurrentView('assistant')}
           />
         )}
 
@@ -126,8 +139,6 @@ export default function App() {
             onInspect={handleInspect}
           />
         )}
-
-        {currentView === 'assistant' && <AssistantPanel context={assistantContext} />}
 
         {currentView === 'about' && <AboutPage />}
       </main>
