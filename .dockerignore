@@ -1,0 +1,15 @@
+.git
+.env
+.env.*
+!.env.example
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+*.log
+node_modules/
+
+# --- Not needed at runtime in the Lambda image ---------------------------
+AIAgent/Tests/
+AIAgent/Endpoint/
+AIAgent/*.md
+AIAgent/pytest.ini

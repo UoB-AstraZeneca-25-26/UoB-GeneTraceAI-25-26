@@ -21,11 +21,11 @@ pytest Tests/ -m live         # 9 tests, hits real Ensembl/HGNC/Groq
 
 What changed in the implementation since these results were recorded:
 
-- **Gene resolution is local-first.** `gene_alias_lookup` now resolves
-  against the 19,213-gene `reference/gene_lookup.parquet` table (~0 ms,
-  offline) before ever calling Ensembl/HGNC; the network path is only
-  enrichment for genes outside that panel, with retries, a circuit
-  breaker, and explicit `degraded` reporting when a source is down.
+- **Gene resolution is live-API-first.** `gene_alias_lookup` queries
+  Ensembl and HGNC concurrently as the primary source, with retries, a
+  circuit breaker per API, and explicit `degraded` reporting when a source
+  is down. Only if both are unreachable does it fall back to the
+  19,213-gene `reference/gene_lookup.parquet` table (~0 ms, offline).
 - **The API surface is now `/v1/agent/query`** (content-negotiated:
   `Accept: text/event-stream` streams `data` before `token`; anything else
   gets one buffered JSON body), plus `GET /health`. `/agent/query` remains

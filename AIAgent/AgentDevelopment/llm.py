@@ -47,6 +47,25 @@ def get_llm() -> BaseChatModel:
             **extra,
         )
 
+    if provider == "bedrock":
+        from langchain_aws import ChatBedrockConverse
+
+        kwargs: dict = {
+            "model_id": model,
+            "region_name": os.getenv("AWS_REGION", "eu-north-1"),
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+
+        # Only set profile if explicitly configured — otherwise boto3's
+        # standard credential chain (env vars, bearer token, IAM role)
+        # resolves credentials on its own.
+        profile = os.getenv("AWS_PROFILE")
+        if profile:
+            kwargs["credentials_profile_name"] = profile
+
+        return ChatBedrockConverse(**kwargs)
+
     if provider == "huggingface":
         raise NotImplementedError("huggingface provider is a future stub")
 

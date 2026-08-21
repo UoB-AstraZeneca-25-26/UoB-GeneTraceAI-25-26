@@ -7,6 +7,7 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
+from botocore.exceptions import ClientError as BotoClientError
 from fastapi.testclient import TestClient
 from groq import RateLimitError
 
@@ -51,6 +52,14 @@ HAPPY_EVENTS = [
     _token_event("is also known as p53."),
 ]
 
+# Bedrock Converse (via langchain_aws) yields `.content` as a list of content
+# blocks rather than a plain str -- this reproduces that shape.
+BEDROCK_EVENTS = [
+    _tool_end_event("gene_alias_lookup", {"query": "TP53"}, GENE_OUTPUT),
+    _token_event([{"type": "text", "text": "TP53 ", "index": 0}]),
+    _token_event([{"type": "text", "text": "is also known as p53.", "index": 0}]),
+]
+
 
 @pytest.fixture()
 def client(monkeypatch):
@@ -68,6 +77,20 @@ def test_valid_query_returns_200_matching_schema(client):
     assert body.data == GENE_OUTPUT
     assert body.answer == "TP53 is also known as p53."
     assert body.tool_calls[0].tool == "gene_alias_lookup"
+
+
+def test_valid_query_handles_bedrock_list_content_chunks(monkeypatch):
+    """Regression test: Bedrock's `.content` list-of-blocks shape used to
+    crash `"".join(answer_chunks)` with `TypeError: sequence item 0:
+    expected str instance, list found`."""
+    monkeypatch.setattr(routes_module, "executor", FakeExecutor(events=BEDROCK_EVENTS))
+    routes_module._response_cache.clear()
+    with TestClient(app) as c:
+        response = c.post("/v1/agent/query", json={"query": "Tell me about TP53"})
+
+    assert response.status_code == 200
+    body = QueryResponse.model_validate(response.json())
+    assert body.answer == "TP53 is also known as p53."
 
 
 def test_empty_body_returns_422(client):
@@ -100,6 +123,22 @@ def test_groq_rate_limit_returns_503_with_retry_after(monkeypatch):
         "rate limited",
         response=httpx.Response(429, request=httpx.Request("POST", "http://x")),
         body=None,
+    )
+    monkeypatch.setattr(routes_module, "executor", FakeExecutor(events=[], exc=exc))
+    routes_module._response_cache.clear()
+
+    with TestClient(app) as c:
+        response = c.post("/v1/agent/query", json={"query": "Tell me about some rare gene"})
+
+    assert response.status_code == 503
+    assert response.json()["type"] == "rate_limited"
+    assert "Retry-After" in response.headers
+
+
+def test_bedrock_throttling_returns_503_with_retry_after(monkeypatch):
+    exc = BotoClientError(
+        {"Error": {"Code": "ThrottlingException", "Message": "Too many requests"}},
+        "Converse",
     )
     monkeypatch.setattr(routes_module, "executor", FakeExecutor(events=[], exc=exc))
     routes_module._response_cache.clear()

@@ -1,12 +1,12 @@
-"""Local gene lookup index — the primary source for ``gene_alias_lookup``.
+"""Local gene lookup index — the last-resort fallback for ``gene_alias_lookup``.
 
 Loads ``reference/gene_lookup.parquet`` once into in-memory dicts keyed by
 ENSG ID and by upper-cased HGNC symbol (aliases and previous symbols folded
 in as secondary keys). Sub-millisecond lookups, no network round trip.
 
-This addresses plan.md R1: Ensembl measured at 0% success during review, so
-the 19,213-gene local table (same fields the tool returns) becomes the
-primary source; Ensembl/HGNC become enrichment for genes outside the panel.
+Live Ensembl/HGNC are the primary source for ``gene_alias_lookup``; this
+19,213-gene local table only answers a query when both network sources are
+unreachable. Still prewarmed at startup so the fallback path is instant.
 """
 
 from __future__ import annotations

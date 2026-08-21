@@ -8,6 +8,11 @@ The tool has two modes, both covered here offline:
 
 There are no fixture scores anywhere: a number in a ScoreResult only ever
 comes from the API.
+
+score_explainer does not gate on the local gene index -- gene validation is
+gene_alias_lookup's job. It always returns found=True with either real
+scoring-API values or a methodology explanation, regardless of whether the
+gene is in the local 19,213-gene panel.
 """
 
 import json
@@ -28,9 +33,14 @@ _NUMERIC_FIELDS = (
     "core_score",
 )
 
-# TP53 — in the reference panel, so it passes the gene-existence check.
+# TP53 — happens to be in the reference panel, but that no longer matters
+# to score_explainer: it does not consult the local index at all.
 _KNOWN_GENE = "ENSG00000141510"
 _KNOWN_MODEL = "ACH-000001"
+
+# Deliberately not a real Ensembl ID / not in the local 19,213-gene panel.
+_UNKNOWN_GENE = "ENSG_NOT_IN_PANEL"
+_UNKNOWN_MODEL = "ACH-999999"
 
 
 @pytest.fixture(autouse=True)
@@ -63,26 +73,29 @@ async def test_methodology_mode_returns_null_numerics():
 
 
 @pytest.mark.asyncio
-async def test_methodology_mode_flags_tsg_from_gene_index():
-    """is_tsg drives Step 5's inversion, so it must reflect the real gene
-    role even when no scores are available. TP53's role is "both"."""
+async def test_methodology_mode_leaves_is_tsg_null():
+    """is_tsg can no longer be determined without a scoring API, since
+    score_explainer does not consult the local gene index."""
     raw = await score_explainer.ainvoke({"ensg_id": _KNOWN_GENE, "model_id": _KNOWN_MODEL})
     data = json.loads(raw)
 
-    assert data["is_tsg"] is True
+    assert data["is_tsg"] is None
     assert data["driver_gated"] is False
 
 
 @pytest.mark.asyncio
-async def test_unknown_pair_returns_found_false():
-    raw = await score_explainer.ainvoke({"ensg_id": "ENSG_UNKNOWN", "model_id": "ACH-UNKNOWN"})
+async def test_gene_outside_local_panel_still_returns_found_true():
+    """Gene validation belongs to gene_alias_lookup, not score_explainer.
+    A gene missing from the local 19,213-gene panel must still get a
+    methodology explanation, not found=False."""
+    raw = await score_explainer.ainvoke({"ensg_id": _UNKNOWN_GENE, "model_id": _UNKNOWN_MODEL})
     data = json.loads(raw)
-    print(f"\n[test_unknown_pair_returns_found_false] {json.dumps(data, indent=2)}")
+    print(f"\n[test_gene_outside_local_panel_still_returns_found_true] {json.dumps(data, indent=2)}")
 
-    assert data["found"] is False
-    assert data["ensg_id"] == "ENSG_UNKNOWN"
-    assert data["model_id"] == "ACH-UNKNOWN"
-    assert data["message"]
+    assert data["found"] is True
+    assert data["ensg_id"] == _UNKNOWN_GENE
+    assert data["model_id"] == _UNKNOWN_MODEL
+    assert "Methodology" in data["message"]
     for field in _NUMERIC_FIELDS:
         assert data[field] is None
 
@@ -94,7 +107,7 @@ async def test_pydantic_validation_field_types():
     print(f"\n[test_pydantic_validation_field_types] {result.model_dump_json(indent=2)}")
 
     assert isinstance(result.found, bool)
-    assert isinstance(result.is_tsg, bool)
+    assert result.is_tsg is None
     assert isinstance(result.driver_gated, bool)
     assert isinstance(result.message, str)
     assert result.core_score is None
@@ -183,14 +196,16 @@ async def test_api_unreachable_falls_back_to_methodology(scoring_api):
 
 
 @pytest.mark.asyncio
-async def test_api_mode_still_rejects_unknown_gene(scoring_api):
+async def test_api_mode_still_queries_gene_outside_local_panel(scoring_api):
+    """No local-panel gate: the scoring API is queried regardless of
+    whether the gene is in the local index, and its answer wins."""
     calls = scoring_api(_API_PAYLOAD)
 
-    raw = await score_explainer.ainvoke({"ensg_id": "ENSG_UNKNOWN", "model_id": "ACH-UNKNOWN"})
+    raw = await score_explainer.ainvoke({"ensg_id": _UNKNOWN_GENE, "model_id": _UNKNOWN_MODEL})
     data = json.loads(raw)
 
-    assert data["found"] is False
-    assert calls == []  # never queried for a gene outside the panel
+    assert data["found"] is True
+    assert calls == [f"https://scoring.internal/v1/score?gene={_UNKNOWN_GENE}&model={_UNKNOWN_MODEL}"]
 
 
 @pytest.mark.asyncio

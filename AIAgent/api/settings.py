@@ -32,11 +32,23 @@ class Settings(BaseSettings):
     )
 
     # --- LLM ---------------------------------------------------------
-    groq_api_key: SecretStr
+    groq_api_key: SecretStr = SecretStr("")  # optional: only required when llm_provider == "groq"
     llm_provider: str = "groq"
     llm_model: str = "openai/gpt-oss-120b"
     llm_temperature: float = 0.0
     llm_max_tokens: int = 2048   # reasoning tokens are billed against this
+
+    # --- AWS Bedrock ---------------------------------------------------
+    # boto3 reads actual credentials from its own standard env vars
+    # (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_SESSION_TOKEN /
+    # AWS_BEARER_TOKEN_BEDROCK) or the IAM role automatically — these
+    # fields exist for documentation/validation only, not SecretStr since
+    # nothing here reads them directly.
+    aws_region: str = "eu-north-1"
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    aws_session_token: str = ""
+    aws_profile: str | None = None
 
     # --- CORS ----------------------------------------------------------
     allowed_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173"])

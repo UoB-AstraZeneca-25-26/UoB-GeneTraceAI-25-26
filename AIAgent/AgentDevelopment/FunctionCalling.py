@@ -44,9 +44,11 @@ class GeneAliasResult(BaseModel):
     degraded: list[str] = []
 
 
-# Local index is the primary source (R1): 19,213 genes, ~0 ms lookups, no
-# network dependency. `set_gene_index` lets the FastAPI lifespan prewarm it
-# once at startup; standalone/test use falls back to a lazy load here.
+# Live Ensembl/HGNC are the primary source; this local index is now only the
+# last-resort fallback when both are unreachable. Kept prewarmed anyway
+# (19,213 genes, ~0 ms lookups) so the fallback path never pays disk I/O.
+# `set_gene_index` lets the FastAPI lifespan prewarm it once at startup;
+# standalone/test use falls back to a lazy load here.
 _GENE_INDEX: GeneIndex | None = None
 
 
@@ -62,9 +64,12 @@ def _get_gene_index() -> GeneIndex:
     return _GENE_INDEX
 
 
-# Ensembl REST measured at 0% success during the plan.md review. A circuit
-# breaker stops burning ~3s of retries per call once it is confirmed down.
-_ensembl_breaker = CircuitBreaker(failure_threshold=5, reset_after=60.0)
+# Ensembl/HGNC are now the primary source for gene_alias_lookup, so a couple
+# of transient failures should not permanently route every query to the
+# degraded local fallback — threshold raised from 5 to 8 versus the old
+# enrichment-only tuning. Still trips and cools down after sustained outages.
+_ensembl_breaker = CircuitBreaker(failure_threshold=8, reset_after=60.0)
+_hgnc_breaker = CircuitBreaker(failure_threshold=8, reset_after=60.0)
 
 
 async def _query_ensembl(query: str) -> dict | None:
@@ -87,8 +92,11 @@ async def _query_ensembl_by_id(ensg_id: str) -> dict | None:
 
 
 async def _query_hgnc(query: str) -> dict | None:
+    if _hgnc_breaker.is_open():
+        return None
     url = f"https://rest.genenames.org/fetch/symbol/{query}"
     data = await safe_get(url, headers={"Accept": "application/json"})
+    (_hgnc_breaker.record_success if data is not None else _hgnc_breaker.record_failure)()
     if data is None:
         return None
     docs = data.get("response", {}).get("docs", [])
@@ -160,12 +168,17 @@ async def gene_alias_lookup(query: str) -> str:
     or Ensembl ID. Returns validated aliases from Ensembl and HGNC."""
     query = query.strip()
 
-    # Resolution order (R1): local parquet index -> Ensembl+HGNC enrichment
-    # -> found=False. The local index covers the full 19,213-gene panel at
-    # ~0 ms; network calls only fire for genes outside it.
+    # Resolution order: live Ensembl+HGNC (queried concurrently) -> local
+    # parquet index only if BOTH network sources are unreachable ->
+    # found=False. The local index still covers the full 19,213-gene panel
+    # offline, but is now a last-resort fallback rather than the default.
+    result = await _lookup_from_network(query)
+    if result.found:
+        return result.model_dump_json()
+
     local = _get_gene_index().lookup(query)
     if local is not None:
-        result = GeneAliasResult(
+        fallback = GeneAliasResult(
             found=True,
             query=query,
             symbol=local.symbol,
@@ -175,10 +188,10 @@ async def gene_alias_lookup(query: str) -> str:
             synonyms=local.synonyms,
             cross_validated=True,
             sources=["local_index"],
+            degraded=result.degraded,
         )
-        return result.model_dump_json()
+        return fallback.model_dump_json()
 
-    result = await _lookup_from_network(query)
     return result.model_dump_json()
 
 
@@ -199,7 +212,7 @@ class ScoreResult(BaseModel):
     weight_proteomics: float | None = None
     core_score: float | None = None
     confidence_tier: str | None = None
-    is_tsg: bool = False
+    is_tsg: bool | None = None
     driver_gated: bool = False
     message: str = ""
 
@@ -259,7 +272,9 @@ def _as_float(value: object) -> float | None:
         return None
 
 
-def _result_from_api(ensg_id: str, model_id: str, payload: dict, *, is_tsg: bool) -> ScoreResult:
+def _result_from_api(
+    ensg_id: str, model_id: str, payload: dict, *, is_tsg: bool | None
+) -> ScoreResult:
     """Map a scoring-API payload onto ScoreResult.
 
     The API is expected to return the ScoreResult field names; anything it
@@ -267,20 +282,23 @@ def _result_from_api(ensg_id: str, model_id: str, payload: dict, *, is_tsg: bool
     """
     numerics = {name: _as_float(payload.get(name)) for name in _API_NUMERIC_FIELDS}
     tier = payload.get("confidence_tier")
+    payload_is_tsg = payload.get("is_tsg", is_tsg)
 
     return ScoreResult(
         found=bool(payload.get("found", True)),
         ensg_id=ensg_id,
         model_id=model_id,
         confidence_tier=str(tier) if tier is not None else None,
-        is_tsg=bool(payload.get("is_tsg", is_tsg)),
+        is_tsg=bool(payload_is_tsg) if payload_is_tsg is not None else None,
         driver_gated=bool(payload.get("driver_gated", False)),
         message=str(payload.get("message") or "Scoring intermediates retrieved."),
         **numerics,
     )
 
 
-def _methodology_result(ensg_id: str, model_id: str, *, is_tsg: bool, message: str) -> ScoreResult:
+def _methodology_result(
+    ensg_id: str, model_id: str, *, is_tsg: bool | None, message: str
+) -> ScoreResult:
     """A ScoreResult carrying only the pair's identity and gene class.
 
     Every numeric field is null on purpose: the LLM has the formulas in its
@@ -308,42 +326,25 @@ def _methodology_result(ensg_id: str, model_id: str, *, is_tsg: bool, message: s
 @tool
 async def score_explainer(ensg_id: str, model_id: str) -> str:
     """Retrieve scoring intermediates for a gene-cell line pair and explain
-    the 7-step scoring methodology. If the scoring API is connected, returns
-    the real pipeline values. Otherwise explains the mathematical
-    methodology without specific numbers."""
+    the 7-step scoring methodology. If the scoring API is connected and has
+    data for this pair, returns real pipeline values. Otherwise explains the
+    mathematical methodology generically using math_reference.md, without
+    inventing numbers."""
     ensg_id = ensg_id.strip().upper()
     model_id = model_id.strip().upper()
-
-    # Reject genes outside the panel up front so an unknown/mistyped ID gets
-    # found=False instead of a methodology essay about a gene that does not
-    # exist. Skipped when the index is empty (reference parquet missing),
-    # where every gene would otherwise look unknown.
-    index = _get_gene_index()
-    record = index.lookup(ensg_id)
-    if record is None and len(index) > 0:
-        return ScoreResult(
-            found=False,
-            ensg_id=ensg_id,
-            model_id=model_id,
-            message=f"No scoring data found for {ensg_id} in {model_id}.",
-        ).model_dump_json()
-
-    # gene_role comes from reference/gene_lookup.parquet; "both" genes act as
-    # tumour suppressors too, so Step 5's inversion applies to them.
-    is_tsg = record is not None and record.gene_role in ("tsg", "both")
 
     scoring_url = _scoring_api_url()
     if scoring_url:
         url = f"{scoring_url}?gene={ensg_id}&model={model_id}"
         data = await safe_get(url, headers={"Accept": "application/json"})
         if data:
-            return _result_from_api(ensg_id, model_id, data, is_tsg=is_tsg).model_dump_json()
+            return _result_from_api(ensg_id, model_id, data, is_tsg=None).model_dump_json()
         message = _METHODOLOGY_MESSAGE_DEGRADED
     else:
         message = _METHODOLOGY_MESSAGE
 
     return _methodology_result(
-        ensg_id, model_id, is_tsg=is_tsg, message=message
+        ensg_id, model_id, is_tsg=None, message=message
     ).model_dump_json()
 
 

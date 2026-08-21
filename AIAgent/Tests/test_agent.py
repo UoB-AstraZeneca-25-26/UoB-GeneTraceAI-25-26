@@ -1,4 +1,5 @@
-"""Full agent flow tests. Require a real GROQ_API_KEY (live LLM calls)."""
+"""Full agent flow tests. Require real LLM credentials for whichever
+provider LLM_PROVIDER selects (live LLM calls)."""
 
 import asyncio
 import json
@@ -9,11 +10,22 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-_HAS_REAL_KEY = bool(os.getenv("GROQ_API_KEY")) and os.getenv("GROQ_API_KEY") != "your_groq_api_key_here"
+_PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower()
+
+if _PROVIDER == "bedrock":
+    _HAS_REAL_KEY = bool(
+        os.getenv("AWS_BEARER_TOKEN_BEDROCK")
+        or (os.getenv("AWS_ACCESS_KEY_ID") and os.getenv("AWS_SECRET_ACCESS_KEY"))
+        or os.getenv("AWS_PROFILE")
+    )
+    _SKIP_REASON = "no AWS Bedrock credentials set — skipping live agent tests"
+else:
+    _HAS_REAL_KEY = bool(os.getenv("GROQ_API_KEY")) and os.getenv("GROQ_API_KEY") != "your_groq_api_key_here"
+    _SKIP_REASON = "GROQ_API_KEY not set — skipping live agent tests"
 
 pytestmark = [
     pytest.mark.live,
-    pytest.mark.skipif(not _HAS_REAL_KEY, reason="GROQ_API_KEY not set — skipping live agent tests"),
+    pytest.mark.skipif(not _HAS_REAL_KEY, reason=_SKIP_REASON),
 ]
 
 
@@ -22,6 +34,23 @@ def executor():
     from BusinessFlow import executor as agent_executor
 
     return agent_executor
+
+
+def _extract_output_text(output) -> str:
+    """Normalise AgentExecutor output to a plain string.
+
+    Groq returns a str. Bedrock returns a list of content blocks
+    like [{"type": "text", "text": "...", "index": 0}]. Handle both
+    so tests work with any provider.
+    """
+    if isinstance(output, str):
+        return output
+    if isinstance(output, list):
+        return " ".join(
+            block["text"] for block in output
+            if isinstance(block, dict) and block.get("type") == "text"
+        )
+    return str(output)
 
 
 def _print_result(label: str, result: dict) -> None:
@@ -33,7 +62,7 @@ def _print_result(label: str, result: dict) -> None:
             print(f"  tool output: {json.dumps(json.loads(observation), indent=2)}")
         except (TypeError, json.JSONDecodeError):
             print(f"  tool output: {observation}")
-    print(f"  final output: {result['output']}")
+    print(f"  final output: {_extract_output_text(result['output'])}")
 
 
 _STATUSES = {"active", "skipped", "inverted"}
@@ -45,6 +74,8 @@ def _parse_steps(output: str):
     Mirrors api.routes._parse_methodology: tolerate a reasoning preamble and
     code fences, and return None for anything that is not the contract.
     """
+    if not isinstance(output, str):
+        output = _extract_output_text(output)
     if "</think>" in output:
         output = output.rsplit("</think>", 1)[1]
     start = output.find("{")
@@ -66,7 +97,7 @@ async def test_agent_calls_gene_alias_lookup(executor):
     tool_names = {step[0].tool for step in steps}
 
     assert "gene_alias_lookup" in tool_names
-    assert result["output"]
+    assert _extract_output_text(result["output"])
 
 
 @pytest.mark.asyncio
@@ -77,7 +108,7 @@ async def test_agent_calls_dataset_info(executor):
     steps = result.get("intermediate_steps", [])
     tool_names = {step[0].tool for step in steps}
 
-    assert "dataset_info" in tool_names or "depmap" in result["output"].lower()
+    assert "dataset_info" in tool_names or "depmap" in _extract_output_text(result["output"]).lower()
 
 
 @pytest.mark.asyncio
@@ -118,6 +149,6 @@ async def test_agent_does_not_hallucinate_on_empty_result(executor):
         {"input": "Explain the score for ENSG_FAKE in ACH-FAKE"}
     )
     _print_result("test_agent_does_not_hallucinate_on_empty_result", result)
-    output = result["output"].lower()
+    output = _extract_output_text(result["output"]).lower()
 
     assert "0.7" not in output and "0.702" not in output

@@ -28,6 +28,14 @@ Rules:
 - For score_explainer with real values: walk through each step using
   the actual numbers returned. Every number in your explanation must
   trace back to the tool output.
+- If is_tsg is null (unknown), explain Step 5 (TSG inversion)
+  CONDITIONALLY: describe what happens in both cases -- "if this gene is
+  a tumour suppressor, the score is inverted (1 - core_score) because low
+  abundance signals loss of function; if it is an oncogene or
+  abundance-tracking gene, no inversion is applied and the score is used
+  as-is." Do not assert which case applies for this specific gene.
+- If is_tsg is explicitly true or false (from a connected scoring API),
+  explain Step 5 definitively for that gene as before.
 - For score_explainer results the answer is STRUCTURED JSON, not prose
   (see the output contract below). Every other tool answers in prose.
 - Be concise. Maximum 150 words per response. No tables.
@@ -66,6 +74,10 @@ Each object has:
     oncogene -- the tool output has "is_tsg": false).
     Use "inverted" for TSG inversion when the gene IS a tumour suppressor
     (the tool output has "is_tsg": true).
+    Use "active" for TSG inversion when "is_tsg" is null (unknown) -- the
+    step still ran the check, it just cannot be narrated definitively for
+    this gene. Describe both branches conditionally in "value" (see
+    CRITICAL RULES below) rather than asserting which one applies.
 
 Example output format:
 {
@@ -120,6 +132,10 @@ CRITICAL RULES for this output:
 - Always include all 7 steps, in the order shown above.
 - Set "status" to "skipped" for TSG inversion if the gene is an oncogene.
 - Set "status" to "inverted" for TSG inversion if the gene IS a TSG.
+- Set "status" to "active" for TSG inversion if "is_tsg" is null, and
+  write "value" conditionally: explain that TSGs get the score inverted
+  (1 - core_score) while oncogenes/abundance-tracking genes do not,
+  without asserting which case applies to this gene.
 - Keep each "value" to 20-25 words. Not shorter, not longer.
 - Keep each "key" to 3-5 words.
 - If the gene name is known (from the ensg_id), mention it by name in the

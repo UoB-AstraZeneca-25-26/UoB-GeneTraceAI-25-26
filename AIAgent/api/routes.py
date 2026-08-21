@@ -17,6 +17,7 @@ from typing import Any, AsyncIterator
 from fastapi import APIRouter, Depends, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from botocore.exceptions import ClientError as BotoClientError
 from groq import RateLimitError as GroqRateLimitError
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
@@ -59,6 +60,26 @@ async def _invoke_tool(tool_name: str, args: dict) -> dict:
     return json.loads(raw) if isinstance(raw, str) else raw
 
 
+def _chunk_to_text(content: Any) -> str:
+    """Normalise a streamed chat-model chunk's ``.content`` to plain text.
+
+    Groq/OpenAI-compatible backends yield ``content`` as a plain str.
+    Bedrock Converse (via langchain_aws) yields a list of content blocks
+    like ``[{"type": "text", "text": "...", "index": 0}]``, which
+    ``"".join(...)`` chokes on downstream if left unnormalised.
+    """
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "".join(
+            block.get("text", "") for block in content
+            if isinstance(block, dict) and block.get("type") == "text"
+        )
+    if isinstance(content, dict):
+        return content.get("text", "")
+    return ""
+
+
 # score_explainer answers are consumed by the UI's methodology chart, so the
 # narration instruction has to ask for the JSON contract rather than prose --
 # otherwise the fast path contradicts the system prompt and the model splits
@@ -87,7 +108,7 @@ async def _narrate_tool_output(tool_name: str, output: dict) -> AsyncIterator[st
         ),
     ]
     async for chunk in _llm.astream(messages):
-        text = getattr(chunk, "content", "")
+        text = _chunk_to_text(getattr(chunk, "content", ""))
         if text:
             yield text
 
@@ -191,6 +212,11 @@ async def _agent_events(query: str) -> AsyncIterator[_Event]:
                 yield _Event("token", {"text": text})
         except GroqRateLimitError as exc:
             yield _Event("error", {"exc": UpstreamRateLimitedError(detail=str(exc))})
+        except BotoClientError as exc:
+            if exc.response.get("Error", {}).get("Code") == "ThrottlingException":
+                yield _Event("error", {"exc": UpstreamRateLimitedError(detail=str(exc))})
+            else:
+                yield _Event("error", {"exc": exc})
         except Exception as exc:
             yield _Event("error", {"exc": exc})
         return
@@ -210,11 +236,16 @@ async def _agent_events(query: str) -> AsyncIterator[_Event]:
                 yield _Event("status", {"stage": "explaining", "label": "Writing explanation..."})
             elif kind == "on_chat_model_stream":
                 chunk = event["data"].get("chunk")
-                text = getattr(chunk, "content", "") if chunk is not None else ""
+                text = _chunk_to_text(getattr(chunk, "content", "")) if chunk is not None else ""
                 if text:
                     yield _Event("token", {"text": text})
     except GroqRateLimitError as exc:
         yield _Event("error", {"exc": UpstreamRateLimitedError(detail=str(exc))})
+    except BotoClientError as exc:
+        if exc.response.get("Error", {}).get("Code") == "ThrottlingException":
+            yield _Event("error", {"exc": UpstreamRateLimitedError(detail=str(exc))})
+        else:
+            yield _Event("error", {"exc": exc})
     except Exception as exc:
         yield _Event("error", {"exc": exc})
 

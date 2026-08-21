@@ -81,14 +81,14 @@ const json = await result.json();
   "previous_symbols": [],
   "synonyms": ["p53", "LFS1"],
   "cross_validated": true,
-  "sources": ["local_index"]
+  "sources": ["ensembl", "hgnc"]
 }
 ```
 
 **Example response (json.answer):**
 > TP53 (Ensembl ENSG00000141510) is also known as p53 and LFS1. These are the primary synonyms listed in Ensembl and HGNC for the tumor-protein p53 gene. No former symbols are recorded.
 
-**How it resolves the gene:** the tool checks a local parquet table first (19,213 genes, ~3 µs lookup), then falls back to Ensembl and HGNC REST APIs only if the gene is not in the panel. The local table was built by reconciling both external sources upstream, so a local hit is already cross-validated.
+**How it resolves the gene:** the tool queries Ensembl and HGNC REST APIs concurrently first; a hit on either (or both) is returned immediately, cross-validated when both agree. Only if both network sources are unreachable does it fall back to a local parquet table (19,213 genes, ~3 µs lookup) reconciled from the same two sources upstream, so a fallback hit is still treated as cross-validated.
 
 ### Business Case 2 — Score explanation
 
@@ -336,7 +336,7 @@ Offline suite verified 2026-08-17: **35 passed in 34.5 seconds.**
 | Agent framework | LangChain (single AgentExecutor) | LLM-agnostic, native tool binding, production-tested |
 | LLM | OpenAI gpt-oss-120b via Groq | 120B MoE model, strong tool-calling, free tier sufficient for demo |
 | API framework | FastAPI | Async, Pydantic-native, SSE streaming support |
-| Gene data | Local parquet (19,213 genes) + Ensembl/HGNC REST as backup | Local-first eliminates network dependency for 99.9% of queries |
+| Gene data | Ensembl/HGNC REST, primary + local parquet (19,213 genes) as fallback | Live APIs give current data; local table covers queries when both APIs are down |
 | Dataset descriptions | Static JSON (7 entries) | Extracted once from project documentation, no runtime retrieval needed |
 | Scoring pipeline reference | math_reference.md embedded in system prompt | The 7-step pipeline specification the LLM uses to explain scores |
 
