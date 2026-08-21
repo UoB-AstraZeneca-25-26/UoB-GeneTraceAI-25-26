@@ -30,6 +30,7 @@ env/
 venv/
 data/
 outputs/
+Endpoint/
 
 # ── Jupyter ──────────────────────────────────────────────────────
 .ipynb_checkpoints/
@@ -46,3 +47,4 @@ Thumbs.db
 # src/           → all notebooks and scripts
 # outputs/clean_data_report.xlsx  → quality report (small)
 # README.md, requirements.txt, .gitignore
+cell-line-finder-react/node_modules/
