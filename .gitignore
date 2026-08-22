@@ -33,3 +33,7 @@ Thumbs.db
 # outputs/clean_data_report.xlsx  → quality report (small)
 # README.md, requirements.txt, .gitignore
 src/Track - D/celllineselector.db
+
+Cell Line Selector/db
+Cell Line Selector/geo_meta
+
