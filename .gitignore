@@ -34,6 +34,15 @@ Thumbs.db
 # README.md, requirements.txt, .gitignore
 src/Track - D/celllineselector.db
 
-Cell Line Selector/db
-Cell Line Selector/geo_meta
+# Local databases
+Cell Line Selector/db/
+
+# Raw and processed datasets
+Cell Line Selector/data/
+
+# Generated results
+Cell Line Selector/results/
+
+# Logs
+Cell Line Selector/logs/
 
