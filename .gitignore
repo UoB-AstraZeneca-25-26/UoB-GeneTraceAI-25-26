@@ -1,48 +1,50 @@
-# ── Large data files ────────────────────────────────────────────
-# all raw source files
-data/
-# all generated outputs
-outputs/
+# ============================================================
+# Cell Line Selector - Git Ignore
+# ============================================================
 
-# ── Parquet files ────────────────────────────────────────────────
-*.parquet
-!reference/*.parquet
-!cleaned_track_data/*.parquet
-
-# ── Python ───────────────────────────────────────────────────────
-__pycache__/
-*.py[cod]
-*.pyo
-.env
-.venv
-env/
-venv/
-data/
-outputs/
-
-# ── Jupyter ──────────────────────────────────────────────────────
-.ipynb_checkpoints/
-
-# ── OS / editor ──────────────────────────────────────────────────
+# macOS / editor
 .DS_Store
 Thumbs.db
 *.swp
 
-# ── What IS tracked ─────────────────────────────────────────────
-# src/           → all notebooks and scripts
-# outputs/clean_data_report.xlsx  → quality report (small)
-# README.md, requirements.txt, .gitignore
-src/Track - D/celllineselector.db
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
 
-# Local databases
-Cell Line Selector/db/
+# Virtual environments
+.env
+.venv/
+env/
+venv/
 
-# Raw and processed datasets
+# Jupyter
+.ipynb_checkpoints/
+
+# ============================================================
+# Large datasets - DO NOT commit
+# ============================================================
+
 Cell Line Selector/data/
 
-# Generated results
-Cell Line Selector/results/
+# GEO metadata downloaded/generated locally
+Cell Line Selector/geo_meta/
 
-# Logs
+# ============================================================
+# Local database - DO NOT commit
+# ============================================================
+
+Cell Line Selector/db/
+
+# ============================================================
+# Generated results / logs - DO NOT commit
+# ============================================================
+
+Cell Line Selector/results/
 Cell Line Selector/logs/
 
+# ============================================================
+# Large file formats
+# ============================================================
+
+*.parquet
