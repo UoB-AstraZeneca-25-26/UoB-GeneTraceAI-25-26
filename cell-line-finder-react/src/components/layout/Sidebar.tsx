@@ -69,9 +69,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, onReset,
           <RotateCcw className="w-4 h-4" />
           <span>New Query</span>
         </button>
-        <div className="text-center">
-          <span className="text-[11px] text-slate-400 uppercase tracking-wider">MVP Prototype</span>
-        </div>
       </div>
     </aside>
   );

@@ -39,7 +39,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
     const genes =
       meta?.mode === 'multi'
         ? meta.genes ?? []
-        : [meta?.primaryGene ?? queryParams.targets[0], meta?.excludedGene];
+        : [meta?.primaryGene ?? queryParams.targets[0], ...(meta?.excludedGenes ?? [])];
     return Array.from(new Set(genes.filter((g): g is string => Boolean(g))));
   }, [meta, queryParams.targets]);
 
@@ -74,7 +74,9 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
         <Loader2 className="w-8 h-8 mx-auto animate-spin text-indigo-600" />
         <p className="text-sm text-slate-500">
           Querying live ranking for <strong>{queryParams.targets[0]}</strong>
-          {queryParams.exclusions[0] && <> vs <strong>{queryParams.exclusions[0]}</strong></>}…
+          {queryParams.exclusions.length > 0 && (
+            <> vs <strong>{queryParams.exclusions.join(', ')}</strong></>
+          )}…
         </p>
       </div>
     );
@@ -149,7 +151,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
           {meta?.mode === 'selectivity' ? (
             <>
               <strong>Selective for {meta.primaryGene}</strong> against{' '}
-              <strong>{meta.excludedGene}</strong>
+              <strong>{meta.excludedGenes?.join(', ')}</strong>
             </>
           ) : meta?.mode === 'multi' ? (
             <>
@@ -297,13 +299,15 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                   ) : r.mode === 'selectivity' ? (
                     <>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-3 text-xs font-mono">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono">
                           <span className="text-emerald-600" title={`${r.geneHigh} score`}>
                             {r.geneHigh} {r.scoreHigh.toFixed(3)}
                           </span>
-                          <span className="text-rose-500" title={`${r.geneLow} score`}>
-                            {r.geneLow} {r.scoreLow.toFixed(3)}
-                          </span>
+                          {r.excludedGenes.map((g) => (
+                            <span key={g} className="text-rose-500" title={`${g} score`}>
+                              {g} {r.exclusionScores[g].toFixed(3)}
+                            </span>
+                          ))}
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -373,8 +377,10 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                 <>
                   <Metric label="Selectivity" value={topPick.selectivity.toFixed(4)} />
                   <Metric
-                    label={`${topPick.geneHigh}↑ / ${topPick.geneLow}↓`}
-                    value={`${topPick.scoreHigh.toFixed(2)} / ${topPick.scoreLow.toFixed(2)}`}
+                    label={`${topPick.geneHigh}↑ / ${topPick.excludedGenes.join(', ')}↓`}
+                    value={`${topPick.scoreHigh.toFixed(2)} / ${topPick.excludedGenes
+                      .map((g) => topPick.exclusionScores[g].toFixed(2))
+                      .join(', ')}`}
                   />
                 </>
               ) : (

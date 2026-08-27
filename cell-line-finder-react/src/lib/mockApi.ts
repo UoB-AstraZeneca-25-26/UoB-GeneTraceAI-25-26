@@ -2,8 +2,8 @@
 // adapter and view runs identically. Toggle via USE_MOCK in api.ts.
 import type {
   JointApiResponse,
-  ExcludeApiResponse,
-  ExcludeApiLine,
+  ExcludeManyApiResponse,
+  ExcludeManyApiLine,
   CellLineDetailApiResponse,
   LineMetadata,
 } from './api';
@@ -126,24 +126,30 @@ function mockJointResponse(genesRaw: string[]): JointApiResponse {
 export const mockGeneResponse = (gene: string): JointApiResponse => mockJointResponse([gene]);
 export const mockGenesResponse = (genes: string[]): JointApiResponse => mockJointResponse(genes);
 
-// ---------- /exclude ----------
-export function mockExcludeResponse(aRaw: string, bRaw: string): ExcludeApiResponse {
+// ---------- /exclude/many ----------
+export function mockExcludeManyResponse(aRaw: string, bsRaw: string[]): ExcludeManyApiResponse {
   const a = clampGene(aRaw);
-  const b = clampGene(bRaw);
-  const lines: ExcludeApiLine[] = POOL.map((p) => {
+  const bs = bsRaw.map(clampGene).filter(Boolean);
+  const lines: ExcludeManyApiLine[] = POOL.map((p) => {
     const sa = round(0.85 + rand(a + p.model_id) * 0.149);
-    const sb = round(rand(b + p.model_id) * 0.5);
+    const exclusion_scores: Record<string, number> = {};
+    let selectivity = sa;
+    bs.forEach((b) => {
+      const sb = round(rand(b + p.model_id) * 0.5);
+      exclusion_scores[b] = sb;
+      selectivity *= 1 - sb;
+    });
     return {
       model_id: p.model_id,
       name: p.name,
       score_a: sa,
-      score_b: sb,
-      selectivity: round(sa * (1 - sb)),
+      exclusion_scores,
+      selectivity: round(selectivity),
       metadata: metaOf(p),
     };
   }).sort((x, y) => y.selectivity - x.selectivity);
 
-  return { gene_a: a, gene_b: b, lineage: [], total_ranked: 912, lines };
+  return { gene_a: a, excluded_genes: bs, lineage: [], total_ranked: 912, lines };
 }
 
 // ---------- /gene/detail ----------

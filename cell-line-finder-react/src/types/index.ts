@@ -46,14 +46,14 @@ export type SingleRanked = BaseRanked & {
   score: number; // joint_score for the single gene
 };
 
-/** Result of GET /prod/exclude?gene_a=<HIGH>&gene_b=<LOW> */
+/** Result of GET /prod/exclude/many?gene_a=<HIGH>&exclude=<LOW1>&exclude=<LOW2>... */
 export type SelectivityRanked = BaseRanked & {
   mode: 'selectivity';
-  selectivity: number; // score_high * (1 - score_low)
+  selectivity: number; // score_high * Π(1 - score_low_i)
   geneHigh: string;
-  geneLow: string;
   scoreHigh: number;
-  scoreLow: number;
+  excludedGenes: string[];
+  exclusionScores: Record<string, number>;
 };
 
 /** Result of GET /genes?query=<A,B,...> (joint multi-gene ranking) */
@@ -71,7 +71,7 @@ export type ResultMeta = {
   mode: ResultMode;
   primaryGene: string;   // gene_high (selectivity), gene (single), or joined list (multi)
   ensg?: string;
-  excludedGene?: string; // gene_low (selectivity only)
+  excludedGenes?: string[]; // gene_b list (selectivity only)
   formula?: string;      // selectivity only
   genes?: string[];      // multi only
   floor?: number;        // multi only

@@ -25,6 +25,13 @@ export const GeneSearch: React.FC<GeneSearchProps> = ({ suggestions, exclude = [
       .slice(0, 8);
   }, [value, suggestions, exclude]);
 
+  // When the typed text isn't an exact known symbol, surface an explicit
+  // "Add <value>" option so users can see that a custom symbol is committable
+  // (not just discover it by blindly pressing Enter).
+  const q = value.trim().toUpperCase();
+  const showCustomAdd = q.length > 0 && !exclude.includes(q) && !matches.includes(q);
+  const options = showCustomAdd ? [...matches, q] : matches;
+
   useEffect(() => {
     const h = (e: MouseEvent) => {
       if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
@@ -58,34 +65,43 @@ export const GeneSearch: React.FC<GeneSearchProps> = ({ suggestions, exclude = [
         onKeyDown={(e) => {
           if (e.key === 'ArrowDown') {
             e.preventDefault();
-            setHi((h) => Math.min(h + 1, matches.length - 1));
+            setHi((h) => Math.min(h + 1, options.length - 1));
           } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             setHi((h) => Math.max(h - 1, 0));
           } else if (e.key === 'Enter') {
             e.preventDefault();
-            commit(matches[hi] ?? value);
+            commit(options[hi] ?? value);
           } else if (e.key === 'Escape') {
             setOpen(false);
           }
         }}
         className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none"
       />
-      {open && matches.length > 0 && (
+      {open && options.length > 0 && (
         <div className="absolute z-30 top-[calc(100%+4px)] left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg p-1 max-h-64 overflow-auto">
-          {matches.map((m, i) => (
-            <button
-              type="button"
-              key={m}
-              onMouseEnter={() => setHi(i)}
-              onClick={() => commit(m)}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm font-mono ${
-                i === hi ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              {m}
-            </button>
-          ))}
+          {options.map((m, i) => {
+            const isCustom = showCustomAdd && i === options.length - 1;
+            return (
+              <button
+                type="button"
+                key={m}
+                onMouseEnter={() => setHi(i)}
+                onClick={() => commit(m)}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-mono ${
+                  i === hi ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                {isCustom ? (
+                  <span>
+                    Add <span className="font-semibold">"{m}"</span>
+                  </span>
+                ) : (
+                  m
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

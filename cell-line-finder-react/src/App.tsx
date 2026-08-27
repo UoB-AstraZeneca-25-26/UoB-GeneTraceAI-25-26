@@ -46,9 +46,8 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      // 2+ targets -> joint ranking; 1 target + exclusion -> selectivity; else single.
-      const exclusion = params.exclusions[0];
-      const { results: ranked, meta: m } = await fetchRanking(params.targets, exclusion, controller.signal);
+      // 2+ targets -> joint ranking; 1 target + exclusion(s) -> selectivity; else single.
+      const { results: ranked, meta: m } = await fetchRanking(params.targets, params.exclusions, controller.signal);
       setResults(ranked);
       setMeta(m);
     } catch (e) {

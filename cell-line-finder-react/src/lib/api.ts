@@ -1,6 +1,6 @@
 import {
   mockGeneResponse,
-  mockExcludeResponse,
+  mockExcludeManyResponse,
   mockGenesResponse,
   mockCellLineDetailResponse,
   mockDelay,
@@ -27,7 +27,7 @@ const BASE = import.meta.env.DEV
 const API = `${BASE}/prod`;
 const GENE_URL = `${API}/gene`;
 const GENES_URL = `${API}/genes`;
-const EXCLUDE_URL = `${API}/exclude`;
+const EXCLUDE_MANY_URL = `${API}/exclude/many`;
 const DETAIL_URL = `${API}/gene/detail`;
 
 // How many lines to request from the server (client slices further for display).
@@ -66,22 +66,22 @@ export interface JointApiResponse {
   lines: JointApiLine[];
 }
 
-// ---------- /prod/exclude (selectivity) ----------
-export interface ExcludeApiLine {
+// ---------- /prod/exclude/many (selectivity, N excluded genes) ----------
+export interface ExcludeManyApiLine {
   model_id: string;
   name: string | null;
   score_a: number;
-  score_b: number;
+  exclusion_scores: Record<string, number>;
   selectivity: number;
   metadata?: LineMetadata;
 }
 
-export interface ExcludeApiResponse {
+export interface ExcludeManyApiResponse {
   gene_a: string;
-  gene_b: string;
+  excluded_genes: string[];
   lineage?: string[];
   total_ranked: number;
-  lines: ExcludeApiLine[];
+  lines: ExcludeManyApiLine[];
 }
 
 // ---------- /prod/gene/detail (per-line detail) ----------
@@ -168,21 +168,22 @@ export async function fetchMultiRanking(genes: string[], signal?: AbortSignal): 
 
 export async function fetchSelectivityRanking(
   geneA: string,
-  geneB: string,
+  excludedGenes: string[],
   signal?: AbortSignal
-): Promise<ExcludeApiResponse> {
+): Promise<ExcludeManyApiResponse> {
   const a = geneA.trim();
-  const b = geneB.trim();
-  if (!a || !b) throw new Error('Both a target and an exclusion gene are required.');
+  const bs = excludedGenes.map((g) => g.trim()).filter(Boolean);
+  if (!a || bs.length === 0) throw new Error('Both a target and at least one exclusion gene are required.');
   if (USE_MOCK) {
     await mockDelay();
-    return mockExcludeResponse(a, b);
+    return mockExcludeManyResponse(a, bs);
   }
-  const data = await getJson<ExcludeApiResponse>(
-    `${EXCLUDE_URL}?gene_a=${encodeURIComponent(a)}&gene_b=${encodeURIComponent(b)}&top_n=${TOP_N}`,
+  const query = bs.map((g) => `exclude=${encodeURIComponent(g)}`).join('&');
+  const data = await getJson<ExcludeManyApiResponse>(
+    `${EXCLUDE_MANY_URL}?gene_a=${encodeURIComponent(a)}&${query}&top_n=${TOP_N}`,
     signal
   );
-  if (!data || !Array.isArray(data.lines)) throw new Error('Unexpected /exclude response shape.');
+  if (!data || !Array.isArray(data.lines)) throw new Error('Unexpected /exclude/many response shape.');
   return data;
 }
 
@@ -243,7 +244,7 @@ export function toMultiRanked(resp: JointApiResponse): MultiRanked[] {
   });
 }
 
-export function toSelectivityRanked(resp: ExcludeApiResponse): SelectivityRanked[] {
+export function toSelectivityRanked(resp: ExcludeManyApiResponse): SelectivityRanked[] {
   const sels = resp.lines.map((l) => l.selectivity);
   return resp.lines.map((l, i) => ({
     mode: 'selectivity',
@@ -253,9 +254,9 @@ export function toSelectivityRanked(resp: ExcludeApiResponse): SelectivityRanked
     lineage: lineageOf(l.metadata?.lineage),
     selectivity: l.selectivity,
     scoreHigh: l.score_a,
-    scoreLow: l.score_b,
     geneHigh: resp.gene_a,
-    geneLow: resp.gene_b,
+    excludedGenes: resp.excluded_genes,
+    exclusionScores: l.exclusion_scores,
     relativeScore: relativize(sels, l.selectivity),
   }));
 }
@@ -281,12 +282,12 @@ export function metaFromGenes(resp: JointApiResponse): ResultMeta {
   };
 }
 
-export function metaFromExclude(resp: ExcludeApiResponse): ResultMeta {
+export function metaFromExclude(resp: ExcludeManyApiResponse): ResultMeta {
   return {
     mode: 'selectivity',
     primaryGene: resp.gene_a,
-    excludedGene: resp.gene_b,
-    formula: `score_${resp.gene_a} × (1 − score_${resp.gene_b})`,
+    excludedGenes: resp.excluded_genes,
+    formula: `score_${resp.gene_a} × ${resp.excluded_genes.map((g) => `(1 − score_${g})`).join(' × ')}`,
     total: resp.total_ranked,
     showing: resp.lines.length,
   };
@@ -294,13 +295,13 @@ export function metaFromExclude(resp: ExcludeApiResponse): ResultMeta {
 
 /**
  * High-level entry point. Routes by what's selected:
- *   2+ targets            -> /prod/genes   (joint multi-gene; exclusions ignored)
- *   1 target + exclusion  -> /prod/exclude (selectivity)
- *   1 target              -> /prod/gene    (single, joint shape with one gene)
+ *   2+ targets              -> /prod/genes      (joint multi-gene; exclusions ignored)
+ *   1 target + exclusion(s) -> /prod/exclude/many (selectivity against every excluded gene)
+ *   1 target                -> /prod/gene        (single, joint shape with one gene)
  */
 export async function fetchRanking(
   targets: string[],
-  exclusion: string | undefined,
+  exclusions: string[],
   signal?: AbortSignal
 ): Promise<{ results: RankedCellLine[]; meta: ResultMeta }> {
   const clean = targets.map((t) => t.trim()).filter(Boolean);
@@ -311,8 +312,9 @@ export async function fetchRanking(
     return { results: toMultiRanked(resp), meta: metaFromGenes(resp) };
   }
 
-  if (exclusion && exclusion.trim()) {
-    const resp = await fetchSelectivityRanking(clean[0], exclusion, signal);
+  const cleanExclusions = exclusions.map((e) => e.trim()).filter(Boolean);
+  if (cleanExclusions.length > 0) {
+    const resp = await fetchSelectivityRanking(clean[0], cleanExclusions, signal);
     return { results: toSelectivityRanked(resp), meta: metaFromExclude(resp) };
   }
 
