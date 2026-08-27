@@ -4,6 +4,7 @@ import { QueryBuilder } from './components/views/QueryBuilder';
 import { ResultsTable } from './components/views/ResultsTable';
 import { ProfileView } from './components/views/ProfileView';
 import { AboutPage } from './components/views/AboutPage';
+import { GuidePage } from './components/views/GuidePage';
 // Assistant chatbot page removed from routing/navigation — kept for possible reuse.
 // import { AssistantPanel } from './components/views/AssistantPanel';
 import { fetchRanking } from './lib/api';
@@ -140,6 +141,10 @@ export default function App() {
         )}
 
         {currentView === 'about' && <AboutPage />}
+
+        {currentView === 'guide' && (
+          <GuidePage onStart={() => setCurrentView('query')} />
+        )}
       </main>
     </div>
   );

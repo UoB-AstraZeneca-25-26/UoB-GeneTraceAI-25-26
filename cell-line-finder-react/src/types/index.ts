@@ -23,7 +23,7 @@ export type ScoredResult = {
   exclusionPenalty: number;
 };
 
-export type ViewType = 'query' | 'results' | 'profile' | 'about' | 'assistant';
+export type ViewType = 'query' | 'results' | 'profile' | 'about' | 'assistant' | 'guide';
 
 // ---- Live API result model ----
 
@@ -120,6 +120,10 @@ export type InspectTarget = { gene: string; modelId: string; cellLine: string };
 export type MetadataItem = { label: string; value: string };
 export type SimilarLine = { modelId: string; name: string; similarity: number };
 
+/** A raw per-source measurement behind a modality's level, e.g. DepMap TPM.
+ *  Units differ per source, so `max` gives a per-source scale for its bar. */
+export type SourceMeasurement = { source: string; value: number; unit: string; max: number };
+
 export type CellLineDetail = {
   gene: string;
   ensg: string;
@@ -134,6 +138,12 @@ export type CellLineDetail = {
   pMutation: number | null;
   pFusion: number | null;
   hasCnaAlteration: boolean;
+  expressionLevel: number | null;   // within-gene percentile (0..1), or null if unmeasured
+  proteomicsLevel: number | null;   // within-gene percentile (0..1), or null if unmeasured
+  expressionSources: string[];      // which expression datasets contributed (DepMap/HPA/GEO)
+  proteomicsSources: string[];      // which proteomics datasets contributed (ProCan/CCLE)
+  expressionMeasurements: SourceMeasurement[]; // raw per-source expression values, if reported
+  proteomicsMeasurements: SourceMeasurement[]; // raw per-source proteomics values, if reported
   tracks: TrackScores;         // per-layer signals reported by this endpoint
   metadata: MetadataItem[];    // ordered, cleaned for display
   alternatives: SimilarLine[]; // RNA-similar models

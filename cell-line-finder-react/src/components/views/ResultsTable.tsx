@@ -293,7 +293,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                     <>
                       <td className="px-4 py-3 capitalize text-slate-600">{r.lineage}</td>
                       <td className="px-4 py-3">
-                        <ScoreBar width={r.relativeScore} color="bg-indigo-500" label={r.score.toFixed(4)} />
+                        <ScoreCell relative={r.relativeScore} label={r.score.toFixed(4)} />
                       </td>
                     </>
                   ) : r.mode === 'selectivity' ? (
@@ -311,7 +311,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <ScoreBar width={r.relativeScore} color="bg-indigo-500" label={r.selectivity.toFixed(4)} />
+                        <ScoreCell relative={r.relativeScore} label={r.selectivity.toFixed(4)} />
                       </td>
                     </>
                   ) : (
@@ -335,7 +335,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <ScoreBar width={r.relativeScore} color="bg-indigo-500" label={r.jointScore.toFixed(4)} />
+                        <ScoreCell relative={r.relativeScore} label={r.jointScore.toFixed(4)} />
                       </td>
                     </>
                   )}
@@ -353,6 +353,10 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
               ))}
             </tbody>
           </table>
+          <p className="px-4 py-2.5 border-t border-slate-100 text-[11px] text-slate-400">
+            The number is the score. The marker shows each line’s position within the shown set (left = lowest,
+            right = highest) — lines in your top {results.length} all score highly, so treat these as comparable candidates.
+          </p>
         </div>
         )}
 
@@ -421,14 +425,30 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   );
 };
 
-const ScoreBar: React.FC<{ width: number; color: string; label: string }> = ({ width, color, label }) => (
-  <div className="flex items-center space-x-2">
-    <div className="w-20 bg-slate-200 rounded-full h-2 overflow-hidden">
-      <div className={`h-full rounded-full ${color}`} style={{ width: `${width}%` }} />
+/**
+ * The score is the value that matters, so it leads. The thin track below is a
+ * *position* marker — where this line sits within the shown set (left = lowest
+ * shown, right = highest) — not a fill, so a high score never looks "empty"
+ * just because other shown lines score higher. Lines in the top N all score
+ * highly; the marker only conveys their ordering.
+ */
+const ScoreCell: React.FC<{ relative: number; label: string }> = ({ relative, label }) => {
+  const pos = Math.max(0, Math.min(100, relative));
+  return (
+    <div className="w-28">
+      <span className="text-sm font-mono font-semibold text-slate-800">{label}</span>
+      <div
+        className="relative h-1.5 rounded-full bg-slate-100 mt-1.5"
+        title={`Position within the shown lines (${Math.round(pos)}% — left = lowest shown, right = highest)`}
+      >
+        <div
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 border-white shadow-sm"
+          style={{ left: `${pos}%` }}
+        />
+      </div>
     </div>
-    <span className="text-xs font-mono text-slate-500">{label}</span>
-  </div>
-);
+  );
+};
 
 const Metric: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <div>

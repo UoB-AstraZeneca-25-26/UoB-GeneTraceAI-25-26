@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { RankedCellLine } from '../../types';
-import { ChevronRight, Layers, Star } from 'lucide-react';
+import { ChevronRight, Layers } from 'lucide-react';
 
 interface LineagePanelProps {
   gene: string;
@@ -42,10 +42,9 @@ export const LineagePanel: React.FC<LineagePanelProps> = ({ gene, lines, onSelec
       .sort((a, b) => a.bestRank - b.bestRank || b.lines.length - a.lines.length);
   }, [lines]);
 
-  const recommended = groups[0];
   const [filter, setFilter] = useState<string>('__all__');
 
-  if (!recommended) {
+  if (groups.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center text-sm text-slate-500">
         No lineage information available for these results.
@@ -57,22 +56,12 @@ export const LineagePanel: React.FC<LineagePanelProps> = ({ gene, lines, onSelec
 
   return (
     <div className="space-y-4">
-      {/* Recommended lineage */}
-      <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl p-5">
-        <div className="flex items-center gap-2 text-emerald-800 font-bold mb-2">
-          <Star className="w-4 h-4" />
-          <span>Recommended lineage for {gene}</span>
-        </div>
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h3 className="text-2xl font-black text-slate-900 capitalize">{recommended.lineage}</h3>
-          <span className="text-sm text-slate-500">
-            {recommended.lines.length} cell line{recommended.lines.length === 1 ? '' : 's'} in your top{' '}
-            {lines.length} · best rank #{recommended.bestRank} · top score {recommended.topScore.toFixed(3)}
-          </span>
-        </div>
-        <p className="text-xs text-slate-600 mt-2">
-          This lineage holds the highest-placed line for {gene} among your results. The lines below are the
-          strongest candidates in it; switch lineage to explore alternatives.
+      {/* Lineage overview */}
+      <div>
+        <h3 className="text-lg font-bold text-slate-900">Lineage breakdown for {gene}</h3>
+        <p className="text-xs text-slate-500 mt-1">
+          Your top {lines.length} lines grouped by tissue lineage, ordered by their best-placed line. Use the
+          filters below to focus on a single lineage.
         </p>
       </div>
 
@@ -84,7 +73,6 @@ export const LineagePanel: React.FC<LineagePanelProps> = ({ gene, lines, onSelec
             key={g.lineage}
             label={`${g.lineage} (${g.lines.length})`}
             active={filter === g.lineage}
-            recommended={g.lineage === recommended.lineage}
             onClick={() => setFilter(g.lineage)}
           />
         ))}
@@ -98,11 +86,6 @@ export const LineagePanel: React.FC<LineagePanelProps> = ({ gene, lines, onSelec
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-slate-400" />
                 <span className="font-bold text-slate-800 capitalize">{g.lineage}</span>
-                {g.lineage === recommended.lineage && (
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
-                    RECOMMENDED
-                  </span>
-                )}
               </div>
               <span className="text-[11px] text-slate-400 font-mono">
                 {g.lines.length} line{g.lines.length === 1 ? '' : 's'} · top {g.topScore.toFixed(3)}
@@ -137,10 +120,9 @@ export const LineagePanel: React.FC<LineagePanelProps> = ({ gene, lines, onSelec
   );
 };
 
-const FilterPill: React.FC<{ label: string; active: boolean; recommended?: boolean; onClick: () => void }> = ({
+const FilterPill: React.FC<{ label: string; active: boolean; onClick: () => void }> = ({
   label,
   active,
-  recommended,
   onClick,
 }) => (
   <button
@@ -151,7 +133,6 @@ const FilterPill: React.FC<{ label: string; active: boolean; recommended?: boole
         : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-700'
     }`}
   >
-    {recommended && !active && <Star className="w-3 h-3 text-emerald-500" />}
     {label}
   </button>
 );

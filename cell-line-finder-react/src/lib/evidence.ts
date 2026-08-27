@@ -32,6 +32,22 @@ export const TRACK_BY_KEY = Object.fromEntries(TRACKS.map((t) => [t.key, t])) as
 
 export const pct = (x: number) => Math.round((x || 0) * 100);
 
+/* The datasets each measured layer can draw evidence from. The detail endpoint
+   reports which of these actually contributed for a given line; the UI shows the
+   full set and marks the ones present, so absence is visible, not hidden. */
+export const EXPRESSION_SOURCES = ['DepMap', 'HPA', 'GEO'] as const;
+export const PROTEOMICS_SOURCES = ['ProCan', 'CCLE'] as const;
+
+/* A within-gene percentile (0..1) turned into a plain band. This is a level
+   relative to other cell lines for the same gene — not an absolute amount and
+   not a probability. */
+export function levelBand(score: number): { label: 'Low' | 'Moderate' | 'High'; tone: TierTone } {
+  const p = pct(score);
+  if (p <= 33) return { label: 'Low', tone: 'low' };
+  if (p <= 66) return { label: 'Moderate', tone: 'medium' };
+  return { label: 'High', tone: 'high' };
+}
+
 /* The tier is an ordinal band from the pipeline. It is NOT derived from the score
    here — deriving a band from the number would re-introduce exactly the
    calibrated-confidence claim the scoring layer refuses to make. */

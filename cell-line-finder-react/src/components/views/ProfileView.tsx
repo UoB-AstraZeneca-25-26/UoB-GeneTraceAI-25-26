@@ -1,7 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { CellLineDetail, InspectTarget } from '../../types';
+import { CellLineDetail, InspectTarget, SourceMeasurement } from '../../types';
 import { fetchCellLineDetail, toCellLineDetail } from '../../lib/api';
-import { confTier, pct } from '../../lib/evidence';
+import {
+  confTier,
+  pct,
+  levelBand,
+  TIER_PILL_CLASS,
+  TRACKS,
+  EXPRESSION_SOURCES,
+  PROTEOMICS_SOURCES,
+} from '../../lib/evidence';
 import { TierPill } from '../common/TierPill';
 import { EvidenceSpine } from '../common/EvidenceSpine';
 import { MethodologySidebar } from '../common/MethodologySidebar';
@@ -104,6 +112,38 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
         <StatCard label="Evidence layers" value={String(detail.nLayers)} sub={detail.driverAlteration ? 'driver alteration present' : 'no driver alteration'} />
       </div>
 
+      {/* Evidence fingerprint — labeled at-a-glance overview of all six layers */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+        <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-6">
+          <div className="shrink-0">
+            <span className="text-[11px] uppercase tracking-wide font-semibold text-slate-500 block mb-1.5">
+              Evidence fingerprint
+            </span>
+            <EvidenceSpine tracks={detail.tracks} />
+          </div>
+          <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-[11px]">
+            {TRACKS.map((t) => {
+              const s = detail.tracks[t.key]?.score ?? 0;
+              const on = s > 0;
+              const readout = on ? (t.kind === 'call' ? 'present' : `${pct(s)}th pct`) : 'silent';
+              return (
+                <span key={t.key} className="inline-flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm" style={{ background: on ? t.color : '#e2e8f0' }} />
+                  <span className={on ? 'text-slate-600' : 'text-slate-300'}>
+                    {t.label} <span className="text-slate-400">· {readout}</span>
+                  </span>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+        <p className="text-[11px] text-slate-400 mt-3">
+          One segment per evidence layer, in the order above: filled when the layer has signal for this line
+          (brighter = stronger for expression &amp; proteomics; solid = present for mutation, fusion &amp; copy
+          number), hollow when silent.
+        </p>
+      </div>
+
       <div className="flex justify-end">
         <button
           onClick={() => setShowMethodology(true)}
@@ -114,33 +154,64 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
         </button>
       </div>
 
-      {/* Evidence layers reported by this endpoint */}
+      {/* Expression & proteomics — measured levels, sources and raw values (lead section) */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-800">Alteration evidence</h3>
-          <EvidenceSpine tracks={detail.tracks} />
+          <h3 className="text-sm font-bold text-slate-800">Expression &amp; proteomics</h3>
+          <span className="text-[11px] text-slate-400">measured levels</span>
         </div>
+
+        <p className="text-[12px] text-slate-600 leading-relaxed bg-slate-50 border border-slate-100 rounded-lg p-3">
+          <strong className="text-slate-700">How to read:</strong> the band and meter are a{' '}
+          <strong className="text-slate-700">within-gene percentile</strong> — where {detail.cellLine} sits
+          among all cell lines for {detail.gene}. <strong className="text-slate-700">0 = lowest, 100 = highest.</strong>{' '}
+          It’s a relative level, not an absolute amount or a probability: “High” means more of the transcript
+          (expression) or protein (proteomics) than most other lines. Below each meter are the raw measurements
+          from each dataset — bars are scaled per source, since their units differ.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <LevelRow
+            label="Expression (RNA)"
+            level={detail.expressionLevel}
+            allSources={EXPRESSION_SOURCES}
+            presentSources={detail.expressionSources}
+            measurements={detail.expressionMeasurements}
+          />
+          <LevelRow
+            label="Proteomics (protein)"
+            level={detail.proteomicsLevel}
+            allSources={PROTEOMICS_SOURCES}
+            presentSources={detail.proteomicsSources}
+            measurements={detail.proteomicsMeasurements}
+          />
+        </div>
+      </div>
+
+      {/* Alteration evidence — categorical layers */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+        <h3 className="text-sm font-bold text-slate-800">Alteration evidence</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <LayerCard
             label="Mutation"
-            value={detail.pMutation != null ? `p = ${detail.pMutation.toFixed(3)}` : 'not reported'}
-            active={detail.pMutation != null}
+            present={detail.pMutation != null}
+            hint={detail.driverAlteration ? 'driver alteration' : detail.pMutation != null ? 'variant detected' : 'no variant detected'}
             badge={detail.driverAlteration ? 'driver' : undefined}
           />
           <LayerCard
             label="Fusion"
-            value={detail.pFusion != null ? `p = ${detail.pFusion.toFixed(3)}` : 'none detected'}
-            active={detail.pFusion != null}
+            present={detail.pFusion != null}
+            hint={detail.pFusion != null ? 'fusion detected' : 'no fusion detected'}
           />
           <LayerCard
             label="Copy number"
-            value={detail.hasCnaAlteration ? 'altered' : 'no alteration'}
-            active={detail.hasCnaAlteration}
+            present={detail.hasCnaAlteration}
+            hint={detail.hasCnaAlteration ? 'copy-number altered' : 'no alteration'}
           />
         </div>
         <p className="text-[11px] text-slate-400">
-          These are the alteration layers this endpoint reports. Expression and proteomics contribute
-          to the score but aren't broken out per-layer here.
+          Alteration layers are categorical — each is simply present or absent for this line. A “driver”
+          tag means the mutation is a known cancer driver, not just any variant.
         </p>
       </div>
 
@@ -216,21 +287,127 @@ const StatCard: React.FC<{ label: string; value: string; sub?: string }> = ({ la
   </div>
 );
 
-const LayerCard: React.FC<{ label: string; value: string; active: boolean; badge?: string }> = ({
+const LayerCard: React.FC<{ label: string; present: boolean; hint: string; badge?: string }> = ({
   label,
-  value,
-  active,
+  present,
+  hint,
   badge,
 }) => (
-  <div className={`rounded-lg border p-3 ${active ? 'border-slate-200 bg-white' : 'border-slate-100 bg-slate-50'}`}>
+  <div className={`rounded-lg border p-3 ${present ? 'border-slate-200 bg-white' : 'border-slate-100 bg-slate-50'}`}>
     <div className="flex items-center justify-between">
-      <span className={`text-xs font-semibold ${active ? 'text-slate-700' : 'text-slate-400'}`}>{label}</span>
+      <span className={`text-xs font-semibold ${present ? 'text-slate-700' : 'text-slate-400'}`}>{label}</span>
       {badge && (
         <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded">
           <Zap className="w-2.5 h-2.5" /> {badge}
         </span>
       )}
     </div>
-    <span className={`text-sm font-mono mt-1 block ${active ? 'text-slate-900' : 'text-slate-400'}`}>{value}</span>
+    <div className="flex items-baseline gap-2 mt-1">
+      <span className={`text-lg font-bold ${present ? 'text-emerald-600' : 'text-slate-400'}`}>
+        {present ? 'Yes' : 'No'}
+      </span>
+      <span className="text-[11px] text-slate-400">{hint}</span>
+    </div>
   </div>
 );
+
+const LevelRow: React.FC<{
+  label: string;
+  level: number | null;
+  allSources: readonly string[];
+  presentSources: string[];
+  measurements: SourceMeasurement[];
+}> = ({ label, level, allSources, presentSources, measurements }) => {
+  if (level == null) {
+    return (
+      <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-semibold text-slate-500">{label}</span>
+          <span className="text-[11px] font-medium text-slate-400">Not measured</span>
+        </div>
+        <p className="text-[11px] text-slate-400 mt-2">No {label.toLowerCase()} evidence reported for this line.</p>
+      </div>
+    );
+  }
+
+  const band = levelBand(level);
+  const p = pct(level);
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold text-slate-700">{label}</span>
+        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${TIER_PILL_CLASS[band.tone]}`}>
+          {band.label}
+        </span>
+      </div>
+
+      {/* Low → High meter with a marker at the percentile */}
+      <div>
+        <div className="relative h-2.5 rounded-full bg-gradient-to-r from-slate-200 via-slate-300 to-indigo-500">
+          <div
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-white border-2 border-indigo-600 shadow-sm"
+            style={{ left: `${p}%` }}
+            title={`${p}th percentile`}
+          />
+        </div>
+        <div className="flex justify-between text-[10px] mt-1">
+          <span className="text-slate-400">Low</span>
+          <span className="font-mono font-semibold text-slate-600">{p}th percentile</span>
+          <span className="text-slate-400">High</span>
+        </div>
+      </div>
+
+      {/* Raw per-source measurements as a barplot; else which sources were present */}
+      {measurements.length > 0 ? (
+        <div>
+          <span className="text-[10px] uppercase tracking-wide text-slate-400">Raw measurements by source</span>
+          <div className="space-y-1.5 mt-1.5">
+            {measurements.map((m) => {
+              const w = Math.max(3, Math.min(100, (m.value / m.max) * 100));
+              return (
+                <div
+                  key={m.source}
+                  className="flex items-center gap-2"
+                  title={`${m.source}: ${m.value} ${m.unit}`}
+                >
+                  <span className="w-16 shrink-0 text-[11px] font-medium text-slate-600">{m.source}</span>
+                  <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+                    <div className="h-full rounded-full bg-indigo-500" style={{ width: `${w}%` }} />
+                  </div>
+                  <span className="w-28 shrink-0 text-right text-[10px] font-mono text-slate-500 tabular-nums">
+                    {m.value} <span className="text-slate-400">{m.unit}</span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-slate-400 mt-1.5">Bars are scaled per source — units differ, so lengths aren’t comparable across rows.</p>
+        </div>
+      ) : (
+        <div>
+          <span className="text-[10px] uppercase tracking-wide text-slate-400">Sources</span>
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {allSources.map((s) => {
+              const on = presentSources.includes(s);
+              return (
+                <span
+                  key={s}
+                  title={on ? `${s} contributed this level` : `${s} did not contribute for this line`}
+                  className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${
+                    on
+                      ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                      : 'bg-slate-50 text-slate-400 border-dashed border-slate-200'
+                  }`}
+                >
+                  {on && <span aria-hidden>✓</span>}
+                  {s}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

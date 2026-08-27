@@ -27,10 +27,19 @@ export const EvidenceSpine: React.FC<EvidenceSpineProps> = ({ tracks, nLayers, d
         {TRACKS.map((tr) => {
           const s = tracks[tr.key]?.score || 0;
           const on = s > 0;
+          // Level tracks (expression/proteomics) carry a percentile; categorical
+          // tracks (mutation/fusion/CNA/signature) are just present or absent.
+          const readout = !on
+            ? tr.kind === 'call'
+              ? 'absent'
+              : 'no signal'
+            : tr.kind === 'call'
+            ? 'present'
+            : `${pct(s)}th percentile`;
           return (
             <span
               key={tr.key}
-              title={`${tr.label}: ${on ? pct(s) + '%' : 'no signal'}`}
+              title={`${tr.label}: ${readout}`}
               className={`w-4 h-[9px] rounded-[2px] block ${on ? '' : 'ring-1 ring-inset ring-slate-200'}`}
               style={on ? { background: tr.color, opacity: segAlpha(s) } : undefined}
             />

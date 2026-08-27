@@ -166,6 +166,45 @@ export function mockCellLineDetailResponse(geneRaw: string, modelId: string): Ce
     .slice(0, 5)
     .map(({ x, sim }) => ({ model_id: x.model_id, name: x.name, similarity: sim }));
 
+  const exprLevel = round(0.3 + rand('rna' + gene + p.model_id) * 0.69, 3);
+  const protLevel = rand('prot' + gene + p.model_id) > 0.3 ? round(0.2 + rand('prot2' + gene + p.model_id) * 0.79, 3) : null;
+
+  // Which datasets contributed — DepMap always present for expression.
+  const exprSources = [
+    'DepMap',
+    ...(rand('hpa' + gene + p.model_id) > 0.4 ? ['HPA'] : []),
+    ...(rand('geo' + gene + p.model_id) > 0.6 ? ['GEO'] : []),
+  ];
+  const protSources =
+    protLevel != null
+      ? [
+          ...(rand('procan' + gene + p.model_id) > 0.35 ? ['ProCan'] : []),
+          ...(rand('ccle' + gene + p.model_id) > 0.45 ? ['CCLE'] : []),
+        ]
+      : [];
+
+  // Raw per-source measurements. Units differ per source; `max` sets each bar's
+  // own scale. Values track the modality level so the numbers stay coherent.
+  const EXPR_UNIT: Record<string, { unit: string; max: number }> = {
+    DepMap: { unit: 'log2(TPM+1)', max: 16 },
+    HPA: { unit: 'nTPM', max: 140 },
+    GEO: { unit: 'z-score', max: 4 },
+  };
+  const PROT_UNIT: Record<string, { unit: string; max: number }> = {
+    ProCan: { unit: 'log2 intensity', max: 10 },
+    CCLE: { unit: 'norm. quant', max: 6 },
+  };
+  const exprMeasurements = exprSources.map((s) => {
+    const { unit, max } = EXPR_UNIT[s];
+    const v = exprLevel * max * (0.7 + rand('em' + s + gene + p.model_id) * 0.3);
+    return { source: s, value: round(Math.min(v, max), 2), unit, max };
+  });
+  const protMeasurements = protSources.map((s) => {
+    const { unit, max } = PROT_UNIT[s];
+    const v = (protLevel ?? 0) * max * (0.7 + rand('pm' + s + gene + p.model_id) * 0.3);
+    return { source: s, value: round(Math.min(v, max), 2), unit, max };
+  });
+
   return {
     gene,
     ensg: 'ENSG' + (10000000 + Math.floor(rand(gene) * 8999999)),
@@ -179,8 +218,12 @@ export function mockCellLineDetailResponse(geneRaw: string, modelId: string): Ce
     p_mutation: driver ? round(0.6 + rand('pm' + p.model_id) * 0.39, 3) : (rand('pm' + p.model_id) > 0.5 ? round(rand('pm2' + p.model_id) * 0.4, 3) : null),
     p_fusion: rand('pf' + p.model_id) > 0.75 ? round(rand('pf2' + p.model_id), 3) : null,
     has_cna_alteration: rand('cna' + gene + p.model_id) > 0.6,
-    expression_level: round(0.3 + rand('rna' + gene + p.model_id) * 0.69, 3),
-    proteomics_level: rand('prot' + gene + p.model_id) > 0.3 ? round(0.2 + rand('prot2' + gene + p.model_id) * 0.79, 3) : null,
+    expression_level: exprLevel,
+    proteomics_level: protLevel,
+    expression_sources: exprSources,
+    proteomics_sources: protSources,
+    expression_measurements: exprMeasurements,
+    proteomics_measurements: protMeasurements,
     metadata: {
       lineage: p.lineage,
       lineage_subtype: p.lineage_subtype,

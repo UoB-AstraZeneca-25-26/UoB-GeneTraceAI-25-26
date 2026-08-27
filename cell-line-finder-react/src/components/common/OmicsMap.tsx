@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { TrackScores } from '../../types';
 import { fetchCellLineDetail, toCellLineDetail } from '../../lib/api';
-import { TRACKS, pct } from '../../lib/evidence';
+import { TRACKS, pct, levelBand } from '../../lib/evidence';
 import { Loader2 } from 'lucide-react';
 
 interface OmicsMapProps {
@@ -219,7 +219,7 @@ export const OmicsMap: React.FC<OmicsMapProps> = ({ gene, lines, onSelect }) => 
                 {t.label}
               </text>
               <text x={xTrackL + 14} y={y + 9} dominantBaseline="central" style={{ fontSize: 8.5, fill: '#94a3b8', fontWeight: 500 }}>
-                {t.kind === 'call' ? 'categorical' : `avg ${strength}%`}
+                {t.kind === 'call' ? 'present / absent' : `avg ${strength}th pct`}
               </text>
             </g>
           );
@@ -268,15 +268,22 @@ export const OmicsMap: React.FC<OmicsMapProps> = ({ gene, lines, onSelect }) => 
             <strong className="text-slate-700">{hoveredRow.cellLine}</strong>{' '}
             {activeTracks
               .filter((t) => (hoveredRow.tracks[t.key]?.score ?? 0) > 0)
-              .map((t) =>
-                t.kind === 'call'
-                  ? t.label
-                  : `${t.label} ${pct(hoveredRow.tracks[t.key]!.score)}%`
-              )
+              .map((t) => {
+                if (t.kind === 'call') return `${t.label} ✓`;
+                const s = hoveredRow.tracks[t.key]!.score;
+                return `${t.label} ${levelBand(s).label} (${pct(s)}th pct)`;
+              })
               .join(' · ') || 'no measured signal'}
           </span>
         )}
       </div>
+
+      {/* How to read — keeps the numbers from looking arbitrary */}
+      <p className="text-[11px] text-slate-400 mt-2 px-1 leading-relaxed">
+        <strong className="text-slate-500">How to read:</strong> expression &amp; proteomics are shown as
+        within-gene percentiles — 0 = lowest, 100 = highest across cell lines (a relative level, not a
+        probability). Mutation, fusion &amp; copy number are categorical, drawn only when present.
+      </p>
     </div>
   );
 };

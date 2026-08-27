@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ALL_GENES } from '../../lib/mockData';
 import { QueryParams } from '../../types';
 import { GeneSearch } from '../common/GeneSearch';
-import { Search, X } from 'lucide-react';
+import { Search, X, Eraser } from 'lucide-react';
 
 interface QueryBuilderProps {
   initialParams: QueryParams;
@@ -36,6 +36,15 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({ initialParams, onSub
     }
     setError(null);
     onSubmit({ targets, exclusions, lineage: 'Any', topK });
+  };
+
+  const nothingSelected = targets.length === 0 && exclusions.length === 0 && topK === 5;
+
+  const handleClear = () => {
+    setTargets([]);
+    setExclusions([]);
+    setTopK(5);
+    setError(null);
   };
 
   // Genes not in the quick-pick grid are shown as removable chips.
@@ -170,13 +179,24 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({ initialParams, onSub
           </div>
         </div>
 
-        <button
-          type="submit"
-          className="w-full flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-lg shadow-sm transition"
-        >
-          <Search className="w-4 h-4" />
-          <span>Find Cell Lines</span>
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            type="button"
+            onClick={handleClear}
+            disabled={nothingSelected}
+            className="sm:w-44 flex items-center justify-center gap-2 border border-slate-300 text-slate-600 font-medium py-3 rounded-lg transition hover:bg-slate-50 hover:text-slate-800 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+          >
+            <Eraser className="w-4 h-4" />
+            <span>Clear filters</span>
+          </button>
+          <button
+            type="submit"
+            className="flex-1 flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-lg shadow-sm transition"
+          >
+            <Search className="w-4 h-4" />
+            <span>Find Cell Lines</span>
+          </button>
+        </div>
       </form>
     </div>
   );

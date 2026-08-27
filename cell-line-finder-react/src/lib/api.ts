@@ -13,6 +13,7 @@ import {
   ResultMeta,
   SelectivityRanked,
   SingleRanked,
+  SourceMeasurement,
   TrackScores,
 } from '../types';
 
@@ -36,7 +37,7 @@ const TOP_N = 30;
 // ---- Offline mock mode -------------------------------------------------------
 // Flip to false to use the live API. When true, all fetchers return local mock
 // data in the same shapes as the live endpoints.
-export const USE_MOCK = false;
+export const USE_MOCK = true;
 
 // ---------- shared line metadata ----------
 export interface LineMetadata {
@@ -100,6 +101,15 @@ export interface CellLineDetailApiResponse {
   has_cna_alteration: boolean;
   expression_level: number | null;
   proteomics_level: number | null;
+  // Which datasets each measured layer drew evidence from. Optional: older
+  // deployments of /gene/detail don't send them, in which case the UI simply
+  // shows the level without a source breakdown.
+  expression_sources?: string[] | null;
+  proteomics_sources?: string[] | null;
+  // Raw per-source measurements behind each level (DepMap TPM, HPA nTPM, etc.).
+  // Optional — deployments that don't send them fall back to the source chips.
+  expression_measurements?: { source: string; value: number; unit?: string; max?: number }[] | null;
+  proteomics_measurements?: { source: string; value: number; unit?: string; max?: number }[] | null;
   metadata: Record<string, string | number | null>;
   rna_alternatives: { model_id: string; name: string; similarity: number }[];
 }
@@ -395,6 +405,26 @@ export function toCellLineDetail(resp: CellLineDetailApiResponse): CellLineDetai
   }
 
   const name = displayName(resp.cell_line.name, resp.cell_line.model_id);
+  const cleanSources = (v: unknown): string[] =>
+    Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string' && s.trim() !== '') : [];
+  const cleanMeasurements = (v: unknown): SourceMeasurement[] => {
+    if (!Array.isArray(v)) return [];
+    const items = v
+      .filter(
+        (m): m is { source: string; value: number; unit?: string; max?: number } =>
+          !!m && typeof m.source === 'string' && typeof m.value === 'number' && Number.isFinite(m.value)
+      )
+      .map((m) => ({
+        source: m.source,
+        value: m.value,
+        unit: typeof m.unit === 'string' ? m.unit : '',
+        max: typeof m.max === 'number' && m.max > 0 ? m.max : 0,
+      }));
+    // Bars scale per-source; if a source didn't send its own max, fall back to
+    // the largest value in the group so the bar still renders sensibly.
+    const groupMax = Math.max(...items.map((m) => m.value), 0.0001);
+    return items.map((m) => ({ ...m, max: m.max > 0 ? m.max : groupMax }));
+  };
 
   return {
     gene: resp.gene,
@@ -410,6 +440,18 @@ export function toCellLineDetail(resp: CellLineDetailApiResponse): CellLineDetai
     pMutation: resp.p_mutation,
     pFusion: resp.p_fusion,
     hasCnaAlteration: resp.has_cna_alteration,
+    expressionLevel:
+      typeof resp.expression_level === 'number' && Number.isFinite(resp.expression_level)
+        ? resp.expression_level
+        : null,
+    proteomicsLevel:
+      typeof resp.proteomics_level === 'number' && Number.isFinite(resp.proteomics_level)
+        ? resp.proteomics_level
+        : null,
+    expressionSources: cleanSources(resp.expression_sources),
+    proteomicsSources: cleanSources(resp.proteomics_sources),
+    expressionMeasurements: cleanMeasurements(resp.expression_measurements),
+    proteomicsMeasurements: cleanMeasurements(resp.proteomics_measurements),
     tracks,
     metadata: cleanMetadata(resp.metadata),
     alternatives: (resp.rna_alternatives || []).map((a) => ({
