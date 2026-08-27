@@ -145,9 +145,6 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({ initialParams, onSub
               );
             })}
           </div>
-          <p className="text-[11px] text-slate-400 mt-2">
-            Live ranking uses the first target and first exclusion; extras are recorded but not yet applied.
-          </p>
         </div>
 
         {/* Number of recommendations */}

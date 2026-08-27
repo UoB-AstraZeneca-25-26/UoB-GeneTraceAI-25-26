@@ -2,8 +2,8 @@
 // adapter and view runs identically. Toggle via USE_MOCK in api.ts.
 import type {
   JointApiResponse,
-  ExcludeApiResponse,
-  ExcludeApiLine,
+  ExcludeManyApiResponse,
+  ExcludeManyApiLine,
   CellLineDetailApiResponse,
   LineMetadata,
 } from './api';
@@ -126,24 +126,30 @@ function mockJointResponse(genesRaw: string[]): JointApiResponse {
 export const mockGeneResponse = (gene: string): JointApiResponse => mockJointResponse([gene]);
 export const mockGenesResponse = (genes: string[]): JointApiResponse => mockJointResponse(genes);
 
-// ---------- /exclude ----------
-export function mockExcludeResponse(aRaw: string, bRaw: string): ExcludeApiResponse {
+// ---------- /exclude/many ----------
+export function mockExcludeManyResponse(aRaw: string, bsRaw: string[]): ExcludeManyApiResponse {
   const a = clampGene(aRaw);
-  const b = clampGene(bRaw);
-  const lines: ExcludeApiLine[] = POOL.map((p) => {
+  const bs = bsRaw.map(clampGene).filter(Boolean);
+  const lines: ExcludeManyApiLine[] = POOL.map((p) => {
     const sa = round(0.85 + rand(a + p.model_id) * 0.149);
-    const sb = round(rand(b + p.model_id) * 0.5);
+    const exclusion_scores: Record<string, number> = {};
+    let selectivity = sa;
+    bs.forEach((b) => {
+      const sb = round(rand(b + p.model_id) * 0.5);
+      exclusion_scores[b] = sb;
+      selectivity *= 1 - sb;
+    });
     return {
       model_id: p.model_id,
       name: p.name,
       score_a: sa,
-      score_b: sb,
-      selectivity: round(sa * (1 - sb)),
+      exclusion_scores,
+      selectivity: round(selectivity),
       metadata: metaOf(p),
     };
   }).sort((x, y) => y.selectivity - x.selectivity);
 
-  return { gene_a: a, gene_b: b, lineage: [], total_ranked: 912, lines };
+  return { gene_a: a, excluded_genes: bs, lineage: [], total_ranked: 912, lines };
 }
 
 // ---------- /gene/detail ----------
@@ -173,11 +179,8 @@ export function mockCellLineDetailResponse(geneRaw: string, modelId: string): Ce
     p_mutation: driver ? round(0.6 + rand('pm' + p.model_id) * 0.39, 3) : (rand('pm' + p.model_id) > 0.5 ? round(rand('pm2' + p.model_id) * 0.4, 3) : null),
     p_fusion: rand('pf' + p.model_id) > 0.75 ? round(rand('pf2' + p.model_id), 3) : null,
     has_cna_alteration: rand('cna' + gene + p.model_id) > 0.6,
-<<<<<<< Updated upstream
-=======
     expression_level: round(0.3 + rand('rna' + gene + p.model_id) * 0.69, 3),
     proteomics_level: rand('prot' + gene + p.model_id) > 0.3 ? round(0.2 + rand('prot2' + gene + p.model_id) * 0.79, 3) : null,
->>>>>>> Stashed changes
     metadata: {
       lineage: p.lineage,
       lineage_subtype: p.lineage_subtype,

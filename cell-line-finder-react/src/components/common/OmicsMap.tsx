@@ -15,13 +15,8 @@ type LineTracks = { modelId: string; cellLine: string; tracks: TrackScores };
 /**
  * Sankey-style flow: gene → evidence layers → cell lines. The per-layer signal
  * isn't in the ranking response, so this fetches the detail endpoint for each
-<<<<<<< Updated upstream
- * shown line (in parallel) and builds the map from real track data. Only the
- * layers the pipeline actually reports (mutation / fusion / CNA) appear.
-=======
  * shown line (in parallel) and builds the map from real track data. Expression
  * and proteomics are 0-1 levels; mutation / fusion / CNA are categorical.
->>>>>>> Stashed changes
  */
 export const OmicsMap: React.FC<OmicsMapProps> = ({ gene, lines, onSelect }) => {
   const [data, setData] = useState<LineTracks[] | null>(null);
@@ -87,30 +82,12 @@ export const OmicsMap: React.FC<OmicsMapProps> = ({ gene, lines, onSelect }) => 
   if (activeTracks.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center text-sm text-slate-500">
-<<<<<<< Updated upstream
-        None of the top lines have alteration-layer signal (mutation / fusion / CNA) for {gene}.
-=======
         None of the top lines have measured evidence-layer signal for {gene}.
->>>>>>> Stashed changes
       </div>
     );
   }
 
   // ----- layout geometry -----
-<<<<<<< Updated upstream
-  const W = 660;
-  const rowH = 34;
-  const H = Math.max(activeTracks.length, rows.length) * rowH + 60;
-  const xGene = 70;
-  const xTrack = 320;
-  const xLine = 560;
-  const geneY = H / 2;
-
-  const trackY = (i: number, n: number) => (H - (n - 1) * rowH) / 2 + i * rowH;
-  const lineY = (i: number, n: number) => (H - (n - 1) * rowH) / 2 + i * rowH;
-
-  // Total flow per track (for gene->track ribbon width)
-=======
   const W = 680;
   const rowH = 46;
   const padTop = 54;
@@ -132,7 +109,6 @@ export const OmicsMap: React.FC<OmicsMapProps> = ({ gene, lines, onSelect }) => 
   const lineY = (i: number) => colY(i, rows.length);
 
   // Total flow per track (drives the gene→track ribbon width)
->>>>>>> Stashed changes
   const trackTotals = activeTracks.map((t) =>
     rows.reduce((sum, r) => sum + (r.tracks[t.key]?.score ?? 0), 0)
   );
@@ -143,28 +119,6 @@ export const OmicsMap: React.FC<OmicsMapProps> = ({ gene, lines, onSelect }) => 
     return `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`;
   };
 
-<<<<<<< Updated upstream
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-      <p className="text-xs text-slate-500 mb-2 px-1">
-        Evidence flow for <strong>{gene}</strong>: the gene connects through each reported alteration
-        layer to the top cell lines. Ribbon thickness follows the per-layer signal. Hover a line to
-        trace its evidence; click to inspect.
-      </p>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={`Omics evidence map for ${gene}`}>
-        {/* gene -> track ribbons */}
-        {activeTracks.map((t, i) => {
-          const y = trackY(i, activeTracks.length);
-          const w = 2 + (trackTotals[i] / maxTrackTotal) * 10;
-          return (
-            <path
-              key={'gt' + t.key}
-              d={ribbon(xGene + 14, geneY, xTrack - 52, y)}
-              fill="none"
-              stroke={t.color}
-              strokeWidth={w}
-              opacity={hover ? 0.12 : 0.28}
-=======
   const hoveredRow = hover ? rows.find((r) => r.modelId === hover) : null;
 
   return (
@@ -204,35 +158,18 @@ export const OmicsMap: React.FC<OmicsMapProps> = ({ gene, lines, onSelect }) => 
               stroke={t.color}
               strokeWidth={w}
               opacity={hover ? 0.1 : 0.26}
->>>>>>> Stashed changes
               strokeLinecap="round"
             />
           );
         })}
 
         {/* track -> line ribbons */}
-<<<<<<< Updated upstream
-        {rows.map((r, li) => {
-          const yL = lineY(li, rows.length);
-=======
         {rows.map((r) => {
           const yL = lineY(rows.indexOf(r));
->>>>>>> Stashed changes
           const dim = hover && hover !== r.modelId;
           return activeTracks.map((t, ti) => {
             const s = r.tracks[t.key]?.score ?? 0;
             if (s <= 0) return null;
-<<<<<<< Updated upstream
-            const yT = trackY(ti, activeTracks.length);
-            return (
-              <path
-                key={`tl-${r.modelId}-${t.key}`}
-                d={ribbon(xTrack + 52, yT, xLine - 6, yL)}
-                fill="none"
-                stroke={t.color}
-                strokeWidth={2 + s * 9}
-                opacity={dim ? 0.06 : 0.45}
-=======
             const yT = trackY(ti);
             return (
               <path
@@ -242,33 +179,12 @@ export const OmicsMap: React.FC<OmicsMapProps> = ({ gene, lines, onSelect }) => 
                 stroke={t.color}
                 strokeWidth={2 + s * 10}
                 opacity={dim ? 0.05 : hover === r.modelId ? 0.6 : 0.4}
->>>>>>> Stashed changes
                 strokeLinecap="round"
               />
             );
           });
         })}
 
-<<<<<<< Updated upstream
-        {/* gene node */}
-        <g>
-          <circle cx={xGene} cy={geneY} r={16} fill="#4f46e5" />
-          <text x={xGene} y={geneY + 1} textAnchor="middle" dominantBaseline="central" className="fill-white" style={{ fontSize: 11, fontWeight: 700 }}>
-            {gene.length > 5 ? gene.slice(0, 5) : gene}
-          </text>
-        </g>
-
-        {/* track nodes */}
-        {activeTracks.map((t, i) => {
-          const y = trackY(i, activeTracks.length);
-          return (
-            <g key={'tn' + t.key}>
-              <rect x={xTrack - 52} y={y - 11} width={104} height={22} rx={6} fill={t.color} opacity={0.14} />
-              <rect x={xTrack - 52} y={y - 11} width={4} height={22} rx={2} fill={t.color} />
-              <text x={xTrack} y={y + 1} textAnchor="middle" dominantBaseline="central" style={{ fontSize: 11, fill: '#334155', fontWeight: 600 }}>
-                {t.label}
-              </text>
-=======
         {/* gene node (pill) */}
         <g>
           <rect
@@ -305,21 +221,15 @@ export const OmicsMap: React.FC<OmicsMapProps> = ({ gene, lines, onSelect }) => 
               <text x={xTrackL + 14} y={y + 9} dominantBaseline="central" style={{ fontSize: 8.5, fill: '#94a3b8', fontWeight: 500 }}>
                 {t.kind === 'call' ? 'categorical' : `avg ${strength}%`}
               </text>
->>>>>>> Stashed changes
             </g>
           );
         })}
 
         {/* line nodes */}
         {rows.map((r, i) => {
-<<<<<<< Updated upstream
-          const y = lineY(i, rows.length);
-          const active = hover === r.modelId;
-=======
           const y = lineY(i);
           const active = hover === r.modelId;
           const nLayers = activeTracks.filter((t) => (r.tracks[t.key]?.score ?? 0) > 0).length;
->>>>>>> Stashed changes
           return (
             <g
               key={'ln' + r.modelId}
@@ -329,11 +239,6 @@ export const OmicsMap: React.FC<OmicsMapProps> = ({ gene, lines, onSelect }) => 
               style={{ cursor: 'pointer' }}
             >
               <circle cx={xLine} cy={y} r={active ? 7 : 5} fill={active ? '#0f172a' : '#6366f1'} />
-<<<<<<< Updated upstream
-              <text x={xLine + 12} y={y + 1} dominantBaseline="central" style={{ fontSize: 11, fill: active ? '#0f172a' : '#475569', fontWeight: active ? 700 : 500 }}>
-                {r.cellLine}
-              </text>
-=======
               <text
                 x={xLine + 13}
                 y={y - 3}
@@ -345,33 +250,19 @@ export const OmicsMap: React.FC<OmicsMapProps> = ({ gene, lines, onSelect }) => 
               <text x={xLine + 13} y={y + 9} dominantBaseline="central" style={{ fontSize: 8.5, fill: '#94a3b8' }}>
                 {nLayers} layer{nLayers === 1 ? '' : 's'}
               </text>
->>>>>>> Stashed changes
             </g>
           );
         })}
       </svg>
 
-<<<<<<< Updated upstream
-      <div className="flex flex-wrap gap-3 mt-2 px-1 text-xs text-slate-500">
-=======
       {/* legend + hover readout */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 pt-3 border-t border-slate-100 px-1 text-xs text-slate-500">
->>>>>>> Stashed changes
         {activeTracks.map((t) => (
           <span key={t.key} className="inline-flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-sm" style={{ background: t.color }} />
             {t.label}
           </span>
         ))}
-<<<<<<< Updated upstream
-        {hover && (
-          <span className="ml-auto font-mono text-slate-400">
-            {rows.find((r) => r.modelId === hover)?.cellLine}:{' '}
-            {activeTracks
-              .filter((t) => (rows.find((r) => r.modelId === hover)?.tracks[t.key]?.score ?? 0) > 0)
-              .map((t) => `${t.label} ${pct(rows.find((r) => r.modelId === hover)!.tracks[t.key]!.score)}%`)
-              .join(' · ') || 'no alteration signal'}
-=======
         {hoveredRow && (
           <span className="ml-auto font-mono text-[11px] text-slate-500">
             <strong className="text-slate-700">{hoveredRow.cellLine}</strong>{' '}
@@ -383,7 +274,6 @@ export const OmicsMap: React.FC<OmicsMapProps> = ({ gene, lines, onSelect }) => 
                   : `${t.label} ${pct(hoveredRow.tracks[t.key]!.score)}%`
               )
               .join(' · ') || 'no measured signal'}
->>>>>>> Stashed changes
           </span>
         )}
       </div>

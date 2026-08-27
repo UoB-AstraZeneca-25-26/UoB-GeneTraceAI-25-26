@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, BarChart3, Info, RotateCcw, Dna, Sparkles } from 'lucide-react';
+import { Search, BarChart3, Info, RotateCcw, Dna } from 'lucide-react';
 import { ViewType } from '../../types';
 
 interface SidebarProps {
@@ -49,16 +49,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, onReset,
           </button>
 
           <button
-            onClick={() => setView('assistant')}
-            className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
-              currentView === 'assistant' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-            }`}
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Assistant</span>
-          </button>
-
-          <button
             onClick={() => setView('about')}
             className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
               currentView === 'about' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
@@ -79,9 +69,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, onReset,
           <RotateCcw className="w-4 h-4" />
           <span>New Query</span>
         </button>
-        <div className="text-center">
-          <span className="text-[11px] text-slate-400 uppercase tracking-wider">MVP Prototype</span>
-        </div>
       </div>
     </aside>
   );

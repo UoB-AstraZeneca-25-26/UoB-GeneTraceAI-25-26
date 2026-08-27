@@ -4,7 +4,8 @@ import { fetchCellLineDetail, toCellLineDetail } from '../../lib/api';
 import { confTier, pct } from '../../lib/evidence';
 import { TierPill } from '../common/TierPill';
 import { EvidenceSpine } from '../common/EvidenceSpine';
-import { ArrowLeft, AlertCircle, Loader2, Zap, ChevronRight } from 'lucide-react';
+import { MethodologySidebar } from '../common/MethodologySidebar';
+import { ArrowLeft, AlertCircle, Loader2, Sparkles, Zap, ChevronRight } from 'lucide-react';
 
 interface ProfileViewProps {
   target: InspectTarget;
@@ -16,6 +17,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
   const [detail, setDetail] = useState<CellLineDetail | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [showMethodology, setShowMethodology] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,6 +81,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
   }
 
   return (
+    <>
     <div className="space-y-6 max-w-5xl mx-auto">
       <div>
         {BackButton}
@@ -99,6 +102,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
         <StatCard label={`Rank for ${detail.gene}`} value={`#${detail.rank.toLocaleString()}`} sub={`of ${detail.total.toLocaleString()}`} />
         <StatCard label="Score" value={detail.score.toFixed(4)} sub={`${confTier(detail.tier).label} tier`} />
         <StatCard label="Evidence layers" value={String(detail.nLayers)} sub={detail.driverAlteration ? 'driver alteration present' : 'no driver alteration'} />
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowMethodology(true)}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-indigo-600 text-indigo-600 text-sm font-semibold transition-colors hover:bg-indigo-600 hover:text-white"
+        >
+          <Sparkles className="w-4 h-4" />
+          Explain scoring methodology
+        </button>
       </div>
 
       {/* Evidence layers reported by this endpoint */}
@@ -182,6 +195,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
         </div>
       )}
     </div>
+
+    <MethodologySidebar
+      isOpen={showMethodology}
+      onClose={() => setShowMethodology(false)}
+      geneName={detail.gene}
+      ensgId={detail.ensg}
+      modelId={detail.modelId}
+      cellLineName={detail.cellLine}
+    />
+    </>
   );
 };
 
