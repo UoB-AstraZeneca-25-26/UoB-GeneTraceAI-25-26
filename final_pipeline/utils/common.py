@@ -29,9 +29,9 @@ def connect(read_only: bool = True) -> duckdb.DuckDBPyConnection:
 
 
 def gene_universe(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
-    dm_cols  = {c for c in con.execute("DESCRIBE main.depmap_expr").df()["column_name"] if c != "profileid"}
-    geo_cols = {c for c in con.execute("DESCRIBE main.geo_expr").df()["column_name"] if c != "sample"}
-    hpa_genes = set(con.execute("SELECT DISTINCT gene FROM main.hpa_rna").df()["gene"])
+    dm_cols  = {c for c in con.execute("DESCRIBE main.depmap_expr").df()["column_name"] if c != "profile_id"}
+    geo_cols = {c for c in con.execute("DESCRIBE main.geo_expr").df()["column_name"] if c != "gsm_id"}
+    hpa_genes = set(con.execute("SELECT DISTINCT gene_id FROM main.hpa_rna").df()["gene_id"])
     gene = con.execute("SELECT gene_id, hugo_symbol FROM main.gene").df()
     common = dm_cols & geo_cols & hpa_genes & set(gene.gene_id)
     return gene[gene.gene_id.isin(common)].reset_index(drop=True)
@@ -60,11 +60,11 @@ def _to_log2(v: np.ndarray) -> np.ndarray:
 
 def fetch_depmap(con, gene_ids: list[str]) -> pd.DataFrame:
     cols = ", ".join(f'"{g}"' for g in gene_ids)
-    wide = con.execute(f'SELECT profileid, {cols} FROM main.depmap_expr').df()
+    wide = con.execute(f'SELECT profile_id, {cols} FROM main.depmap_expr').df()
     prof = con.execute(
-        "SELECT profileid, model_id FROM main.depmap_profiles WHERE datatype = 'rna'"
-    ).df().drop_duplicates("profileid")
-    wide = wide.merge(prof, on="profileid", how="inner").drop(columns=["profileid"])
+        "SELECT profile_id, model_id FROM main.depmap_profiles WHERE datatype = 'rna'"
+    ).df().drop_duplicates("profile_id")
+    wide = wide.merge(prof, on="profile_id", how="inner").drop(columns=["profile_id"])
     long = wide.melt(id_vars="model_id", var_name="gene_id", value_name="value").dropna()
     if detect_scale(long["value"]) == "linear":
         long["value"] = _to_log2(long["value"].values)
@@ -76,8 +76,8 @@ def fetch_depmap(con, gene_ids: list[str]) -> pd.DataFrame:
 def fetch_hpa(con, gene_ids: list[str]) -> pd.DataFrame:
     ph = ", ".join(f"'{g}'" for g in gene_ids)
     long = con.execute(
-        f"SELECT gene AS gene_id, model_id, ntpm AS value FROM main.hpa_rna "
-        f"WHERE gene IN ({ph}) AND is_ambiguous = FALSE"
+        f"SELECT gene_id, model_id, ntpm AS value FROM main.hpa_rna "
+        f"WHERE gene_id IN ({ph}) AND is_ambiguous = FALSE"
     ).df().dropna()
     if detect_scale(long["value"]) == "linear":
         long["value"] = _to_log2(long["value"].values)
@@ -88,12 +88,12 @@ def fetch_hpa(con, gene_ids: list[str]) -> pd.DataFrame:
 
 def fetch_geo(con, gene_ids: list[str]) -> pd.DataFrame:
     cols = ", ".join(f'"{g}"' for g in gene_ids)
-    wide = con.execute(f'SELECT sample, {cols} FROM main.geo_expr').df()
+    wide = con.execute(f'SELECT gsm_id, {cols} FROM main.geo_expr').df()
     gi   = con.execute(
         "SELECT geo_accession, model_id FROM main.geo_info WHERE model_id IS NOT NULL"
     ).df().drop_duplicates("geo_accession")
-    wide = wide.merge(gi, left_on="sample", right_on="geo_accession", how="inner").drop(
-        columns=["sample", "geo_accession"])
+    wide = wide.merge(gi, left_on="gsm_id", right_on="geo_accession", how="inner").drop(
+        columns=["gsm_id", "geo_accession"])
     long = wide.melt(id_vars="model_id", var_name="gene_id", value_name="value").dropna()
     if detect_scale(long["value"]) == "linear":
         long["value"] = _to_log2(long["value"].values)
