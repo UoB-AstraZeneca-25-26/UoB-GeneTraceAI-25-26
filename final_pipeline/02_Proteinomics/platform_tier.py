@@ -29,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "utils"))
 import common as C
 
 TIER_CUTOFFS = {"consistent": 0.5, "cautious": 0.3}
-MIN_SHARED   = 30
+MIN_SHARED   = 44
 
 _PROCAN_ID_COLS = {"gdsc_model_name", "sanger_model_id", "model_id",
                    "matched_via", "n_model_id", "is_ambiguous"}
