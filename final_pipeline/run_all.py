@@ -19,8 +19,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 STAGES = [
     (0, "00_harmonisation", "Check warehouse exists"),
-    (1, "01_Transcriptomics", "RNA z-scores (3 sources × all genes)      ~5-10 min"),
-    (2, "02_Proteinomics",    "Protein tier + z-scores (2 platforms)     ~3-5 min"),
+    (1, "01_Transcriptomics", "RNA z-scores (transcriptomics.py, full genome)  ~2h"),
+    (2, "02_Proteinomics",    "Protein tier + z-scores (M2)              ~15-20 min"),
     (3, "03_Altercations",    "Mutations + Fusions + CNA scoring"),
     (4, "Scoring",            "core_score + driver routing + tiers"),
     (5, "Ranking",            "Evidence ledger (all pairs)"),
@@ -37,14 +37,14 @@ def run_stage_0():
 
 def run_stage_1():
     from importlib import import_module
-    mod = import_module("01_Transcriptomics.rna_scorer")
+    mod = import_module("01_Transcriptomics.run_transcriptomics_stage")
     mod.run()
 
 
 def run_stage_2():
     from importlib import import_module
     import_module("02_Proteinomics.platform_tier").run()
-    import_module("02_Proteinomics.protein_scorer").run()
+    import_module("02_Proteinomics.run_protein_m2_stage").run()
 
 
 def run_stage_3():

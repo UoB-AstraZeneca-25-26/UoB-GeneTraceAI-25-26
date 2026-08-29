@@ -1,0 +1,8 @@
+{
+  "isoform_corr": 0.330095376705089,
+  "isoform_min_overlap": 5,
+  "agree_low": 0.2664360998430314,
+  "agree_high": 0.42549133919066634,
+  "min_shared": 55,
+  "seed_overlap": 5
+}
