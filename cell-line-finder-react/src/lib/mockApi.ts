@@ -164,7 +164,7 @@ export function mockCellLineDetailResponse(geneRaw: string, modelId: string): Ce
     .map((x) => ({ x, sim: round(0.55 + rand(p.model_id + x.model_id) * 0.35, 3) }))
     .sort((m, n) => n.sim - m.sim)
     .slice(0, 5)
-    .map(({ x, sim }) => ({ model_id: x.model_id, name: x.name, similarity: sim }));
+    .map(({ x, sim }) => ({ model_id: x.model_id, name: x.name, similarity: sim, lineage: x.lineage, primary_disease: x.primary_disease }));
 
   const exprLevel = round(0.3 + rand('rna' + gene + p.model_id) * 0.69, 3);
   const protLevel = rand('prot' + gene + p.model_id) > 0.3 ? round(0.2 + rand('prot2' + gene + p.model_id) * 0.79, 3) : null;
@@ -205,6 +205,10 @@ export function mockCellLineDetailResponse(geneRaw: string, modelId: string): Ce
     return { source: s, value: round(Math.min(v, max), 2), unit, max };
   });
 
+  const lineageTotal = POOL.filter((x) => x.lineage === p.lineage).length + Math.floor(rand('lt' + p.lineage) * 40) + 6;
+  const lineageRank = 1 + Math.floor(rand('lr' + gene + p.model_id) * Math.min(lineageTotal - 1, 10));
+  const lineageScore = round(Math.min(1, score * (0.92 + rand('ls' + gene + p.model_id) * 0.12)));
+
   return {
     gene,
     ensg: 'ENSG' + (10000000 + Math.floor(rand(gene) * 8999999)),
@@ -212,6 +216,9 @@ export function mockCellLineDetailResponse(geneRaw: string, modelId: string): Ce
     rank: 1 + Math.floor(rand('r' + gene + p.model_id) * 1522),
     total: 1523,
     score,
+    lineage_score: lineageScore,
+    lineage_rank: lineageRank,
+    lineage_total: lineageTotal,
     tier,
     n_layers: 1 + Math.floor(rand('l' + gene + p.model_id) * 3),
     driver_alteration: driver,
@@ -241,3 +248,12 @@ export function mockCellLineDetailResponse(geneRaw: string, modelId: string): Ce
 }
 
 export const mockDelay = (ms = 350) => new Promise((r) => setTimeout(r, ms));
+
+/** Demo cell-line directory for the Reference lookup (ACH id ↔ name). To be
+ *  replaced by the full DepMap table later. */
+export const CELL_LINE_DIRECTORY: { ach: string; name: string; lineage: string; disease: string }[] = POOL.map((p) => ({
+  ach: p.model_id,
+  name: p.name.toUpperCase(),
+  lineage: p.lineage.replace(/_/g, ' '),
+  disease: p.primary_disease,
+}));

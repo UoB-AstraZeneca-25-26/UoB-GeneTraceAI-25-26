@@ -163,7 +163,7 @@ const StepNode: React.FC<{
   const hoverBgClass = isSkipped ? 'hover:bg-slate-50' : isInverted ? 'hover:bg-amber-50' : 'hover:bg-violet-50';
   const bgClass = isExpanded ? (isSkipped ? 'bg-slate-50' : isInverted ? 'bg-amber-50' : 'bg-violet-50') : 'bg-white';
   const textClass = isSkipped ? 'text-slate-400' : 'text-slate-800';
-  const circleActiveBg = isInverted ? 'bg-amber-500' : 'bg-indigo-600';
+  const circleActiveBg = isInverted ? 'bg-amber-500' : 'bg-mulberry-600';
 
   return (
     <div>
@@ -206,7 +206,7 @@ const StepNode: React.FC<{
       )}
 
       {index < total - 1 && (
-        <div className={`w-0.5 h-4 ml-[42px] ${isSkipped ? 'bg-slate-200' : 'bg-indigo-200'}`} />
+        <div className={`w-0.5 h-4 ml-[42px] ${isSkipped ? 'bg-slate-200' : 'bg-mulberry-200'}`} />
       )}
     </div>
   );

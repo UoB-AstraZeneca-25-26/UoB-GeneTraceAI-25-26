@@ -5,6 +5,7 @@ import { ResultsTable } from './components/views/ResultsTable';
 import { ProfileView } from './components/views/ProfileView';
 import { AboutPage } from './components/views/AboutPage';
 import { GuidePage } from './components/views/GuidePage';
+import { ReferencePage } from './components/views/ReferencePage';
 // Assistant chatbot page removed from routing/navigation — kept for possible reuse.
 // import { AssistantPanel } from './components/views/AssistantPanel';
 import { fetchRanking } from './lib/api';
@@ -104,7 +105,7 @@ export default function App() {
   const visibleResults = results.slice(0, queryParams.topK);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-900">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#fdfbfc] text-slate-900">
       <Sidebar
         currentView={currentView}
         setView={setCurrentView}
@@ -117,6 +118,7 @@ export default function App() {
           <QueryBuilder
             initialParams={queryParams}
             onSubmit={handleSearchSubmit}
+            onOpenReference={() => setCurrentView('reference')}
           />
         )}
 
@@ -145,6 +147,8 @@ export default function App() {
         {currentView === 'guide' && (
           <GuidePage onStart={() => setCurrentView('query')} />
         )}
+
+        {currentView === 'reference' && <ReferencePage />}
       </main>
     </div>
   );

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { GeneAliasInfo, InspectTarget, QueryParams, RankedCellLine, ResultMeta } from '../../types';
-import { NetworkGraph } from '../common/NetworkGraph';
-import { OmicsMap } from '../common/OmicsMap';
+import { EvidenceMatrix } from '../common/EvidenceMatrix';
 import { LineagePanel } from '../common/LineagePanel';
-import { Trophy, ChevronRight, AlertCircle, Loader2, Table2, Network, GitFork, Layers } from 'lucide-react';
+import { ChevronRight, AlertCircle, Loader2, Table2, LayoutGrid, Layers } from 'lucide-react';
 import { AGENT_API_URL } from '../../config';
 
 interface ResultsTableProps {
@@ -25,14 +24,9 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   onRetry,
   onInspect,
 }) => {
-  const [selectedInDropdown, setSelectedInDropdown] = useState<string>('');
   const [view, setView] = useState<string>('table');
   const [aliasInfo, setAliasInfo] = useState<Record<string, GeneAliasInfo>>({});
   const [aliasFailed, setAliasFailed] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    if (results.length > 0) setSelectedInDropdown(results[0].modelId);
-  }, [results]);
 
   // Gene full-name / alias enrichment — purely additive, never blocks or alters the ranking.
   const aliasGenes = React.useMemo(() => {
@@ -68,10 +62,40 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aliasGenes.join(',')]);
 
+  // Lineage filter for the table. Declared here (before any early return) so hook
+  // order stays constant. When a lineage is picked, the table shows only that
+  // lineage's lines, re-ranked by their in-lineage score (highest first).
+  const [lineageFilter, setLineageFilter] = useState<string>('all');
+  const resultSig = results.map((r) => r.modelId).join(',');
+  useEffect(() => {
+    setLineageFilter('all');
+  }, [resultSig]);
+
+  const lineageCounts = React.useMemo(() => {
+    const m = new Map<string, number>();
+    results.forEach((r) => m.set(r.lineage, (m.get(r.lineage) ?? 0) + 1));
+    return Array.from(m.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [resultSig]);
+
+  const tableRows = React.useMemo(() => {
+    if (lineageFilter === 'all') return results.map((r) => ({ r, displayRank: r.rank, filtered: false }));
+    return results
+      .filter((r) => r.lineage === lineageFilter)
+      .sort((a, b) => b.lineageScore - a.lineageScore)
+      .map((r, i) => ({ r, displayRank: i + 1, filtered: true }));
+  }, [resultSig, lineageFilter]);
+
+  const pillClass = (active: boolean) =>
+    `inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border transition capitalize ${
+      active
+        ? 'bg-mulberry-600 text-white border-mulberry-600'
+        : 'bg-white text-slate-600 border-slate-200 hover:border-mulberry-300 hover:text-mulberry-700'
+    }`;
+
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto text-center py-24 space-y-4">
-        <Loader2 className="w-8 h-8 mx-auto animate-spin text-indigo-600" />
+        <Loader2 className="w-8 h-8 mx-auto animate-spin text-mulberry-600" />
         <p className="text-sm text-slate-500">
           Querying live ranking for <strong>{queryParams.targets[0]}</strong>
           {queryParams.exclusions.length > 0 && (
@@ -115,31 +139,32 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   }
 
   const mode = results[0].mode;
-  const topPick = results[0];
 
-  // Views available per mode. 'omics' (Sankey) needs per-line detail fetches, so
-  // it's single/multi only; 'network' (radial rank graph) works for every mode
-  // that has a comparable per-line score; 'lineages' works for every mode.
+  // Views available per mode. 'omics' (grid) needs per-line detail fetches.
   const VIEW_META: Record<string, { label: string; icon: React.ElementType }> = {
     table: { label: 'Table', icon: Table2 },
-    network: { label: 'Network', icon: Network },
-    omics: { label: 'Omics map', icon: GitFork },
+    omics: { label: 'Evidence grid', icon: LayoutGrid },
     lineages: { label: 'Lineages', icon: Layers },
   };
-  const views =
-    mode === 'single' || mode === 'multi'
-      ? ['table', 'network', 'omics', 'lineages']
-      : mode === 'selectivity'
-      ? ['table', 'network', 'lineages']
-      : ['table', 'lineages'];
+  const views = ['table', 'omics', 'lineages'];
   const activeView = views.includes(view) ? view : 'table';
 
   // Which single gene the detail endpoint is queried for: the primary target.
   // (multi mode's primaryGene is a joined label, so prefer the first real gene.)
   const inspectGene = meta?.genes?.[0] ?? meta?.primaryGene ?? queryParams.targets[0];
+
+  // Genes whose evidence the grid should show: single -> [gene]; multi -> all
+  // targets; selectivity -> target + excluded genes (so you see high-vs-low).
+  const gridGenes =
+    mode === 'multi'
+      ? meta?.genes ?? queryParams.targets
+      : mode === 'selectivity'
+      ? [meta?.primaryGene ?? queryParams.targets[0], ...(meta?.excludedGenes ?? queryParams.exclusions)]
+      : [inspectGene];
+
   const inspect = (modelId: string) => {
     const row = results.find((r) => r.modelId === modelId);
-    onInspect({ gene: inspectGene, modelId, cellLine: row?.cellLine ?? modelId });
+    onInspect({ gene: inspectGene, modelId, cellLine: row?.cellLine ?? modelId, ranked: row });
   };
 
   return (
@@ -226,17 +251,15 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
         {/* Left panel: table or a visualization */}
         {activeView !== 'table' ? (
           <div className="lg:col-span-2">
-            {activeView === 'network' && (
-              <NetworkGraph
-                gene={meta?.primaryGene ?? queryParams.targets.join(' + ')}
-                lines={results}
-                onSelect={inspect}
-              />
-            )}
             {activeView === 'omics' && (
-              <OmicsMap
-                gene={inspectGene}
-                lines={results.slice(0, 6).map((r) => ({ modelId: r.modelId, cellLine: r.cellLine }))}
+              <EvidenceMatrix
+                genes={gridGenes}
+                lines={results.map((r) => ({
+                  modelId: r.modelId,
+                  cellLine: r.cellLine,
+                  lineage: r.lineage,
+                  rank: r.rank,
+                }))}
                 onSelect={inspect}
               />
             )}
@@ -246,6 +269,23 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
           </div>
         ) : (
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          {/* Lineage filter */}
+          <div className="flex items-center gap-2 flex-wrap px-4 py-3 border-b border-slate-100 bg-slate-50/60">
+            <span className="text-xs font-medium text-slate-500 flex items-center gap-1">
+              <Layers className="w-3.5 h-3.5 text-slate-400" /> Lineage
+            </span>
+            <button onClick={() => setLineageFilter('all')} className={pillClass(lineageFilter === 'all')}>
+              All <span className="opacity-60">{results.length}</span>
+            </button>
+            {lineageCounts.map(([lin, count]) => (
+              <button key={lin} onClick={() => setLineageFilter(lin)} className={pillClass(lineageFilter === lin)}>
+                {lin} <span className="opacity-60">{count}</span>
+              </button>
+            ))}
+            {lineageFilter !== 'all' && (
+              <span className="text-[11px] text-mulberry-700 ml-1">↕ re-ranked by in-lineage score</span>
+            )}
+          </div>
           <table className="w-full text-left text-sm text-slate-700">
             <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase">
               <tr>
@@ -254,29 +294,32 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                 {mode === 'single' ? (
                   <>
                     <th className="px-4 py-3">Lineage</th>
-                    <th className="px-4 py-3">Score</th>
+                    <th className="px-4 py-3">Score <span className="normal-case font-normal text-slate-400">(global / in-lineage)</span></th>
                   </>
                 ) : mode === 'selectivity' ? (
                   <>
                     <th className="px-4 py-3">Component scores</th>
-                    <th className="px-4 py-3">Selectivity</th>
+                    <th className="px-4 py-3">Selectivity <span className="normal-case font-normal text-slate-400">(global / in-lineage)</span></th>
                   </>
                 ) : (
                   <>
                     <th className="px-4 py-3">Per-gene scores</th>
-                    <th className="px-4 py-3">Joint</th>
+                    <th className="px-4 py-3">Joint <span className="normal-case font-normal text-slate-400">(global / in-lineage)</span></th>
                   </>
                 )}
                 <th className="px-4 py-3 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {results.map((r) => (
+              {tableRows.map(({ r, displayRank, filtered }) => (
                 <tr key={r.modelId} className="hover:bg-slate-50/75 transition">
-                  <td className="px-4 py-3 font-semibold text-slate-500">#{r.rank}</td>
+                  <td className="px-4 py-3 font-semibold text-slate-500">
+                    #{displayRank}
+                    {filtered && <span className="block text-[10px] font-normal text-slate-400">global #{r.rank}</span>}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900">{r.cellLine}</span>
+                      <span className="font-bold font-mono text-slate-900">{r.modelId}</span>
                       {r.mode === 'multi' && r.genes.some((g) => r.geneScores[g] === null) && (
                         <span
                           title="Missing a score for at least one requested gene — joint score is based on partial evidence"
@@ -286,14 +329,14 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] text-slate-400 font-mono">{r.modelId}</span>
+                    <span className="text-[11px] text-slate-400">{r.cellLine}</span>
                   </td>
 
                   {r.mode === 'single' ? (
                     <>
                       <td className="px-4 py-3 capitalize text-slate-600">{r.lineage}</td>
                       <td className="px-4 py-3">
-                        <ScoreCell relative={r.relativeScore} label={r.score.toFixed(4)} />
+                        <ScorePair global={r.score} lineage={r.lineageScore} />
                       </td>
                     </>
                   ) : r.mode === 'selectivity' ? (
@@ -311,7 +354,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <ScoreCell relative={r.relativeScore} label={r.selectivity.toFixed(4)} />
+                        <ScorePair global={r.selectivity} lineage={r.lineageScore} />
                       </td>
                     </>
                   ) : (
@@ -335,7 +378,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <ScoreCell relative={r.relativeScore} label={r.jointScore.toFixed(4)} />
+                        <ScorePair global={r.jointScore} lineage={r.lineageScore} />
                       </td>
                     </>
                   )}
@@ -343,7 +386,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                   <td className="px-4 py-3 text-right">
                     <button
                       onClick={() => inspect(r.modelId)}
-                      className="inline-flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                      className="inline-flex items-center text-xs font-semibold text-mulberry-600 hover:text-mulberry-800"
                     >
                       <span>Inspect</span>
                       <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
@@ -353,106 +396,72 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
               ))}
             </tbody>
           </table>
-          <p className="px-4 py-2.5 border-t border-slate-100 text-[11px] text-slate-400">
-            The number is the score. The marker shows each line’s position within the shown set (left = lowest,
-            right = highest) — lines in your top {results.length} all score highly, so treat these as comparable candidates.
-          </p>
         </div>
         )}
 
-        {/* Top pick + quick dive */}
+        {/* Contextual explainer for the visual on the left */}
         <div className="space-y-4">
-          <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 border border-indigo-100 rounded-xl p-5 space-y-4">
-            <div className="flex items-center space-x-2 text-indigo-900 font-bold">
-              <Trophy className="w-5 h-5 text-indigo-600" />
-              <span>Top Recommendation</span>
-            </div>
-            <div>
-              <h3 className="text-2xl font-black text-slate-900 font-display">{topPick.cellLine}</h3>
-              <p className="text-xs text-slate-600 font-mono">{topPick.modelId}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-indigo-200/60">
-              {topPick.mode === 'single' ? (
-                <>
-                  <Metric label="Lineage" value={topPick.lineage} />
-                  <Metric label="Score" value={topPick.score.toFixed(4)} />
-                </>
-              ) : topPick.mode === 'selectivity' ? (
-                <>
-                  <Metric label="Selectivity" value={topPick.selectivity.toFixed(4)} />
-                  <Metric
-                    label={`${topPick.geneHigh}↑ / ${topPick.excludedGenes.join(', ')}↓`}
-                    value={`${topPick.scoreHigh.toFixed(2)} / ${topPick.excludedGenes
-                      .map((g) => topPick.exclusionScores[g].toFixed(2))
-                      .join(', ')}`}
-                  />
-                </>
-              ) : (
-                <>
-                  <Metric label="Joint score" value={topPick.jointScore.toFixed(4)} />
-                  <Metric
-                    label="Genes with evidence"
-                    value={`${topPick.genes.filter((g) => topPick.geneScores[g] !== null).length} / ${topPick.genes.length}`}
-                  />
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Quick Deep Dive</h4>
-            <select
-              value={selectedInDropdown}
-              onChange={(e) => setSelectedInDropdown(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-300 text-slate-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500"
-            >
-              {results.map((r) => (
-                <option key={r.modelId} value={r.modelId}>
-                  {r.cellLine}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={() => inspect(selectedInDropdown)}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-2 rounded-lg text-sm transition"
-            >
-              Inspect Profile
-            </button>
-          </div>
+          <ViewExplainer view={activeView} count={results.length} />
         </div>
       </div>
     </div>
   );
 };
 
-/**
- * The score is the value that matters, so it leads. The thin track below is a
- * *position* marker — where this line sits within the shown set (left = lowest
- * shown, right = highest) — not a fill, so a high score never looks "empty"
- * just because other shown lines score higher. Lines in the top N all score
- * highly; the marker only conveys their ordering.
- */
-const ScoreCell: React.FC<{ relative: number; label: string }> = ({ relative, label }) => {
-  const pos = Math.max(0, Math.min(100, relative));
+const ScorePair: React.FC<{ global: number; lineage: number }> = ({ global, lineage }) => (
+  <div>
+    <div className="text-sm font-mono font-semibold text-slate-800">{global.toFixed(4)}</div>
+    <div
+      className="text-[11px] font-mono text-slate-400"
+      title="Within-lineage score: how this line ranks among shown lines of the same tissue lineage (0–1)"
+    >
+      lin {lineage.toFixed(3)}
+    </div>
+  </div>
+);
+
+const VIEW_HELP: Record<
+  string,
+  { title: string; blurb: string; tips: string[] }
+> = {
+  table: {
+    title: 'Ranked results',
+    blurb:
+      'Every cell line that passed, ordered by score. Each row shows two scores: global (across all lines) and in-lineage (among shown lines of the same tissue). Cell lines are shown by their ACH id, with the common name beneath.',
+    tips: ['Hit Inspect on any line to open its full evidence profile.', 'Switch to the Evidence grid to compare layers across lines.'],
+  },
+  omics: {
+    title: 'Evidence grid',
+    blurb:
+      'A table of cell lines (rows) against evidence layers (columns). For selectivity and multi-gene queries the layers are shown per gene, so you can see a line is high in the target and low in the excluded gene at once.',
+    tips: ['Read down a column to compare one layer across lines.', 'Click a line to open its profile.'],
+  },
+  lineages: {
+    title: 'Lineages',
+    blurb:
+      'Groups the results by tissue lineage so you can compare candidates within and across tissues, ordered by each lineage’s best-placed line.',
+    tips: ['Use the filter pills to focus on a single lineage.', 'Click any line to inspect it.'],
+  },
+};
+
+const ViewExplainer: React.FC<{ view: string; count: number }> = ({ view, count }) => {
+  const help = VIEW_HELP[view] ?? VIEW_HELP.table;
   return (
-    <div className="w-28">
-      <span className="text-sm font-mono font-semibold text-slate-800">{label}</span>
-      <div
-        className="relative h-1.5 rounded-full bg-slate-100 mt-1.5"
-        title={`Position within the shown lines (${Math.round(pos)}% — left = lowest shown, right = highest)`}
-      >
-        <div
-          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 border-white shadow-sm"
-          style={{ left: `${pos}%` }}
-        />
-      </div>
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+      <span className="text-[11px] font-semibold uppercase tracking-wider text-mulberry-600">About this view</span>
+      <h3 className="text-lg font-bold text-slate-900 mt-1">{help.title}</h3>
+      <p className="text-sm text-slate-600 mt-2 leading-relaxed">{help.blurb}</p>
+      <ul className="mt-3 space-y-1.5">
+        {help.tips.map((t, i) => (
+          <li key={i} className="flex gap-2 text-xs text-slate-500 leading-relaxed">
+            <span className="text-mulberry-400 shrink-0">→</span>
+            <span>{t}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-[11px] text-slate-400 mt-4 pt-3 border-t border-slate-100">
+        Showing your top {count} {count === 1 ? 'line' : 'lines'}.
+      </p>
     </div>
   );
 };
-
-const Metric: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div>
-    <span className="text-[11px] text-slate-500 block">{label}</span>
-    <span className="text-base font-bold text-slate-800">{value}</span>
-  </div>
-);

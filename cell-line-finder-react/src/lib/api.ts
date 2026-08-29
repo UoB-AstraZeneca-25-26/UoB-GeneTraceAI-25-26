@@ -54,6 +54,7 @@ export interface JointApiLine {
   model_id: string;
   name: string | null;
   joint_score: number;
+  lineage_score?: number; // 0-1 within-lineage score, if the backend provides it
   limiting_gene?: string;
   scores: Record<string, number | null>;
   metadata?: LineMetadata;
@@ -74,6 +75,7 @@ export interface ExcludeManyApiLine {
   score_a: number;
   exclusion_scores: Record<string, number>;
   selectivity: number;
+  lineage_score?: number; // 0-1 within-lineage score, if the backend provides it
   metadata?: LineMetadata;
 }
 
@@ -93,6 +95,9 @@ export interface CellLineDetailApiResponse {
   rank: number;
   total: number;
   score: number;
+  lineage_score?: number | null;
+  lineage_rank?: number | null;
+  lineage_total?: number | null;
   tier: string;
   n_layers: number;
   driver_alteration: boolean;
@@ -111,7 +116,7 @@ export interface CellLineDetailApiResponse {
   expression_measurements?: { source: string; value: number; unit?: string; max?: number }[] | null;
   proteomics_measurements?: { source: string; value: number; unit?: string; max?: number }[] | null;
   metadata: Record<string, string | number | null>;
-  rna_alternatives: { model_id: string; name: string; similarity: number }[];
+  rna_alternatives: { model_id: string; name: string; similarity: number; lineage?: string; primary_disease?: string }[];
 }
 
 // ---------- fetch helpers ----------
@@ -207,6 +212,29 @@ function relativize(values: number[], value: number): number {
   return span > 0 ? Math.round((5 + ((value - min) / span) * 95) * 10) / 10 : 100;
 }
 
+/**
+ * Within-lineage score (0-1) for each row. Uses the backend's lineage_score when
+ * present; otherwise derives one client-side by min-max normalising each line's
+ * metric against the other shown lines OF THE SAME LINEAGE — so "in-lineage"
+ * answers "how does this line rank among its own tissue here", independent of
+ * how it ranks globally. Singletons score 1 (best of their lineage in the set).
+ */
+function lineageScores(
+  rows: { lineage: string; metric: number; provided?: number }[]
+): number[] {
+  const groups: Record<string, number[]> = {};
+  for (const r of rows) (groups[r.lineage] ??= []).push(r.metric);
+  return rows.map((r) => {
+    if (typeof r.provided === 'number' && Number.isFinite(r.provided)) {
+      return Math.max(0, Math.min(1, r.provided));
+    }
+    const g = groups[r.lineage];
+    const min = Math.min(...g);
+    const max = Math.max(...g);
+    return max > min ? Math.round(((r.metric - min) / (max - min)) * 1000) / 1000 : 1;
+  });
+}
+
 /** Normalize a raw lineage string ("central_nervous_system" -> "Central nervous system"). */
 function lineageOf(raw?: string | null): string {
   const v = (raw ?? '').trim().replace(/_/g, ' ');
@@ -220,6 +248,9 @@ const displayName = (name: string | null, modelId: string) =>
 
 export function toSingleRanked(resp: JointApiResponse): SingleRanked[] {
   const joints = resp.lines.map((l) => l.joint_score);
+  const linScores = lineageScores(
+    resp.lines.map((l) => ({ lineage: lineageOf(l.metadata?.lineage), metric: l.joint_score, provided: l.lineage_score }))
+  );
   return resp.lines.map((l, i) => ({
     mode: 'single',
     rank: i + 1,
@@ -228,11 +259,15 @@ export function toSingleRanked(resp: JointApiResponse): SingleRanked[] {
     lineage: lineageOf(l.metadata?.lineage),
     score: l.joint_score,
     relativeScore: relativize(joints, l.joint_score),
+    lineageScore: linScores[i],
   }));
 }
 
 export function toMultiRanked(resp: JointApiResponse): MultiRanked[] {
   const joints = resp.lines.map((l) => l.joint_score);
+  const linScores = lineageScores(
+    resp.lines.map((l) => ({ lineage: lineageOf(l.metadata?.lineage), metric: l.joint_score, provided: l.lineage_score }))
+  );
   return resp.lines.map((l, i) => {
     const geneScores: Record<string, number | null> = {};
     for (const g of resp.genes) {
@@ -250,12 +285,16 @@ export function toMultiRanked(resp: JointApiResponse): MultiRanked[] {
       geneScores,
       limitingGene: l.limiting_gene ?? null,
       relativeScore: relativize(joints, l.joint_score),
+      lineageScore: linScores[i],
     };
   });
 }
 
 export function toSelectivityRanked(resp: ExcludeManyApiResponse): SelectivityRanked[] {
   const sels = resp.lines.map((l) => l.selectivity);
+  const linScores = lineageScores(
+    resp.lines.map((l) => ({ lineage: lineageOf(l.metadata?.lineage), metric: l.selectivity, provided: l.lineage_score }))
+  );
   return resp.lines.map((l, i) => ({
     mode: 'selectivity',
     rank: i + 1,
@@ -268,6 +307,7 @@ export function toSelectivityRanked(resp: ExcludeManyApiResponse): SelectivityRa
     excludedGenes: resp.excluded_genes,
     exclusionScores: l.exclusion_scores,
     relativeScore: relativize(sels, l.selectivity),
+    lineageScore: linScores[i],
   }));
 }
 
@@ -434,6 +474,10 @@ export function toCellLineDetail(resp: CellLineDetailApiResponse): CellLineDetai
     rank: resp.rank,
     total: resp.total,
     score: resp.score,
+    lineageScore:
+      typeof resp.lineage_score === 'number' && Number.isFinite(resp.lineage_score) ? resp.lineage_score : null,
+    lineageRank: typeof resp.lineage_rank === 'number' ? resp.lineage_rank : null,
+    lineageTotal: typeof resp.lineage_total === 'number' ? resp.lineage_total : null,
     tier: resp.tier,
     nLayers: resp.n_layers,
     driverAlteration: resp.driver_alteration,
@@ -458,6 +502,8 @@ export function toCellLineDetail(resp: CellLineDetailApiResponse): CellLineDetai
       modelId: a.model_id,
       name: displayName(a.name, a.model_id),
       similarity: a.similarity,
+      lineage: typeof a.lineage === 'string' ? a.lineage : undefined,
+      primaryDisease: typeof a.primary_disease === 'string' ? a.primary_disease : undefined,
     })),
   };
 }

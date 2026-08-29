@@ -27,7 +27,7 @@ export const AboutPage: React.FC = () => {
         </ul>
 
         <h3 className="text-base font-bold text-slate-900 pt-3">End-to-End Workflow</h3>
-        <div className="bg-slate-900 text-indigo-300 font-mono text-xs p-4 rounded-lg leading-relaxed">
+        <div className="bg-slate-900 text-mulberry-300 font-mono text-xs p-4 rounded-lg leading-relaxed">
           User Input &rarr; Evidence Retrieval &rarr; Aggregation & Scoring &rarr; Ranked Recommendations &rarr; Profile Deep Dive & Export
         </div>
       </div>

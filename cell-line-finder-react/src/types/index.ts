@@ -23,7 +23,7 @@ export type ScoredResult = {
   exclusionPenalty: number;
 };
 
-export type ViewType = 'query' | 'results' | 'profile' | 'about' | 'assistant' | 'guide';
+export type ViewType = 'query' | 'results' | 'profile' | 'about' | 'assistant' | 'guide' | 'reference';
 
 // ---- Live API result model ----
 
@@ -33,10 +33,11 @@ export type ResultMode = 'single' | 'selectivity' | 'multi';
 
 export type BaseRanked = {
   rank: number;
-  modelId: string;   // DepMap ACH id
-  cellLine: string;  // display name
+  modelId: string;   // DepMap ACH id (primary identifier)
+  cellLine: string;  // display name / alias (secondary)
   lineage: string;   // tissue lineage, e.g. "skin"
-  relativeScore: number; // min-max normalized within the set, for bar width
+  relativeScore: number;  // min-max normalized within the set, for bar width
+  lineageScore: number;   // 0-1 score relative to same-lineage lines (within-lineage)
 };
 
 /** Result of /prod/gene (joint shape with a single gene). tier / n_layers /
@@ -115,10 +116,15 @@ export type Verdict = {
 // ---- Cell-line detail (GET /gene?query=<GENE>&cell_line=<MODEL_ID>) ----
 
 /** What the Inspect action carries: which gene's detail to fetch, for which model. */
-export type InspectTarget = { gene: string; modelId: string; cellLine: string };
+export type InspectTarget = {
+  gene: string;
+  modelId: string;
+  cellLine: string;
+  ranked?: RankedCellLine; // the ranked row this line came from — carries how it scored in this query
+};
 
 export type MetadataItem = { label: string; value: string };
-export type SimilarLine = { modelId: string; name: string; similarity: number };
+export type SimilarLine = { modelId: string; name: string; similarity: number; lineage?: string; primaryDisease?: string };
 
 /** A raw per-source measurement behind a modality's level, e.g. DepMap TPM.
  *  Units differ per source, so `max` gives a per-source scale for its bar. */
@@ -132,6 +138,9 @@ export type CellLineDetail = {
   rank: number;
   total: number;
   score: number;
+  lineageScore: number | null;  // 0-1 within-lineage score (null if backend omits)
+  lineageRank: number | null;   // rank within the same lineage
+  lineageTotal: number | null;  // number of lines in the same lineage
   tier: string;
   nLayers: number;
   driverAlteration: boolean;

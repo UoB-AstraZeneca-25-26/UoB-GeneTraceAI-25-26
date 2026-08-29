@@ -43,7 +43,7 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({ context, send = 
     <div className="max-w-3xl mx-auto h-full flex flex-col">
       <div className="mb-4">
         <h2 className="text-2xl font-bold text-slate-900 font-display tracking-tight flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-indigo-600" /> Assistant
+          <Sparkles className="w-5 h-5 text-mulberry-600" /> Assistant
         </h2>
         <p className="text-sm text-slate-500 mt-1">
           Ask how a ranking was produced, or anything else about your query.
@@ -52,10 +52,10 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({ context, send = 
 
       {/* Context chip */}
       {hasContext && (
-        <div className="mb-3 inline-flex items-center gap-2 self-start bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-full px-3 py-1 text-xs">
+        <div className="mb-3 inline-flex items-center gap-2 self-start bg-mulberry-50 border border-mulberry-200 text-mulberry-800 rounded-full px-3 py-1 text-xs">
           <span className="font-semibold">Context:</span>
           <span className="font-mono">{context!.genes.join(', ')}</span>
-          {context!.mode && <span className="text-indigo-400">· {context!.mode}</span>}
+          {context!.mode && <span className="text-mulberry-400">· {context!.mode}</span>}
         </div>
       )}
 
@@ -79,7 +79,7 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({ context, send = 
           <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
             <div
               className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
-                m.role === 'user' ? 'bg-slate-200 text-slate-600' : 'bg-indigo-600 text-white'
+                m.role === 'user' ? 'bg-slate-200 text-slate-600' : 'bg-mulberry-600 text-white'
               }`}
             >
               {m.role === 'user' ? <User className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
@@ -88,7 +88,7 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({ context, send = 
               className={`rounded-xl px-4 py-2.5 text-sm max-w-[80%] whitespace-pre-wrap leading-relaxed ${
                 m.role === 'user'
                   ? 'bg-slate-100 text-slate-800'
-                  : 'bg-indigo-50 text-slate-800 border border-indigo-100'
+                  : 'bg-mulberry-50 text-slate-800 border border-mulberry-100'
               }`}
             >
               {m.content}
@@ -98,11 +98,11 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({ context, send = 
 
         {loading && (
           <div className="flex gap-3">
-            <div className="shrink-0 w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
+            <div className="shrink-0 w-8 h-8 rounded-lg bg-mulberry-600 text-white flex items-center justify-center">
               <Sparkles className="w-4 h-4" />
             </div>
-            <div className="rounded-xl px-4 py-2.5 bg-indigo-50 border border-indigo-100">
-              <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+            <div className="rounded-xl px-4 py-2.5 bg-mulberry-50 border border-mulberry-100">
+              <Loader2 className="w-4 h-4 animate-spin text-mulberry-500" />
             </div>
           </div>
         )}
@@ -123,12 +123,12 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({ context, send = 
           }}
           rows={1}
           placeholder="Ask about the ranking…"
-          className="flex-1 resize-none bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none max-h-32"
+          className="flex-1 resize-none bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-mulberry-500 focus:outline-none max-h-32"
         />
         <button
           onClick={() => submit(input)}
           disabled={loading || !input.trim()}
-          className="shrink-0 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl p-3 transition"
+          className="shrink-0 bg-mulberry-600 hover:bg-mulberry-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl p-3 transition"
           aria-label="Send"
         >
           <Send className="w-4 h-4" />

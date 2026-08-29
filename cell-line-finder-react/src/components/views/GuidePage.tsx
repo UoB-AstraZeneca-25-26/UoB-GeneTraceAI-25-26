@@ -5,8 +5,7 @@ import {
   Ban,
   SlidersHorizontal,
   Table2,
-  Network,
-  GitFork,
+  LayoutGrid,
   Layers,
   ChevronRight,
   Microscope,
@@ -19,7 +18,7 @@ interface GuidePageProps {
 /**
  * A first-run walkthrough. It answers three questions a new user has: what this
  * tool does, how to run a search, and how to read what comes back — including
- * the two number types (percentiles vs. categorical calls) that trip people up.
+ * the two evidence types (measured levels vs. categorical calls) that trip people up.
  */
 export const GuidePage: React.FC<GuidePageProps> = ({ onStart }) => {
   return (
@@ -71,14 +70,9 @@ export const GuidePage: React.FC<GuidePageProps> = ({ onStart }) => {
             body="The ranked list. The number is the score; the marker beside it shows a line's position within the shown set — lines in your top N all score highly, so treat them as comparable candidates."
           />
           <ViewCard
-            icon={Network}
-            title="Network"
-            body="A radial map: distance from the centre follows rank (nearest = highest-ranked), and colour marks tissue lineage."
-          />
-          <ViewCard
-            icon={GitFork}
-            title="Omics map"
-            body="Traces the evidence flow from the gene, through each measured layer, to the top lines. Ribbon thickness follows the per-layer signal."
+            icon={LayoutGrid}
+            title="Evidence grid"
+            body="A table of cell lines against evidence layers — measured levels as Low/Moderate/High, alterations as present or absent. Stays readable as more lines are shown."
           />
           <ViewCard
             icon={Layers}
@@ -89,9 +83,9 @@ export const GuidePage: React.FC<GuidePageProps> = ({ onStart }) => {
       </section>
 
       {/* How to read the evidence — the part people find confusing */}
-      <section className="bg-slate-900 text-slate-100 rounded-xl p-6 space-y-4">
+      <section className="bg-plum text-white rounded-xl p-6 space-y-4">
         <div className="flex items-center gap-2">
-          <Microscope className="w-5 h-5 text-indigo-300" />
+          <Microscope className="w-5 h-5 text-mulberry-300" />
           <h3 className="text-base font-bold">Reading the evidence in a profile</h3>
         </div>
         <p className="text-sm text-slate-300 leading-relaxed">
@@ -99,21 +93,21 @@ export const GuidePage: React.FC<GuidePageProps> = ({ onStart }) => {
           evidence comes in two kinds — they're read differently:
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="bg-slate-800/60 rounded-lg p-4">
+          <div className="bg-plum-accent rounded-lg p-4">
             <h4 className="text-sm font-bold text-white">Alteration layers — yes / no</h4>
             <p className="text-xs text-slate-300 mt-1 leading-relaxed">
               Mutation, fusion and copy number are categorical: each is simply present or absent for that line.
-              A <span className="font-mono text-indigo-300">driver</span> tag means the mutation is a known
+              A <span className="font-mono text-mulberry-300">driver</span> tag means the mutation is a known
               cancer driver, not just any variant.
             </p>
           </div>
-          <div className="bg-slate-800/60 rounded-lg p-4">
+          <div className="bg-plum-accent rounded-lg p-4">
             <h4 className="text-sm font-bold text-white">Expression &amp; proteomics — levels</h4>
             <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-              Shown as a within-gene percentile: where this line sits among all cell lines for the gene.
-              <span className="text-white font-semibold"> 0 = lowest, 100 = highest.</span> It's a relative
-              level, not an absolute amount or a probability. Chips show which datasets each level came from
-              (expression: DepMap / HPA / GEO · proteomics: ProCan / CCLE).
+              Shown as a level — <span className="text-white font-semibold">Low, Moderate or High</span> — for the
+              gene in this line relative to other cell lines. Chips show which datasets measured it
+              (expression: DepMap / HPA / GEO · proteomics: ProCan / CCLE); more sources present means more
+              independent evidence.
             </p>
           </div>
         </div>
@@ -122,7 +116,7 @@ export const GuidePage: React.FC<GuidePageProps> = ({ onStart }) => {
       <div className="flex justify-center pt-2">
         <button
           onClick={onStart}
-          className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-3 rounded-lg shadow-sm transition"
+          className="inline-flex items-center gap-2 bg-mulberry-600 hover:bg-mulberry-700 text-white font-medium px-6 py-3 rounded-lg shadow-sm transition"
         >
           <span>Start your first search</span>
           <ChevronRight className="w-4 h-4" />
@@ -141,7 +135,7 @@ const Step: React.FC<{
 }> = ({ n, icon: Icon, title, body }) => (
   <div className="flex gap-4 p-5">
     <div className="shrink-0">
-      <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold font-mono">
+      <div className="w-9 h-9 rounded-lg bg-mulberry-50 text-mulberry-600 flex items-center justify-center font-bold font-mono">
         {n}
       </div>
     </div>
@@ -162,7 +156,7 @@ const ViewCard: React.FC<{ icon: React.ElementType; title: string; body: string 
 }) => (
   <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
     <div className="flex items-center gap-2">
-      <Icon className="w-4 h-4 text-indigo-600" />
+      <Icon className="w-4 h-4 text-mulberry-600" />
       <h4 className="text-sm font-bold text-slate-800">{title}</h4>
     </div>
     <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">{body}</p>

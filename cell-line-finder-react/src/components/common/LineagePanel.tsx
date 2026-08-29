@@ -87,9 +87,6 @@ export const LineagePanel: React.FC<LineagePanelProps> = ({ gene, lines, onSelec
                 <Layers className="w-4 h-4 text-slate-400" />
                 <span className="font-bold text-slate-800 capitalize">{g.lineage}</span>
               </div>
-              <span className="text-[11px] text-slate-400 font-mono">
-                {g.lines.length} line{g.lines.length === 1 ? '' : 's'} · top {g.topScore.toFixed(3)}
-              </span>
             </div>
             <ul className="divide-y divide-slate-100">
               {g.lines.map((l) => (
@@ -101,8 +98,8 @@ export const LineagePanel: React.FC<LineagePanelProps> = ({ gene, lines, onSelec
                     <div className="flex items-center gap-3">
                       <span className="text-xs font-semibold text-slate-400 w-8">#{l.rank}</span>
                       <div>
-                        <span className="font-bold text-slate-900">{l.cellLine}</span>
-                        <span className="text-[11px] text-slate-400 font-mono ml-2">{l.modelId}</span>
+                        <span className="font-bold font-mono text-slate-900">{l.modelId}</span>
+                        <span className="text-[11px] text-slate-400 ml-2">{l.cellLine}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -129,8 +126,8 @@ const FilterPill: React.FC<{ label: string; active: boolean; onClick: () => void
     onClick={onClick}
     className={`inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full border transition capitalize ${
       active
-        ? 'bg-indigo-600 text-white border-indigo-600'
-        : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-700'
+        ? 'bg-mulberry-600 text-white border-mulberry-600'
+        : 'bg-white text-slate-600 border-slate-200 hover:border-mulberry-300 hover:text-mulberry-700'
     }`}
   >
     {label}
