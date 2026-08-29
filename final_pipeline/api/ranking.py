@@ -257,6 +257,50 @@ def rank(gene_syms: list[str], lineages: list[str],
             "lineage_distribution": _lineage_dist(passing["model_id"].tolist())}
 
 
+def exclude_many(gene_a: str, gene_bs: list[str], lineages: list[str], top_n: int) -> dict:
+    """Like exclude(), generalized to N excluded genes: selectivity is
+    score_a * Π(1 - score_bi) — a joint gene must pass, and every excluded
+    gene independently pulls the ranking down."""
+    ensg_a, sym_a = _resolve(gene_a)
+    resolved_b = [_resolve(g) for g in gene_bs]
+    syms_b = [s for _, s in resolved_b]
+
+    lineage_ids = _lineage_model_ids(lineages)
+
+    merged = _gene_series(ensg_a, lineage_ids).rename("score_a").reset_index()
+    for ensg_b, sym_b in resolved_b:
+        b = _gene_series(ensg_b, lineage_ids).rename(sym_b).reset_index()
+        merged = merged.merge(b, on="model_id", how="inner")
+
+    selectivity = merged["score_a"].astype("float64").copy()
+    for sym_b in syms_b:
+        selectivity = selectivity * (1.0 - merged[sym_b])
+    merged["selectivity"] = selectivity
+
+    merged = merged.sort_values("selectivity", ascending=False, na_position="last")
+    scored = merged[merged["selectivity"].notna()]
+    shortlist = scored.head(top_n)
+
+    if _cell_lkp is not None:
+        shortlist = shortlist.merge(_cell_lkp, on="model_id", how="left")
+
+    lines = []
+    for _, row in shortlist.iterrows():
+        raw_name = row.get("cell_line_name")
+        lines.append({
+            "model_id": row["model_id"].upper(),
+            "name": raw_name if isinstance(raw_name, str) else None,
+            "score_a": round(float(row["score_a"]), 6),
+            "exclusion_scores": {s: round(float(row[s]), 6) for s in syms_b},
+            "selectivity": round(float(row["selectivity"]), 6),
+            "metadata": _meta(row["model_id"]),
+        })
+
+    return {"gene_a": sym_a, "excluded_genes": syms_b, "lineage": lineages,
+            "total_ranked": len(scored), "lines": lines,
+            "lineage_distribution": _lineage_dist(scored["model_id"].tolist())}
+
+
 def exclude(gene_a: str, gene_b: str, lineages: list[str], top_n: int) -> dict:
     ensg_a, sym_a = _resolve(gene_a)
     ensg_b, sym_b = _resolve(gene_b)

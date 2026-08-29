@@ -46,6 +46,24 @@ class ExcludeResponse(BaseModel):
     lineage_distribution: dict[str, int] = {}
 
 
+class ExcludeManyLine(BaseModel):
+    model_id: str
+    name: str | None = None
+    score_a: float
+    exclusion_scores: dict[str, float]
+    selectivity: float
+    metadata: dict = {}
+
+
+class ExcludeManyResponse(BaseModel):
+    gene_a: str
+    excluded_genes: list[str]
+    lineage: list[str]
+    total_ranked: int
+    lines: list[ExcludeManyLine]
+    lineage_distribution: dict[str, int] = {}
+
+
 class CellLineRef(BaseModel):
     model_id: str
     name: str | None = None

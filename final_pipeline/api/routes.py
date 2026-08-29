@@ -9,8 +9,16 @@ from fastapi import APIRouter, HTTPException, Query
 
 from .ranking import detail as _detail
 from .ranking import exclude as _exclude
+from .ranking import exclude_many as _exclude_many
 from .ranking import is_ready, rank
-from .schemas import DetailResponse, ExcludeResponse, HealthResponse, RankRequest, RankResponse
+from .schemas import (
+    DetailResponse,
+    ExcludeManyResponse,
+    ExcludeResponse,
+    HealthResponse,
+    RankRequest,
+    RankResponse,
+)
 
 router = APIRouter()
 
@@ -87,6 +95,31 @@ async def exclude_endpoint(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     return ExcludeResponse(**result)
+
+
+@router.get("/exclude/many", response_model=ExcludeManyResponse)
+async def exclude_many_endpoint(
+    gene_a: str = Query(..., description="Gene that must be essential (high score)"),
+    exclude: list[str] = Query(
+        ..., description="Genes that must NOT be essential (repeatable, e.g. ?exclude=KRAS&exclude=TP53)"
+    ),
+    lineage: list[str] = Query(default=[], description="Lineage filter (repeatable)"),
+    top_n: int = Query(default=30, ge=1, le=200),
+) -> ExcludeManyResponse:
+    _guard()
+    exclude_genes = [g.strip() for g in exclude if g.strip()]
+    if not exclude_genes:
+        raise HTTPException(status_code=422, detail="Provide at least 1 exclusion gene.")
+    if len(exclude_genes) > 10:
+        raise HTTPException(status_code=422, detail="Provide at most 10 exclusion genes.")
+    try:
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None, lambda: _exclude_many(gene_a, exclude_genes, lineage, top_n)
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return ExcludeManyResponse(**result)
 
 
 @router.get("/gene/detail", response_model=DetailResponse)
