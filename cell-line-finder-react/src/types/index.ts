@@ -176,6 +176,27 @@ export type AssistantContext = {
   topLines: { rank: number; cellLine: string; modelId: string; score: number; tier: string | null }[];
 };
 
+// ---- Lineage-grouped ranking (GET /prod/gene/by-lineage?gene=<GENE>) ----
+// Top 10 lineages by their best candidate's score, top 5 lines per lineage.
+// Not affected by top_n -- sizing is fixed by this rule.
+
+export type LineageGroupedLine = {
+  modelId: string;
+  cellLine: string;
+  lineage: string;
+  coreScore: number;
+  rankWithinLineage: number; // 1..5 within this lineage (ties broken by modelId)
+  rankGlobal: number;        // pooled rank across every scoreable line for this gene (ties share a rank)
+};
+
+export type LineageGroupedResult = {
+  gene: string;
+  lineagesReturned: number;      // <= 10
+  totalScoreable: number;        // all scoreable lines for this gene, not just the ones shown
+  lineageUnassignedCount: number; // scoreable lines excluded because their cell line has no lineage on record
+  lines: LineageGroupedLine[];   // <= 50
+};
+
 // ---- Agent-backed methodology / gene alias enrichment ----
 
 export type MethodologyStepStatus = 'active' | 'skipped' | 'inverted';

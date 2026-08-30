@@ -264,7 +264,13 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
               />
             )}
             {activeView === 'lineages' && (
-              <LineagePanel gene={inspectGene} lines={results} onSelect={inspect} />
+              <LineagePanel
+                gene={inspectGene}
+                mode={mode}
+                genes={meta?.genes ?? queryParams.targets}
+                excludedGenes={meta?.excludedGenes ?? queryParams.exclusions}
+                onSelect={inspect}
+              />
             )}
           </div>
         ) : (
@@ -439,7 +445,7 @@ const VIEW_HELP: Record<
   lineages: {
     title: 'Lineages',
     blurb:
-      'Groups the results by tissue lineage so you can compare candidates within and across tissues, ordered by each lineage’s best-placed line.',
+      'Groups the results by tissue lineage so you can compare candidates within and across tissues, ordered by each lineage’s best-placed line. For a single-gene query, this ranks across the whole panel — not just this page’s top results.',
     tips: ['Use the filter pills to focus on a single lineage.', 'Click any line to inspect it.'],
   },
 };

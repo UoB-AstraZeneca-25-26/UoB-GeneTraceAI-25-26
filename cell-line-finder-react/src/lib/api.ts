@@ -7,6 +7,7 @@ import {
 } from './mockApi';
 import {
   CellLineDetail,
+  LineageGroupedResult,
   MetadataItem,
   MultiRanked,
   RankedCellLine,
@@ -30,6 +31,9 @@ const GENE_URL = `${API}/gene`;
 const GENES_URL = `${API}/genes`;
 const EXCLUDE_MANY_URL = `${API}/exclude/many`;
 const DETAIL_URL = `${API}/gene/detail`;
+const BY_LINEAGE_URL = `${API}/gene/by-lineage`;
+const GENES_BY_LINEAGE_URL = `${API}/genes/by-lineage`;
+const EXCLUDE_MANY_BY_LINEAGE_URL = `${API}/exclude/many/by-lineage`;
 
 // How many lines to request from the server (client slices further for display).
 const TOP_N = 30;
@@ -37,7 +41,7 @@ const TOP_N = 30;
 // ---- Offline mock mode -------------------------------------------------------
 // Flip to false to use the live API. When true, all fetchers return local mock
 // data in the same shapes as the live endpoints.
-export const USE_MOCK = true;
+export const USE_MOCK = false;
 
 // ---------- shared line metadata ----------
 export interface LineMetadata {
@@ -202,6 +206,111 @@ export async function fetchSelectivityRanking(
   return data;
 }
 
+// ---------- /prod/gene/by-lineage (single gene, grouped by lineage) ----------
+export interface LineageRankedApiLine {
+  model_id: string;
+  name: string | null;
+  core_score: number;
+  lineage: string;
+  rank_within_lineage: number;
+  rank_global: number;
+  metadata?: LineMetadata;
+}
+
+export interface LineageRankedApiResponse {
+  gene: string;
+  lineages_returned: number;
+  total_scoreable: number;
+  lineage_unassigned_count: number;
+  lines: LineageRankedApiLine[];
+}
+
+export async function fetchLineageRanking(
+  gene: string,
+  signal?: AbortSignal
+): Promise<LineageRankedApiResponse> {
+  const symbol = gene.trim();
+  if (!symbol) throw new Error('No gene symbol provided.');
+  const data = await getJson<LineageRankedApiResponse>(
+    `${BY_LINEAGE_URL}?gene=${encodeURIComponent(symbol)}`,
+    signal
+  );
+  if (!data || !Array.isArray(data.lines)) throw new Error('Unexpected /gene/by-lineage response shape.');
+  return data;
+}
+
+// ---------- /prod/genes/by-lineage (multi-gene, grouped by lineage) ----------
+export interface MultiLineageRankedApiLine {
+  model_id: string;
+  name: string | null;
+  joint_score: number;
+  scores: Record<string, number | null>;
+  limiting_gene: string | null;
+  lineage: string;
+  rank_within_lineage: number;
+  rank_global: number;
+  metadata?: LineMetadata;
+}
+
+export interface MultiLineageRankedApiResponse {
+  genes: string[];
+  lineages_returned: number;
+  total_scoreable: number;
+  lineage_unassigned_count: number;
+  lines: MultiLineageRankedApiLine[];
+}
+
+export async function fetchMultiLineageRanking(
+  genes: string[],
+  signal?: AbortSignal
+): Promise<MultiLineageRankedApiResponse> {
+  const clean = genes.map((g) => g.trim()).filter(Boolean);
+  if (clean.length < 2) throw new Error('Provide at least two target genes for a joint ranking.');
+  const query = clean.map(encodeURIComponent).join(',');
+  const data = await getJson<MultiLineageRankedApiResponse>(`${GENES_BY_LINEAGE_URL}?genes=${query}`, signal);
+  if (!data || !Array.isArray(data.lines)) throw new Error('Unexpected /genes/by-lineage response shape.');
+  return data;
+}
+
+// ---------- /prod/exclude/many/by-lineage (selectivity, grouped by lineage) ----------
+export interface ExcludeManyLineageRankedApiLine {
+  model_id: string;
+  name: string | null;
+  score_a: number;
+  exclusion_scores: Record<string, number>;
+  selectivity: number;
+  lineage: string;
+  rank_within_lineage: number;
+  rank_global: number;
+  metadata?: LineMetadata;
+}
+
+export interface ExcludeManyLineageRankedApiResponse {
+  gene_a: string;
+  excluded_genes: string[];
+  lineages_returned: number;
+  total_scoreable: number;
+  lineage_unassigned_count: number;
+  lines: ExcludeManyLineageRankedApiLine[];
+}
+
+export async function fetchSelectivityLineageRanking(
+  geneA: string,
+  excludedGenes: string[],
+  signal?: AbortSignal
+): Promise<ExcludeManyLineageRankedApiResponse> {
+  const a = geneA.trim();
+  const bs = excludedGenes.map((g) => g.trim()).filter(Boolean);
+  if (!a || bs.length === 0) throw new Error('Both a target and at least one exclusion gene are required.');
+  const query = bs.map((g) => `exclude=${encodeURIComponent(g)}`).join('&');
+  const data = await getJson<ExcludeManyLineageRankedApiResponse>(
+    `${EXCLUDE_MANY_BY_LINEAGE_URL}?gene_a=${encodeURIComponent(a)}&${query}`,
+    signal
+  );
+  if (!data || !Array.isArray(data.lines)) throw new Error('Unexpected /exclude/many/by-lineage response shape.');
+  return data;
+}
+
 // ---------- helpers ----------
 
 /** Spread near-identical scores across 5..100% for a readable bar. */
@@ -309,6 +418,23 @@ export function toSelectivityRanked(resp: ExcludeManyApiResponse): SelectivityRa
     relativeScore: relativize(sels, l.selectivity),
     lineageScore: linScores[i],
   }));
+}
+
+export function toLineageGrouped(resp: LineageRankedApiResponse): LineageGroupedResult {
+  return {
+    gene: resp.gene,
+    lineagesReturned: resp.lineages_returned,
+    totalScoreable: resp.total_scoreable,
+    lineageUnassignedCount: resp.lineage_unassigned_count,
+    lines: resp.lines.map((l) => ({
+      modelId: l.model_id,
+      cellLine: displayName(l.name, l.model_id),
+      lineage: lineageOf(l.lineage),
+      coreScore: l.core_score,
+      rankWithinLineage: l.rank_within_lineage,
+      rankGlobal: l.rank_global,
+    })),
+  };
 }
 
 export function metaFromGene(resp: JointApiResponse): ResultMeta {
