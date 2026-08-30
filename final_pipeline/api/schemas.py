@@ -64,6 +64,86 @@ class ExcludeManyResponse(BaseModel):
     lineage_distribution: dict[str, int] = {}
 
 
+class LineageRankedLine(BaseModel):
+    model_id: str
+    name: str | None = None
+    core_score: float
+    lineage: str
+    rank_within_lineage: int
+    rank_global: int
+    metadata: dict = {}
+
+
+class LineageRankedResponse(BaseModel):
+    gene: str
+    lineages_returned: int
+    total_scoreable: int
+    lineage_unassigned_count: int
+    lines: list[LineageRankedLine]
+
+
+class MultiLineageRankedLine(BaseModel):
+    model_id: str
+    name: str | None = None
+    joint_score: float
+    scores: dict[str, float | None]
+    limiting_gene: str | None = None
+    lineage: str
+    rank_within_lineage: int
+    rank_global: int
+    metadata: dict = {}
+
+
+class MultiLineageRankedResponse(BaseModel):
+    genes: list[str]
+    lineages_returned: int
+    total_scoreable: int
+    lineage_unassigned_count: int
+    lines: list[MultiLineageRankedLine]
+
+
+class ExcludeLineageRankedLine(BaseModel):
+    model_id: str
+    name: str | None = None
+    score_a: float
+    score_b: float
+    selectivity: float
+    lineage: str
+    rank_within_lineage: int
+    rank_global: int
+    metadata: dict = {}
+
+
+class ExcludeLineageRankedResponse(BaseModel):
+    gene_a: str
+    gene_b: str
+    lineages_returned: int
+    total_scoreable: int
+    lineage_unassigned_count: int
+    lines: list[ExcludeLineageRankedLine]
+
+
+class ExcludeManyLineageRankedLine(BaseModel):
+    model_id: str
+    name: str | None = None
+    score_a: float
+    exclusion_scores: dict[str, float]
+    selectivity: float
+    lineage: str
+    rank_within_lineage: int
+    rank_global: int
+    metadata: dict = {}
+
+
+class ExcludeManyLineageRankedResponse(BaseModel):
+    gene_a: str
+    excluded_genes: list[str]
+    lineages_returned: int
+    total_scoreable: int
+    lineage_unassigned_count: int
+    lines: list[ExcludeManyLineageRankedLine]
+
+
 class CellLineRef(BaseModel):
     model_id: str
     name: str | None = None

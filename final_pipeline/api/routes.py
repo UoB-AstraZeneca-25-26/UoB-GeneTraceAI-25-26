@@ -9,13 +9,21 @@ from fastapi import APIRouter, HTTPException, Query
 
 from .ranking import detail as _detail
 from .ranking import exclude as _exclude
+from .ranking import exclude_by_lineage as _exclude_by_lineage
 from .ranking import exclude_many as _exclude_many
+from .ranking import exclude_many_by_lineage as _exclude_many_by_lineage
 from .ranking import is_ready, rank
+from .ranking import rank_by_lineage as _rank_by_lineage
+from .ranking import rank_by_lineage_multi as _rank_by_lineage_multi
 from .schemas import (
     DetailResponse,
+    ExcludeLineageRankedResponse,
+    ExcludeManyLineageRankedResponse,
     ExcludeManyResponse,
     ExcludeResponse,
     HealthResponse,
+    LineageRankedResponse,
+    MultiLineageRankedResponse,
     RankRequest,
     RankResponse,
 )
@@ -58,6 +66,21 @@ async def gene_endpoint(
     return RankResponse(**result)
 
 
+@router.get("/gene/by-lineage", response_model=LineageRankedResponse)
+async def gene_by_lineage_endpoint(
+    gene: str = Query(..., description="Gene symbol or ENSG ID"),
+) -> LineageRankedResponse:
+    _guard()
+    try:
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None, lambda: _rank_by_lineage(gene)
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return LineageRankedResponse(**result)
+
+
 @router.get("/genes", response_model=RankResponse)
 async def genes_endpoint(
     genes: str = Query(..., description="Comma-separated gene symbols, e.g. BRAF,KRAS"),
@@ -79,6 +102,24 @@ async def genes_endpoint(
     return RankResponse(**result)
 
 
+@router.get("/genes/by-lineage", response_model=MultiLineageRankedResponse)
+async def genes_by_lineage_endpoint(
+    genes: str = Query(..., description="Comma-separated gene symbols, e.g. BRAF,KRAS"),
+) -> MultiLineageRankedResponse:
+    _guard()
+    gene_list = [g.strip() for g in genes.split(",") if g.strip()]
+    if len(gene_list) < 2:
+        raise HTTPException(status_code=422, detail="Provide at least 2 comma-separated genes.")
+    try:
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None, lambda: _rank_by_lineage_multi(gene_list)
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return MultiLineageRankedResponse(**result)
+
+
 @router.get("/exclude", response_model=ExcludeResponse)
 async def exclude_endpoint(
     gene_a: str = Query(..., description="Gene that must be essential (high score)"),
@@ -95,6 +136,22 @@ async def exclude_endpoint(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     return ExcludeResponse(**result)
+
+
+@router.get("/exclude/by-lineage", response_model=ExcludeLineageRankedResponse)
+async def exclude_by_lineage_endpoint(
+    gene_a: str = Query(..., description="Gene that must be essential (high score)"),
+    gene_b: str = Query(..., description="Gene that must NOT be essential (low score)"),
+) -> ExcludeLineageRankedResponse:
+    _guard()
+    try:
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None, lambda: _exclude_by_lineage(gene_a, gene_b)
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return ExcludeLineageRankedResponse(**result)
 
 
 @router.get("/exclude/many", response_model=ExcludeManyResponse)
@@ -120,6 +177,29 @@ async def exclude_many_endpoint(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     return ExcludeManyResponse(**result)
+
+
+@router.get("/exclude/many/by-lineage", response_model=ExcludeManyLineageRankedResponse)
+async def exclude_many_by_lineage_endpoint(
+    gene_a: str = Query(..., description="Gene that must be essential (high score)"),
+    exclude: list[str] = Query(
+        ..., description="Genes that must NOT be essential (repeatable, e.g. ?exclude=KRAS&exclude=TP53)"
+    ),
+) -> ExcludeManyLineageRankedResponse:
+    _guard()
+    exclude_genes = [g.strip() for g in exclude if g.strip()]
+    if not exclude_genes:
+        raise HTTPException(status_code=422, detail="Provide at least 1 exclusion gene.")
+    if len(exclude_genes) > 10:
+        raise HTTPException(status_code=422, detail="Provide at most 10 exclusion genes.")
+    try:
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None, lambda: _exclude_many_by_lineage(gene_a, exclude_genes)
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return ExcludeManyLineageRankedResponse(**result)
 
 
 @router.get("/gene/detail", response_model=DetailResponse)

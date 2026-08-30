@@ -336,6 +336,239 @@ def exclude(gene_a: str, gene_b: str, lineages: list[str], top_n: int) -> dict:
             "lineage_distribution": _lineage_dist(scored["model_id"].tolist())}
 
 
+def _group_by_lineage(metric: pd.Series, top_lineages: int, per_lineage: int) -> dict:
+    """Shared lineage-grouping core, metric-agnostic: given ANY (model_id ->
+    score) Series pooled across all lineages, keep the top `per_lineage` rows
+    in each lineage, then keep the top `top_lineages` lineages (ranked by
+    their own best candidate's score). Sizing is fixed by this rule -- there
+    is no top_n / floor here. Used by single-gene, multi-gene, and both
+    selectivity modes -- each builds its own metric Series (core_score /
+    joint_score / selectivity) and calls this once.
+
+    rank_within_lineage is a clean 1..per_lineage ordinal within the kept
+    lineage's scoreable population, ties broken by model_id ascending -- the
+    same tie rule core_score.py uses for stratum_rank (not reused directly:
+    see the data-layer note below), computed fresh so a "top 5" is always
+    exactly 5 distinct rows.
+
+    rank_global reproduces the pooled, cross-lineage rank formula already
+    live on /gene/detail (ties share a rank: 1 + count of strictly higher
+    scores) so it means the same thing here as it already does there.
+
+    Data-layer note: core_score.parquet's `stratum_rank` column already
+    computes (gene, lineage) rank but is unread anywhere live, and is
+    verified NULL for ~768k otherwise-scoreable rows (67 cell lines absent
+    from celllineselector.db's sample_info, so lineage-less) -- deliberately
+    not reused here; both rank fields are computed fresh, in-memory, per
+    request, the same way /gene/detail already computes its rank.
+
+    Returns {lineages_returned, total_scoreable, lineage_unassigned_count,
+    kept: DataFrame[model_id, metric, lineage, rank_within_lineage,
+    rank_global]} -- callers attach whichever mode-specific fields (scores
+    dict, exclusion_scores, ...) belong on top of this shared scaffold.
+    """
+    s = metric.dropna()
+    if s.empty:
+        return {"lineages_returned": 0, "total_scoreable": 0,
+                "lineage_unassigned_count": 0, "kept": None}
+
+    df = s.rename("metric").reset_index()  # columns: model_id, metric
+    df["lineage"] = df["model_id"].str.lower().map(_lineage_map)
+
+    unassigned = df["lineage"].isna()
+    lineage_unassigned_count = int(unassigned.sum())
+    df = df[~unassigned].copy()
+
+    # rank_global: pooled across every scoreable line (lineage-blind) -- same
+    # "ties share a rank" formula detail() already uses.
+    global_rank = s.rank(ascending=False, method="min")
+    df["rank_global"] = df["model_id"].map(global_rank).astype(int)
+
+    # Deterministic order for within-lineage ranking: metric desc, then
+    # model_id asc on ties (core_score.py's own stratum_rank tie rule).
+    df = df.sort_values(["lineage", "metric", "model_id"],
+                        ascending=[True, False, True])
+    df["rank_within_lineage"] = (
+        df.groupby("lineage")["metric"].rank(ascending=False, method="first")
+    ).astype(int)
+
+    # Each lineage's top candidate score decides lineage order.
+    lineage_best = df.groupby("lineage")["metric"].max().sort_values(ascending=False)
+    kept_lineages = lineage_best.head(top_lineages).index.tolist()
+    lineage_order = {lin: i for i, lin in enumerate(kept_lineages)}
+
+    kept = df[df["lineage"].isin(kept_lineages) & (df["rank_within_lineage"] <= per_lineage)].copy()
+    kept["_lineage_order"] = kept["lineage"].map(lineage_order)
+    kept = kept.sort_values(["_lineage_order", "rank_within_lineage"])
+
+    return {
+        "lineages_returned": len(kept_lineages),
+        "total_scoreable": int(len(s)),
+        "lineage_unassigned_count": lineage_unassigned_count,
+        "kept": kept,
+    }
+
+
+def rank_by_lineage(gene: str, top_lineages: int = 10, per_lineage: int = 5) -> dict:
+    """Single-gene lineage ranking: metric is core_score for the one gene."""
+    ensg, sym = _resolve(gene)
+    grouped = _group_by_lineage(_gene_series(ensg, None), top_lineages, per_lineage)
+
+    kept = grouped.pop("kept")
+    if kept is None:
+        return {"gene": sym, **grouped, "lines": []}
+
+    if _cell_lkp is not None:
+        kept = kept.merge(_cell_lkp, on="model_id", how="left")
+
+    lines = []
+    for _, row in kept.iterrows():
+        raw_name = row.get("cell_line_name")
+        lines.append({
+            "model_id": row["model_id"].upper(),
+            "name": raw_name if isinstance(raw_name, str) else None,
+            "core_score": round(float(row["metric"]), 6),
+            "lineage": row["lineage"],
+            "rank_within_lineage": int(row["rank_within_lineage"]),
+            "rank_global": int(row["rank_global"]),
+            "metadata": _meta(row["model_id"]),
+        })
+
+    return {"gene": sym, **grouped, "lines": lines}
+
+
+def rank_by_lineage_multi(genes: list[str], top_lineages: int = 10, per_lineage: int = 5) -> dict:
+    """Multi-gene lineage ranking: metric is the joint score (min across
+    genes, same weakest-link rule as rank()'s N-gene path)."""
+    resolved = [_resolve(g) for g in genes]
+    syms = [s for _, s in resolved]
+
+    wide = None
+    for ensg, sym in resolved:
+        s = _gene_series(ensg, None).rename(sym).reset_index()
+        wide = s if wide is None else wide.merge(s, on="model_id", how="inner")
+
+    if wide is None or wide.empty:
+        return {"genes": syms, "lineages_returned": 0, "total_scoreable": 0,
+                "lineage_unassigned_count": 0, "lines": []}
+
+    wide["joint_score"] = wide[syms].min(axis=1, skipna=False)
+    metric = wide.set_index("model_id")["joint_score"]
+
+    grouped = _group_by_lineage(metric, top_lineages, per_lineage)
+    kept = grouped.pop("kept")
+    if kept is None:
+        return {"genes": syms, **grouped, "lines": []}
+
+    kept = kept.merge(wide[["model_id", *syms]], on="model_id", how="left")
+    if _cell_lkp is not None:
+        kept = kept.merge(_cell_lkp, on="model_id", how="left")
+
+    lines = []
+    for _, row in kept.iterrows():
+        raw_name = row.get("cell_line_name")
+        gene_scores = {sym: (round(float(row[sym]), 6) if pd.notna(row[sym]) else None) for sym in syms}
+        limiting = min((s for s in syms if row[s] == row["metric"]), default=None)
+        lines.append({
+            "model_id": row["model_id"].upper(),
+            "name": raw_name if isinstance(raw_name, str) else None,
+            "joint_score": round(float(row["metric"]), 6),
+            "scores": gene_scores,
+            "limiting_gene": limiting,
+            "lineage": row["lineage"],
+            "rank_within_lineage": int(row["rank_within_lineage"]),
+            "rank_global": int(row["rank_global"]),
+            "metadata": _meta(row["model_id"]),
+        })
+
+    return {"genes": syms, **grouped, "lines": lines}
+
+
+def exclude_by_lineage(gene_a: str, gene_b: str, top_lineages: int = 10, per_lineage: int = 5) -> dict:
+    """Single-exclusion selectivity lineage ranking: metric is selectivity
+    (score_a * (1 - score_b)), same formula as exclude()."""
+    ensg_a, sym_a = _resolve(gene_a)
+    ensg_b, sym_b = _resolve(gene_b)
+
+    a = _gene_series(ensg_a, None).rename("score_a").reset_index()
+    b = _gene_series(ensg_b, None).rename("score_b").reset_index()
+    merged = a.merge(b, on="model_id", how="inner")
+    merged["selectivity"] = merged["score_a"] * (1.0 - merged["score_b"])
+    metric = merged.set_index("model_id")["selectivity"]
+
+    grouped = _group_by_lineage(metric, top_lineages, per_lineage)
+    kept = grouped.pop("kept")
+    if kept is None:
+        return {"gene_a": sym_a, "gene_b": sym_b, **grouped, "lines": []}
+
+    kept = kept.merge(merged[["model_id", "score_a", "score_b"]], on="model_id", how="left")
+    if _cell_lkp is not None:
+        kept = kept.merge(_cell_lkp, on="model_id", how="left")
+
+    lines = []
+    for _, row in kept.iterrows():
+        raw_name = row.get("cell_line_name")
+        lines.append({
+            "model_id": row["model_id"].upper(),
+            "name": raw_name if isinstance(raw_name, str) else None,
+            "score_a": round(float(row["score_a"]), 6),
+            "score_b": round(float(row["score_b"]), 6),
+            "selectivity": round(float(row["metric"]), 6),
+            "lineage": row["lineage"],
+            "rank_within_lineage": int(row["rank_within_lineage"]),
+            "rank_global": int(row["rank_global"]),
+            "metadata": _meta(row["model_id"]),
+        })
+
+    return {"gene_a": sym_a, "gene_b": sym_b, **grouped, "lines": lines}
+
+
+def exclude_many_by_lineage(gene_a: str, gene_bs: list[str], top_lineages: int = 10,
+                            per_lineage: int = 5) -> dict:
+    """Multi-exclusion selectivity lineage ranking: metric is selectivity
+    (score_a * Pi(1 - score_bi)), same formula as exclude_many()."""
+    ensg_a, sym_a = _resolve(gene_a)
+    resolved_b = [_resolve(g) for g in gene_bs]
+    syms_b = [s for _, s in resolved_b]
+
+    merged = _gene_series(ensg_a, None).rename("score_a").reset_index()
+    for ensg_b, sym_b in resolved_b:
+        b = _gene_series(ensg_b, None).rename(sym_b).reset_index()
+        merged = merged.merge(b, on="model_id", how="inner")
+
+    selectivity = merged["score_a"].astype("float64").copy()
+    for sym_b in syms_b:
+        selectivity = selectivity * (1.0 - merged[sym_b])
+    merged["selectivity"] = selectivity
+    metric = merged.set_index("model_id")["selectivity"]
+
+    grouped = _group_by_lineage(metric, top_lineages, per_lineage)
+    kept = grouped.pop("kept")
+    if kept is None:
+        return {"gene_a": sym_a, "excluded_genes": syms_b, **grouped, "lines": []}
+
+    kept = kept.merge(merged[["model_id", "score_a", *syms_b]], on="model_id", how="left")
+    if _cell_lkp is not None:
+        kept = kept.merge(_cell_lkp, on="model_id", how="left")
+
+    lines = []
+    for _, row in kept.iterrows():
+        raw_name = row.get("cell_line_name")
+        lines.append({
+            "model_id": row["model_id"].upper(),
+            "name": raw_name if isinstance(raw_name, str) else None,
+            "score_a": round(float(row["score_a"]), 6),
+            "exclusion_scores": {s: round(float(row[s]), 6) for s in syms_b},
+            "selectivity": round(float(row["metric"]), 6),
+            "lineage": row["lineage"],
+            "rank_within_lineage": int(row["rank_within_lineage"]),
+            "rank_global": int(row["rank_global"]),
+            "metadata": _meta(row["model_id"]),
+        })
+
+    return {"gene_a": sym_a, "excluded_genes": syms_b, **grouped, "lines": lines}
+
+
 def _lineage_meta(model_id: str) -> dict:
     if _db_path is None:
         return {}
