@@ -465,9 +465,11 @@ const ViewExplainer: React.FC<{ view: string; count: number }> = ({ view, count 
           </li>
         ))}
       </ul>
-      <p className="text-[11px] text-slate-400 mt-4 pt-3 border-t border-slate-100">
-        Showing your top {count} {count === 1 ? 'line' : 'lines'}.
-      </p>
+      {view !== 'lineages' && (
+        <p className="text-[11px] text-slate-400 mt-4 pt-3 border-t border-slate-100">
+          Showing your top {count} {count === 1 ? 'line' : 'lines'}.
+        </p>
+      )}
     </div>
   );
 };

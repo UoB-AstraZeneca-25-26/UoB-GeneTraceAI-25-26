@@ -34,6 +34,7 @@ const DETAIL_URL = `${API}/gene/detail`;
 const BY_LINEAGE_URL = `${API}/gene/by-lineage`;
 const GENES_BY_LINEAGE_URL = `${API}/genes/by-lineage`;
 const EXCLUDE_MANY_BY_LINEAGE_URL = `${API}/exclude/many/by-lineage`;
+const GENES_LIST_URL = `${API}/genes/list`;
 
 // How many lines to request from the server (client slices further for display).
 const TOP_N = 30;
@@ -308,6 +309,22 @@ export async function fetchSelectivityLineageRanking(
     signal
   );
   if (!data || !Array.isArray(data.lines)) throw new Error('Unexpected /exclude/many/by-lineage response shape.');
+  return data;
+}
+
+// ---------- /prod/genes/list (full gene universe, for autocomplete/validation) ----------
+export interface GeneListApiItem {
+  symbol: string;
+  ensg: string;
+}
+
+export interface GeneListApiResponse {
+  genes: GeneListApiItem[];
+}
+
+export async function fetchGeneList(signal?: AbortSignal): Promise<GeneListApiResponse> {
+  const data = await getJson<GeneListApiResponse>(GENES_LIST_URL, signal);
+  if (!data || !Array.isArray(data.genes)) throw new Error('Unexpected /genes/list response shape.');
   return data;
 }
 

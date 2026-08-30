@@ -45,6 +45,15 @@ const groupByLineage = (rows: RawRow[]): Group[] => {
  * on record, so they can't appear grouped here (flagged, not silently
  * dropped). */
 export const LineagePanel: React.FC<LineagePanelProps> = ({ gene, mode, genes, excludedGenes, onSelect }) => {
+  // Display label reflecting the whole query, not just the primary gene --
+  // "BRAF + TP53" for multi, "BRAF vs KRAS, TP53" for selectivity.
+  const queryLabel =
+    mode === 'multi' && genes && genes.length > 1
+      ? genes.join(' + ')
+      : mode === 'selectivity' && excludedGenes && excludedGenes.length > 0
+      ? `${gene} vs ${excludedGenes.join(', ')}`
+      : gene;
+
   const [groups, setGroups] = useState<Group[] | null>(null);
   const [unassigned, setUnassigned] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
@@ -166,7 +175,7 @@ export const LineagePanel: React.FC<LineagePanelProps> = ({ gene, mode, genes, e
     return (
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
         <Loader2 className="w-6 h-6 mx-auto animate-spin text-indigo-600" />
-        <p className="text-xs text-slate-500 mt-3">Ranking every lineage for {gene}…</p>
+        <p className="text-xs text-slate-500 mt-3">Ranking every lineage for {queryLabel}…</p>
       </div>
     );
   }
@@ -187,7 +196,7 @@ export const LineagePanel: React.FC<LineagePanelProps> = ({ gene, mode, genes, e
     <div className="space-y-4">
       {/* Lineage overview */}
       <div>
-        <h3 className="text-lg font-bold text-slate-900">Lineage breakdown for {gene}</h3>
+        <h3 className="text-lg font-bold text-slate-900">Lineage breakdown for {queryLabel}</h3>
         <p className="text-xs text-slate-500 mt-1">
           Top {groups.length} lineages by their single best candidate, top {Math.max(...groups.map((g) => g.lines.length))}{' '}
           lines within each — ranked across the whole panel, not just this page's results. Use the filters below to

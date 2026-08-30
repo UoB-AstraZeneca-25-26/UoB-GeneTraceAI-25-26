@@ -77,7 +77,7 @@ export const GuidePage: React.FC<GuidePageProps> = ({ onStart }) => {
           <ViewCard
             icon={Layers}
             title="Lineages"
-            body="Groups the results by tissue lineage so you can compare candidates within and across tissues."
+            body="Ranks the top 10 tissue lineages by their best candidate, top 5 lines within each — across the whole panel, not just your top N results."
           />
         </div>
       </section>
