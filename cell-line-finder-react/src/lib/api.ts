@@ -7,6 +7,7 @@ import {
 } from './mockApi';
 import {
   CellLineDetail,
+  JointSelectivityRanked,
   LineageGroupedResult,
   MetadataItem,
   MultiRanked,
@@ -34,6 +35,8 @@ const DETAIL_URL = `${API}/gene/detail`;
 const BY_LINEAGE_URL = `${API}/gene/by-lineage`;
 const GENES_BY_LINEAGE_URL = `${API}/genes/by-lineage`;
 const EXCLUDE_MANY_BY_LINEAGE_URL = `${API}/exclude/many/by-lineage`;
+const GENES_EXCLUDE_MANY_URL = `${API}/genes/exclude/many`;
+const GENES_EXCLUDE_MANY_BY_LINEAGE_URL = `${API}/genes/exclude/many/by-lineage`;
 const GENES_LIST_URL = `${API}/genes/list`;
 
 // How many lines to request from the server (client slices further for display).
@@ -92,6 +95,28 @@ export interface ExcludeManyApiResponse {
   lines: ExcludeManyApiLine[];
 }
 
+// ---------- /prod/genes/exclude/many (joint multi-target + N-exclusion selectivity) ----------
+export interface JointExcludeManyApiLine {
+  model_id: string;
+  name: string | null;
+  joint_score: number;
+  limiting_gene: string | null;
+  scores: Record<string, number | null>;
+  exclusion_scores: Record<string, number>;
+  combined_score: number;
+  lineage_score?: number; // 0-1 within-lineage score, if the backend provides it
+  metadata?: LineMetadata;
+}
+
+export interface JointExcludeManyApiResponse {
+  genes: string[];
+  excluded_genes: string[];
+  lineage?: string[];
+  floor: number;
+  total_passing: number;
+  lines: JointExcludeManyApiLine[];
+}
+
 // ---------- /prod/gene/detail (per-line detail) ----------
 export interface CellLineDetailApiResponse {
   gene: string;
@@ -108,6 +133,12 @@ export interface CellLineDetailApiResponse {
   driver_alteration: boolean;
   p_mutation: number | null;
   p_fusion: number | null;
+  // Per-layer split of driver_alteration (mutation/fusion each gated at p >= 0.5,
+  // matching the backend's driver threshold) -- lets the UI attribute the "driver"
+  // badge to the layer that actually earned it instead of always tagging Mutation.
+  // Optional: older deployments don't send these.
+  mutation_driver?: boolean;
+  fusion_driver?: boolean;
   has_cna_alteration: boolean;
   expression_level: number | null;
   proteomics_level: number | null;
@@ -209,6 +240,25 @@ export async function fetchSelectivityRanking(
     signal
   );
   if (!data || !Array.isArray(data.lines)) throw new Error('Unexpected /exclude/many response shape.');
+  return data;
+}
+
+export async function fetchJointSelectivityRanking(
+  genes: string[],
+  excludedGenes: string[],
+  signal?: AbortSignal
+): Promise<JointExcludeManyApiResponse> {
+  const clean = genes.map((g) => g.trim()).filter(Boolean);
+  const bs = excludedGenes.map((g) => g.trim()).filter(Boolean);
+  if (clean.length < 2) throw new Error('Provide at least two target genes for a joint ranking.');
+  if (bs.length === 0) throw new Error('Provide at least one exclusion gene.');
+  const genesQuery = clean.map(encodeURIComponent).join(',');
+  const excludeQuery = bs.map((g) => `exclude=${encodeURIComponent(g)}`).join('&');
+  const data = await getJson<JointExcludeManyApiResponse>(
+    `${GENES_EXCLUDE_MANY_URL}?genes=${genesQuery}&${excludeQuery}&top_n=${TOP_N}`,
+    signal
+  );
+  if (!data || !Array.isArray(data.lines)) throw new Error('Unexpected /genes/exclude/many response shape.');
   return data;
 }
 
@@ -314,6 +364,50 @@ export async function fetchSelectivityLineageRanking(
     signal
   );
   if (!data || !Array.isArray(data.lines)) throw new Error('Unexpected /exclude/many/by-lineage response shape.');
+  return data;
+}
+
+// ---------- /prod/genes/exclude/many/by-lineage (joint + N-exclusion, grouped by lineage) ----------
+export interface JointExcludeManyLineageRankedApiLine {
+  model_id: string;
+  name: string | null;
+  joint_score: number;
+  scores: Record<string, number | null>;
+  limiting_gene: string | null;
+  exclusion_scores: Record<string, number>;
+  combined_score: number;
+  lineage: string;
+  rank_within_lineage: number;
+  rank_global: number;
+  metadata?: LineMetadata;
+}
+
+export interface JointExcludeManyLineageRankedApiResponse {
+  genes: string[];
+  excluded_genes: string[];
+  lineages_returned: number;
+  total_scoreable: number;
+  lineage_unassigned_count: number;
+  lines: JointExcludeManyLineageRankedApiLine[];
+}
+
+export async function fetchJointSelectivityLineageRanking(
+  genes: string[],
+  excludedGenes: string[],
+  signal?: AbortSignal
+): Promise<JointExcludeManyLineageRankedApiResponse> {
+  const clean = genes.map((g) => g.trim()).filter(Boolean);
+  const bs = excludedGenes.map((g) => g.trim()).filter(Boolean);
+  if (clean.length < 2) throw new Error('Provide at least two target genes for a joint ranking.');
+  if (bs.length === 0) throw new Error('Provide at least one exclusion gene.');
+  const genesQuery = clean.map(encodeURIComponent).join(',');
+  const excludeQuery = bs.map((g) => `exclude=${encodeURIComponent(g)}`).join('&');
+  const data = await getJson<JointExcludeManyLineageRankedApiResponse>(
+    `${GENES_EXCLUDE_MANY_BY_LINEAGE_URL}?genes=${genesQuery}&${excludeQuery}`,
+    signal
+  );
+  if (!data || !Array.isArray(data.lines))
+    throw new Error('Unexpected /genes/exclude/many/by-lineage response shape.');
   return data;
 }
 
@@ -442,6 +536,36 @@ export function toSelectivityRanked(resp: ExcludeManyApiResponse): SelectivityRa
   }));
 }
 
+export function toJointSelectivityRanked(resp: JointExcludeManyApiResponse): JointSelectivityRanked[] {
+  const combined = resp.lines.map((l) => l.combined_score);
+  const linScores = lineageScores(
+    resp.lines.map((l) => ({ lineage: lineageOf(l.metadata?.lineage), metric: l.combined_score, provided: l.lineage_score }))
+  );
+  return resp.lines.map((l, i) => {
+    const geneScores: Record<string, number | null> = {};
+    for (const g of resp.genes) {
+      const v = l.scores?.[g];
+      geneScores[g] = typeof v === 'number' && Number.isFinite(v) ? v : null;
+    }
+    return {
+      mode: 'jointSelectivity',
+      rank: i + 1,
+      modelId: l.model_id,
+      cellLine: displayName(l.name, l.model_id),
+      lineage: lineageOf(l.metadata?.lineage),
+      jointScore: l.joint_score,
+      combinedScore: l.combined_score,
+      genes: resp.genes,
+      geneScores,
+      limitingGene: l.limiting_gene ?? null,
+      excludedGenes: resp.excluded_genes,
+      exclusionScores: l.exclusion_scores,
+      relativeScore: relativize(combined, l.combined_score),
+      lineageScore: linScores[i],
+    };
+  });
+}
+
 export function toLineageGrouped(resp: LineageRankedApiResponse): LineageGroupedResult {
   return {
     gene: resp.gene,
@@ -491,11 +615,27 @@ export function metaFromExclude(resp: ExcludeManyApiResponse): ResultMeta {
   };
 }
 
+export function metaFromJointExclude(resp: JointExcludeManyApiResponse): ResultMeta {
+  return {
+    mode: 'jointSelectivity',
+    primaryGene: resp.genes.join(' + '),
+    genes: resp.genes,
+    excludedGenes: resp.excluded_genes,
+    floor: resp.floor,
+    formula: `min(${resp.genes.map((g) => `score_${g}`).join(', ')}) × ${resp.excluded_genes
+      .map((g) => `(1 − score_${g})`)
+      .join(' × ')}`,
+    total: resp.total_passing,
+    showing: resp.lines.length,
+  };
+}
+
 /**
  * High-level entry point. Routes by what's selected:
- *   2+ targets              -> /prod/genes      (joint multi-gene; exclusions ignored)
- *   1 target + exclusion(s) -> /prod/exclude/many (selectivity against every excluded gene)
- *   1 target                -> /prod/gene        (single, joint shape with one gene)
+ *   2+ targets + exclusion(s) -> /prod/genes/exclude/many (joint multi-gene, selective against excluded genes)
+ *   2+ targets                -> /prod/genes      (joint multi-gene, no exclusions)
+ *   1 target + exclusion(s)   -> /prod/exclude/many (selectivity against every excluded gene)
+ *   1 target                  -> /prod/gene        (single, joint shape with one gene)
  */
 export async function fetchRanking(
   targets: string[],
@@ -504,13 +644,18 @@ export async function fetchRanking(
 ): Promise<{ results: RankedCellLine[]; meta: ResultMeta }> {
   const clean = targets.map((t) => t.trim()).filter(Boolean);
   if (clean.length === 0) throw new Error('Select at least one target gene.');
+  const cleanExclusions = exclusions.map((e) => e.trim()).filter(Boolean);
+
+  if (clean.length >= 2 && cleanExclusions.length > 0) {
+    const resp = await fetchJointSelectivityRanking(clean, cleanExclusions, signal);
+    return { results: toJointSelectivityRanked(resp), meta: metaFromJointExclude(resp) };
+  }
 
   if (clean.length >= 2) {
     const resp = await fetchMultiRanking(clean, signal);
     return { results: toMultiRanked(resp), meta: metaFromGenes(resp) };
   }
 
-  const cleanExclusions = exclusions.map((e) => e.trim()).filter(Boolean);
   if (cleanExclusions.length > 0) {
     const resp = await fetchSelectivityRanking(clean[0], cleanExclusions, signal);
     return { results: toSelectivityRanked(resp), meta: metaFromExclude(resp) };
@@ -632,6 +777,8 @@ export function toCellLineDetail(resp: CellLineDetailApiResponse): CellLineDetai
     driverAlteration: resp.driver_alteration,
     pMutation: resp.p_mutation,
     pFusion: resp.p_fusion,
+    mutationDriver: resp.mutation_driver ?? false,
+    fusionDriver: resp.fusion_driver ?? false,
     hasCnaAlteration: resp.has_cna_alteration,
     expressionLevel:
       typeof resp.expression_level === 'number' && Number.isFinite(resp.expression_level)

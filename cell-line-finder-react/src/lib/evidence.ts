@@ -122,7 +122,13 @@ export function deriveVerdict(results: RankedCellLine[]): Verdict | null {
   }
 
   const metric = (r: RankedCellLine) =>
-    r.mode === 'selectivity' ? r.selectivity : r.mode === 'multi' ? r.jointScore : r.score;
+    r.mode === 'selectivity'
+      ? r.selectivity
+      : r.mode === 'jointSelectivity'
+      ? r.combinedScore
+      : r.mode === 'multi'
+      ? r.jointScore
+      : r.score;
   const vals = results.map(metric).sort((a, b) => b - a);
   const top = vals[0];
   const median = vals[Math.floor(vals.length / 2)];
@@ -133,7 +139,8 @@ export function deriveVerdict(results: RankedCellLine[]): Verdict | null {
   // the top. Flag it when partial-coverage lines are the majority — a high rank
   // there does NOT mean "high across all your targets".
   const multi = results.filter(
-    (r): r is Extract<RankedCellLine, { mode: 'multi' }> => r.mode === 'multi'
+    (r): r is Extract<RankedCellLine, { mode: 'multi' | 'jointSelectivity' }> =>
+      r.mode === 'multi' || r.mode === 'jointSelectivity'
   );
   if (multi.length > 0) {
     const partial = multi.filter((r) => r.genes.some((g) => r.geneScores[g] === null));

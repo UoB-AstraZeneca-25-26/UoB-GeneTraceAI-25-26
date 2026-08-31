@@ -29,7 +29,7 @@ export type ViewType = 'query' | 'results' | 'profile' | 'about' | 'assistant' |
 
 export type ScoreTier = 'HIGH' | 'MEDIUM' | 'LOW';
 
-export type ResultMode = 'single' | 'selectivity' | 'multi';
+export type ResultMode = 'single' | 'selectivity' | 'multi' | 'jointSelectivity';
 
 export type BaseRanked = {
   rank: number;
@@ -66,16 +66,30 @@ export type MultiRanked = BaseRanked & {
   limitingGene: string | null;               // gene that caps the joint score
 };
 
-export type RankedCellLine = SingleRanked | SelectivityRanked | MultiRanked;
+/** Result of GET /prod/genes/exclude/many?genes=<A,B,...>&exclude=<LOW1>&exclude=<LOW2>...
+ *  Combines rank()'s N-target weakest-link joint score with exclude_many()'s
+ *  N-exclusion selectivity penalty: combinedScore = jointScore * Pi(1 - exclusionScore_i). */
+export type JointSelectivityRanked = BaseRanked & {
+  mode: 'jointSelectivity';
+  jointScore: number;                        // min across target genes (weakest-link)
+  combinedScore: number;                     // jointScore * Pi(1 - exclusion scores) -- the ranking metric
+  genes: string[];                           // queried target genes, in order
+  geneScores: Record<string, number | null>; // per-target-gene; null = NaN/no evidence
+  limitingGene: string | null;               // target gene that caps the joint score
+  excludedGenes: string[];
+  exclusionScores: Record<string, number>;
+};
+
+export type RankedCellLine = SingleRanked | SelectivityRanked | MultiRanked | JointSelectivityRanked;
 
 export type ResultMeta = {
   mode: ResultMode;
-  primaryGene: string;   // gene_high (selectivity), gene (single), or joined list (multi)
+  primaryGene: string;   // gene_high (selectivity), gene (single), or joined list (multi / jointSelectivity)
   ensg?: string;
-  excludedGenes?: string[]; // gene_b list (selectivity only)
-  formula?: string;      // selectivity only
-  genes?: string[];      // multi only
-  floor?: number;        // multi only
+  excludedGenes?: string[]; // gene_b list (selectivity), exclude list (jointSelectivity)
+  formula?: string;      // selectivity, jointSelectivity
+  genes?: string[];      // multi, jointSelectivity
+  floor?: number;        // multi, jointSelectivity
   total: number;
   showing: number;
 };
@@ -146,6 +160,8 @@ export type CellLineDetail = {
   driverAlteration: boolean;
   pMutation: number | null;
   pFusion: number | null;
+  mutationDriver: boolean; // p_mutation >= 0.5 -- this layer's own share of driverAlteration
+  fusionDriver: boolean;   // p_fusion >= 0.5 -- this layer's own share of driverAlteration
   hasCnaAlteration: boolean;
   expressionLevel: number | null;   // within-gene percentile (0..1), or null if unmeasured
   proteomicsLevel: number | null;   // within-gene percentile (0..1), or null if unmeasured

@@ -153,23 +153,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
           <LayerCard
             label="Mutation"
             present={(detail.pMutation ?? 0) > 0}
-            hint={detail.driverAlteration ? 'driver alteration' : (detail.pMutation ?? 0) > 0 ? 'variant detected' : 'no variant detected'}
-            badge={detail.driverAlteration ? 'driver' : undefined}
+            hint={detail.mutationDriver ? 'driver alteration' : (detail.pMutation ?? 0) > 0 ? 'variant detected' : 'no variant detected'}
+            badge={detail.mutationDriver ? 'driver' : undefined}
           />
           <LayerCard
             label="Fusion"
             present={(detail.pFusion ?? 0) > 0}
-            hint={(detail.pFusion ?? 0) > 0 ? 'fusion detected' : 'no fusion detected'}
+            hint={detail.fusionDriver ? 'driver alteration' : (detail.pFusion ?? 0) > 0 ? 'fusion detected' : 'no fusion detected'}
+            badge={detail.fusionDriver ? 'driver' : undefined}
           />
           <LayerCard
             label="Copy number"
             present={detail.hasCnaAlteration}
             hint={detail.hasCnaAlteration ? 'copy-number altered' : 'no alteration'}
+            badge={detail.hasCnaAlteration ? 'driver' : undefined}
           />
         </div>
         <p className="text-[11px] text-slate-400">
           Alteration layers are categorical — each is simply present or absent for this line. A “driver”
-          tag means the mutation is a known cancer driver, not just any variant.
+          tag on a layer means that specific alteration (mutation, fusion, or copy-number change) is
+          strong enough to be treated as a likely driver, not just any variant.
         </p>
       </div>
 
@@ -274,6 +277,15 @@ const GeneScores: React.FC<{ ranked?: RankedCellLine; gene: string; score: numbe
       const lim = ranked.limitingGene === g;
       return chip(`${g} ${v != null ? v.toFixed(3) : '—'}${lim ? ' ▼' : ''}`, lim ? 'limit' : 'neutral', g);
     });
+  } else if (ranked.mode === 'jointSelectivity') {
+    chips = [
+      ...ranked.genes.map((g) => {
+        const v = ranked.geneScores[g];
+        const lim = ranked.limitingGene === g;
+        return chip(`${g} ${v != null ? v.toFixed(3) : '—'}${lim ? ' ▼' : ''}`, lim ? 'limit' : 'high', g);
+      }),
+      ...ranked.excludedGenes.map((g) => chip(`${g} ${(ranked.exclusionScores[g] ?? 0).toFixed(3)} ↓`, 'low', g)),
+    ];
   } else {
     chips = [
       chip(`${ranked.geneHigh} ${ranked.scoreHigh.toFixed(3)} ↑`, 'high', ranked.geneHigh),
@@ -305,16 +317,26 @@ const TopCards: React.FC<{ detail: CellLineDetail; ranked?: RankedCellLine }> = 
 
   // From a ranking: show the score/rank the user actually clicked.
   const modeLabel =
-    ranked.mode === 'selectivity' ? 'selectivity ranking' : ranked.mode === 'multi' ? 'joint ranking' : 'single-gene ranking';
+    ranked.mode === 'selectivity'
+      ? 'selectivity ranking'
+      : ranked.mode === 'jointSelectivity'
+      ? 'joint selectivity ranking'
+      : ranked.mode === 'multi'
+      ? 'joint ranking'
+      : 'single-gene ranking';
   const metric =
     ranked.mode === 'selectivity'
       ? { label: 'Selectivity', value: ranked.selectivity }
+      : ranked.mode === 'jointSelectivity'
+      ? { label: 'Combined score', value: ranked.combinedScore }
       : ranked.mode === 'multi'
       ? { label: 'Joint score', value: ranked.jointScore }
       : { label: 'Score', value: ranked.score };
   const scoreSub =
     ranked.mode === 'selectivity'
       ? `${ranked.geneHigh} high vs ${ranked.excludedGenes.join('/')} low`
+      : ranked.mode === 'jointSelectivity'
+      ? `${ranked.genes.filter((g) => ranked.geneScores[g] != null).length}/${ranked.genes.length} targets scored, vs ${ranked.excludedGenes.join('/')} low`
       : ranked.mode === 'multi'
       ? `${ranked.genes.filter((g) => ranked.geneScores[g] != null).length}/${ranked.genes.length} genes scored`
       : `${confTier(detail.tier).label} tier`;

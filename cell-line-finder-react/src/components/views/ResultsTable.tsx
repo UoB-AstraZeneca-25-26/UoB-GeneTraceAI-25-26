@@ -31,8 +31,8 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   // Gene full-name / alias enrichment — purely additive, never blocks or alters the ranking.
   const aliasGenes = React.useMemo(() => {
     const genes =
-      meta?.mode === 'multi'
-        ? meta.genes ?? []
+      meta?.mode === 'multi' || meta?.mode === 'jointSelectivity'
+        ? [...(meta.genes ?? []), ...(meta.excludedGenes ?? [])]
         : [meta?.primaryGene ?? queryParams.targets[0], ...(meta?.excludedGenes ?? [])];
     return Array.from(new Set(genes.filter((g): g is string => Boolean(g))));
   }, [meta, queryParams.targets]);
@@ -154,9 +154,12 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   const inspectGene = meta?.genes?.[0] ?? meta?.primaryGene ?? queryParams.targets[0];
 
   // Genes whose evidence the grid should show: single -> [gene]; multi -> all
-  // targets; selectivity -> target + excluded genes (so you see high-vs-low).
+  // targets; selectivity -> target + excluded genes (so you see high-vs-low);
+  // jointSelectivity -> all targets + excluded genes.
   const gridGenes =
-    mode === 'multi'
+    mode === 'jointSelectivity'
+      ? [...(meta?.genes ?? queryParams.targets), ...(meta?.excludedGenes ?? queryParams.exclusions)]
+      : mode === 'multi'
       ? meta?.genes ?? queryParams.targets
       : mode === 'selectivity'
       ? [meta?.primaryGene ?? queryParams.targets[0], ...(meta?.excludedGenes ?? queryParams.exclusions)]
@@ -178,6 +181,11 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
               <strong>Selective for {meta.primaryGene}</strong> against{' '}
               <strong>{meta.excludedGenes?.join(', ')}</strong>
             </>
+          ) : meta?.mode === 'jointSelectivity' ? (
+            <>
+              <strong>Joint ranking:</strong> {meta.genes?.join(' + ')} <strong>selective against</strong>{' '}
+              {meta.excludedGenes?.join(', ')}
+            </>
           ) : meta?.mode === 'multi' ? (
             <>
               <strong>Joint ranking:</strong> {meta.genes?.join(' + ')}
@@ -189,7 +197,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             </>
           )}
           {meta && (
-            <> {' '}| Top {results.length} of {meta.total.toLocaleString()} {meta.mode === 'multi' ? 'passing' : 'ranked'}</>
+            <> {' '}| Top {results.length} of {meta.total.toLocaleString()} {meta.mode === 'multi' || meta.mode === 'jointSelectivity' ? 'passing' : 'ranked'}</>
           )}
         </p>
 
@@ -307,6 +315,11 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                     <th className="px-4 py-3">Component scores</th>
                     <th className="px-4 py-3">Selectivity <span className="normal-case font-normal text-slate-400">(global / in-lineage)</span></th>
                   </>
+                ) : mode === 'jointSelectivity' ? (
+                  <>
+                    <th className="px-4 py-3">Component scores</th>
+                    <th className="px-4 py-3">Combined <span className="normal-case font-normal text-slate-400">(global / in-lineage)</span></th>
+                  </>
                 ) : (
                   <>
                     <th className="px-4 py-3">Per-gene scores</th>
@@ -326,7 +339,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <span className="font-bold font-mono text-slate-900">{r.modelId}</span>
-                      {r.mode === 'multi' && r.genes.some((g) => r.geneScores[g] === null) && (
+                      {(r.mode === 'multi' || r.mode === 'jointSelectivity') && r.genes.some((g) => r.geneScores[g] === null) && (
                         <span
                           title="Missing a score for at least one requested gene — joint score is based on partial evidence"
                           className="inline-flex items-center text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded"
@@ -361,6 +374,35 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                       </td>
                       <td className="px-4 py-3">
                         <ScorePair global={r.selectivity} lineage={r.lineageScore} />
+                      </td>
+                    </>
+                  ) : r.mode === 'jointSelectivity' ? (
+                    <>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono">
+                          {r.genes.map((g) => {
+                            const v = r.geneScores[g];
+                            const limits = r.limitingGene === g;
+                            return (
+                              <span
+                                key={g}
+                                className={v === null ? 'text-slate-300' : limits ? 'text-amber-700 font-semibold' : 'text-emerald-600'}
+                                title={limits ? `${g} limits the joint score` : `${g} score`}
+                              >
+                                {g} {v === null ? '—' : v.toFixed(3)}
+                                {limits && <span className="ml-0.5 text-[9px]">▼</span>}
+                              </span>
+                            );
+                          })}
+                          {r.excludedGenes.map((g) => (
+                            <span key={g} className="text-rose-500" title={`${g} score`}>
+                              {g} {r.exclusionScores[g].toFixed(3)}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <ScorePair global={r.combinedScore} lineage={r.lineageScore} />
                       </td>
                     </>
                   ) : (

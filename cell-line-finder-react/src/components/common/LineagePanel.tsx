@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { MultiRanked, RankedCellLine, ResultMode, SelectivityRanked, SingleRanked } from '../../types';
+import { JointSelectivityRanked, MultiRanked, RankedCellLine, ResultMode, SelectivityRanked, SingleRanked } from '../../types';
 import {
+  fetchJointSelectivityLineageRanking,
   fetchLineageRanking,
   fetchMultiLineageRanking,
   fetchSelectivityLineageRanking,
@@ -17,7 +18,13 @@ interface LineagePanelProps {
 }
 
 const metricOf = (r: RankedCellLine) =>
-  r.mode === 'selectivity' ? r.selectivity : r.mode === 'multi' ? r.jointScore : r.score;
+  r.mode === 'selectivity'
+    ? r.selectivity
+    : r.mode === 'jointSelectivity'
+    ? r.combinedScore
+    : r.mode === 'multi'
+    ? r.jointScore
+    : r.score;
 
 type GroupLine = { ranked: RankedCellLine; rankGlobal: number };
 type Group = { lineage: string; lines: GroupLine[] };
@@ -48,7 +55,9 @@ export const LineagePanel: React.FC<LineagePanelProps> = ({ gene, mode, genes, e
   // Display label reflecting the whole query, not just the primary gene --
   // "BRAF + TP53" for multi, "BRAF vs KRAS, TP53" for selectivity.
   const queryLabel =
-    mode === 'multi' && genes && genes.length > 1
+    mode === 'jointSelectivity' && genes && genes.length > 1 && excludedGenes && excludedGenes.length > 0
+      ? `${genes.join(' + ')} vs ${excludedGenes.join(', ')}`
+      : mode === 'multi' && genes && genes.length > 1
       ? genes.join(' + ')
       : mode === 'selectivity' && excludedGenes && excludedGenes.length > 0
       ? `${gene} vs ${excludedGenes.join(', ')}`
@@ -147,6 +156,38 @@ export const LineagePanel: React.FC<LineagePanelProps> = ({ gene, mode, genes, e
                   relativeScore: 0,
                   lineageScore: 0,
                 } satisfies SelectivityRanked,
+              }))
+            )
+          );
+          setUnassigned(resp.lineage_unassigned_count);
+        })
+        .catch(onError);
+    } else if (mode === 'jointSelectivity') {
+      if (!genes || genes.length < 2 || !excludedGenes || excludedGenes.length === 0) return;
+      fetchJointSelectivityLineageRanking(genes, excludedGenes, ctrl.signal)
+        .then((resp) => {
+          if (cancelled) return;
+          setGroups(
+            groupByLineage(
+              resp.lines.map((l) => ({
+                lineage: l.lineage,
+                rankGlobal: l.rank_global,
+                ranked: {
+                  mode: 'jointSelectivity',
+                  rank: l.rank_within_lineage,
+                  modelId: l.model_id.toUpperCase(),
+                  cellLine: l.name && l.name !== 'None' ? l.name.toUpperCase() : l.model_id.toUpperCase(),
+                  lineage: l.lineage,
+                  jointScore: l.joint_score,
+                  combinedScore: l.combined_score,
+                  genes: resp.genes,
+                  geneScores: l.scores,
+                  limitingGene: l.limiting_gene,
+                  excludedGenes: resp.excluded_genes,
+                  exclusionScores: l.exclusion_scores,
+                  relativeScore: 0,
+                  lineageScore: 0,
+                } satisfies JointSelectivityRanked,
               }))
             )
           );

@@ -52,9 +52,19 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({ initialParams, onSub
 
   // Query mode derived from the current selection (mirrors the routing in fetchRanking).
   const mode =
-    targets.length >= 2 ? 'MULTI' : targets.length === 1 && exclusions.length > 0 ? 'SELECTIVITY' : targets.length === 1 ? 'SINGLE' : '—';
+    targets.length >= 2 && exclusions.length > 0
+      ? 'JOINT_SELECTIVITY'
+      : targets.length >= 2
+      ? 'MULTI'
+      : targets.length === 1 && exclusions.length > 0
+      ? 'SELECTIVITY'
+      : targets.length === 1
+      ? 'SINGLE'
+      : '—';
   const modeHint =
-    mode === 'MULTI'
+    mode === 'JOINT_SELECTIVITY'
+      ? 'Joint across all targets, high; low in the excluded gene(s)'
+      : mode === 'MULTI'
       ? 'Joint ranking across all targets'
       : mode === 'SELECTIVITY'
       ? 'High in the target, low in the excluded gene(s)'
