@@ -126,6 +126,18 @@ def is_ready() -> bool:
     return _pred is not None and _gene_lkp is not None
 
 
+def list_genes() -> dict:
+    """The full recognised gene universe (symbol + ENSG), for client-side
+    autocomplete/validation -- so the UI can catch an unrecognised symbol
+    before submitting, instead of round-tripping to find out. Served from
+    the same in-memory table _resolve() already uses; no extra I/O."""
+    genes = [
+        {"symbol": sym, "ensg": ensg}
+        for ensg, sym in zip(_gene_lkp["ensg_id"], _gene_lkp["hgnc_symbol"])
+    ]
+    return {"genes": genes}
+
+
 def _resolve(query: str) -> tuple[str, str]:
     q = query.strip().upper()
     if q in _sym_index:

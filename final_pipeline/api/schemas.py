@@ -3,6 +3,15 @@
 from pydantic import BaseModel, Field
 
 
+class GeneListItem(BaseModel):
+    symbol: str
+    ensg: str
+
+
+class GeneListResponse(BaseModel):
+    genes: list[GeneListItem]
+
+
 class RankRequest(BaseModel):
     genes: list[str] = Field(..., min_length=1, max_length=10)
     lineage: list[str] = Field(default_factory=list, max_length=5)

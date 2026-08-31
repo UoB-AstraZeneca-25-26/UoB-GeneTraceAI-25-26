@@ -12,7 +12,7 @@ from .ranking import exclude as _exclude
 from .ranking import exclude_by_lineage as _exclude_by_lineage
 from .ranking import exclude_many as _exclude_many
 from .ranking import exclude_many_by_lineage as _exclude_many_by_lineage
-from .ranking import is_ready, rank
+from .ranking import is_ready, list_genes, rank
 from .ranking import rank_by_lineage as _rank_by_lineage
 from .ranking import rank_by_lineage_multi as _rank_by_lineage_multi
 from .schemas import (
@@ -21,6 +21,7 @@ from .schemas import (
     ExcludeManyLineageRankedResponse,
     ExcludeManyResponse,
     ExcludeResponse,
+    GeneListResponse,
     HealthResponse,
     LineageRankedResponse,
     MultiLineageRankedResponse,
@@ -216,6 +217,13 @@ async def gene_detail_endpoint(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     return DetailResponse(**result)
+
+
+@router.get("/genes/list", response_model=GeneListResponse)
+async def genes_list_endpoint() -> GeneListResponse:
+    """Full recognised gene universe, for client-side autocomplete/validation."""
+    _guard()
+    return GeneListResponse(**list_genes())
 
 
 @router.get("/health", response_model=HealthResponse)
