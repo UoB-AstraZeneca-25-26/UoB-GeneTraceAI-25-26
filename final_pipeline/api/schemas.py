@@ -153,6 +153,50 @@ class ExcludeManyLineageRankedResponse(BaseModel):
     lines: list[ExcludeManyLineageRankedLine]
 
 
+class RankExcludeManyLine(BaseModel):
+    model_id: str
+    name: str | None = None
+    joint_score: float
+    limiting_gene: str | None = None
+    scores: dict[str, float]
+    exclusion_scores: dict[str, float]
+    combined_score: float
+    metadata: dict = {}
+
+
+class RankExcludeManyResponse(BaseModel):
+    genes: list[str]
+    excluded_genes: list[str]
+    lineage: list[str]
+    floor: float
+    total_passing: int
+    lines: list[RankExcludeManyLine]
+    lineage_distribution: dict[str, int] = {}
+
+
+class RankExcludeManyLineageRankedLine(BaseModel):
+    model_id: str
+    name: str | None = None
+    joint_score: float
+    scores: dict[str, float | None]
+    limiting_gene: str | None = None
+    exclusion_scores: dict[str, float]
+    combined_score: float
+    lineage: str
+    rank_within_lineage: int
+    rank_global: int
+    metadata: dict = {}
+
+
+class RankExcludeManyLineageRankedResponse(BaseModel):
+    genes: list[str]
+    excluded_genes: list[str]
+    lineages_returned: int
+    total_scoreable: int
+    lineage_unassigned_count: int
+    lines: list[RankExcludeManyLineageRankedLine]
+
+
 class CellLineRef(BaseModel):
     model_id: str
     name: str | None = None
@@ -170,6 +214,8 @@ class DetailResponse(BaseModel):
     driver_alteration: bool
     p_mutation: float | None = None
     p_fusion: float | None = None
+    mutation_driver: bool = False
+    fusion_driver: bool = False
     has_cna_alteration: bool
     expression_level: float | None = None
     proteomics_level: float | None = None

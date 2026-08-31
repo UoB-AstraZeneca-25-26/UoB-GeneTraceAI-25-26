@@ -581,6 +581,132 @@ def exclude_many_by_lineage(gene_a: str, gene_bs: list[str], top_lineages: int =
     return {"gene_a": sym_a, "excluded_genes": syms_b, **grouped, "lines": lines}
 
 
+def rank_exclude_many(gene_as: list[str], gene_bs: list[str], lineages: list[str],
+                      floor: float, top_n: int) -> dict:
+    """Combines rank()'s N-target weakest-link joint score with exclude_many()'s
+    N-exclusion selectivity penalty: joint_score = min(target scores), gated by
+    floor exactly as rank()'s N-gene path does; combined_score = joint_score *
+    Pi(1 - score_bi) for every excluded gene, same multiplicative penalty as
+    exclude_many(). Requires 2+ target genes -- for one target use
+    exclude()/exclude_many() instead."""
+    resolved_a = [_resolve(s) for s in gene_as]
+    syms_a = [s for _, s in resolved_a]
+    resolved_b = [_resolve(s) for s in gene_bs]
+    syms_b = [s for _, s in resolved_b]
+
+    lineage_ids = _lineage_model_ids(lineages)
+
+    wide = None
+    for ensg, sym in resolved_a:
+        s = _gene_series(ensg, lineage_ids).rename(sym).reset_index()
+        wide = s if wide is None else wide.merge(s, on="model_id", how="inner")
+
+    if wide is None or wide.empty:
+        return {"genes": syms_a, "excluded_genes": syms_b, "lineage": lineages,
+                "floor": floor, "total_passing": 0, "lines": [],
+                "lineage_distribution": {}}
+
+    wide["joint_score"] = wide[syms_a].min(axis=1, skipna=False)
+    scoreable = wide["joint_score"].notna()
+    wide.loc[scoreable, "limiting_gene"] = wide.loc[scoreable, syms_a].idxmin(axis=1)
+
+    for ensg_b, sym_b in resolved_b:
+        b = _gene_series(ensg_b, lineage_ids).rename(sym_b).reset_index()
+        wide = wide.merge(b, on="model_id", how="inner")
+
+    passing = wide[scoreable & (wide["joint_score"] >= floor)].copy()
+    combined = passing["joint_score"].astype("float64").copy()
+    for sym_b in syms_b:
+        combined = combined * (1.0 - passing[sym_b])
+    passing["combined_score"] = combined
+
+    shortlist = passing.sort_values("combined_score", ascending=False, na_position="last").head(top_n)
+
+    if _cell_lkp is not None:
+        shortlist = shortlist.merge(_cell_lkp[["model_id", "cell_line_name"]],
+                                    on="model_id", how="left")
+
+    lines = []
+    for _, row in shortlist.iterrows():
+        raw_name = row.get("cell_line_name")
+        lines.append({
+            "model_id": row["model_id"].upper(),
+            "name": raw_name if isinstance(raw_name, str) else None,
+            "joint_score": round(float(row["joint_score"]), 6),
+            "limiting_gene": row.get("limiting_gene"),
+            "scores": {s: round(float(row[s]), 6) for s in syms_a if pd.notna(row[s])},
+            "exclusion_scores": {s: round(float(row[s]), 6) for s in syms_b},
+            "combined_score": round(float(row["combined_score"]), 6),
+            "metadata": _meta(row["model_id"]),
+        })
+
+    return {"genes": syms_a, "excluded_genes": syms_b, "lineage": lineages,
+            "floor": floor, "total_passing": len(passing), "lines": lines,
+            "lineage_distribution": _lineage_dist(passing["model_id"].tolist())}
+
+
+def rank_exclude_many_by_lineage(gene_as: list[str], gene_bs: list[str],
+                                 top_lineages: int = 10, per_lineage: int = 5) -> dict:
+    """Lineage-grouped counterpart of rank_exclude_many(): metric is
+    combined_score, same formula, no floor gate (matches every other
+    *_by_lineage function -- sizing comes from _group_by_lineage alone)."""
+    resolved_a = [_resolve(s) for s in gene_as]
+    syms_a = [s for _, s in resolved_a]
+    resolved_b = [_resolve(s) for s in gene_bs]
+    syms_b = [s for _, s in resolved_b]
+
+    wide = None
+    for ensg, sym in resolved_a:
+        s = _gene_series(ensg, None).rename(sym).reset_index()
+        wide = s if wide is None else wide.merge(s, on="model_id", how="inner")
+
+    if wide is None or wide.empty:
+        return {"genes": syms_a, "excluded_genes": syms_b, "lineages_returned": 0,
+                "total_scoreable": 0, "lineage_unassigned_count": 0, "lines": []}
+
+    wide["joint_score"] = wide[syms_a].min(axis=1, skipna=False)
+
+    for ensg_b, sym_b in resolved_b:
+        b = _gene_series(ensg_b, None).rename(sym_b).reset_index()
+        wide = wide.merge(b, on="model_id", how="inner")
+
+    combined = wide["joint_score"].astype("float64").copy()
+    for sym_b in syms_b:
+        combined = combined * (1.0 - wide[sym_b])
+    wide["combined_score"] = combined
+    metric = wide.set_index("model_id")["combined_score"]
+
+    grouped = _group_by_lineage(metric, top_lineages, per_lineage)
+    kept = grouped.pop("kept")
+    if kept is None:
+        return {"genes": syms_a, "excluded_genes": syms_b, **grouped, "lines": []}
+
+    kept = kept.merge(wide[["model_id", "joint_score", *syms_a, *syms_b]], on="model_id", how="left")
+    if _cell_lkp is not None:
+        kept = kept.merge(_cell_lkp, on="model_id", how="left")
+
+    lines = []
+    for _, row in kept.iterrows():
+        raw_name = row.get("cell_line_name")
+        gene_scores = {sym: (round(float(row[sym]), 6) if pd.notna(row[sym]) else None) for sym in syms_a}
+        limiting = min((s for s in syms_a if row[s] == row["joint_score"]), default=None)
+        lines.append({
+            "model_id": row["model_id"].upper(),
+            "name": raw_name if isinstance(raw_name, str) else None,
+            "joint_score": round(float(row["joint_score"]), 6),
+            "scores": gene_scores,
+            "limiting_gene": limiting,
+            "exclusion_scores": {s: round(float(row[s]), 6) for s in syms_b},
+            "combined_score": round(float(row["metric"]), 6),
+            "lineage": row["lineage"],
+            "rank_within_lineage": int(row["rank_within_lineage"]),
+            "rank_global": int(row["rank_global"]),
+            "metadata": _meta(row["model_id"]),
+        })
+
+    return {"genes": syms_a, "excluded_genes": syms_b, **grouped, "lines": lines}
+
+
 def _lineage_meta(model_id: str) -> dict:
     if _db_path is None:
         return {}
@@ -775,6 +901,11 @@ def detail(gene: str, model_id: str) -> dict:
         "driver_alteration": bool(pr.get("has_driver_alteration") or False),
         "p_mutation": _num(pr.get("p_mutation")),
         "p_fusion": _num(pr.get("p_fusion")),
+        # 0.5 matches Scoring/driver_routing.py's MUT_DRIVER_THRESHOLD/FUS_DRIVER_THRESHOLD --
+        # per-layer split of the combined has_driver_alteration flag, so the UI can attribute
+        # the "driver" badge to the layer that actually earned it (mutation vs fusion vs CNA).
+        "mutation_driver": bool((pr.get("p_mutation") or 0.0) >= 0.5),
+        "fusion_driver": bool((pr.get("p_fusion") or 0.0) >= 0.5),
         "has_cna_alteration": bool(pr.get("has_cna_alteration") or False),
         "expression_level": omics["expression_level"],
         "proteomics_level": omics["proteomics_level"],
