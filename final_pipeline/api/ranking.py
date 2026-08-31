@@ -126,13 +126,19 @@ def load_ranking_data(predictions_path: Path, gene_lookup_path: Path,
         _sym_index[sym.upper()] = pair
         _ensg_index[ensg.upper()] = pair
 
+    rrid_map: dict[str, str] = {}
     if cell_lookup_path.exists():
-        _cell_lkp = pd.read_parquet(cell_lookup_path, columns=["model_id", "cell_line_name"])
+        _cell_lkp = pd.read_parquet(cell_lookup_path, columns=["model_id", "cell_line_name", "rrid"])
         _cell_lkp["model_id"] = _cell_lkp["model_id"].str.lower()
         _cell_name = {
             mid: name
             for mid, name in zip(_cell_lkp["model_id"], _cell_lkp["cell_line_name"])
             if isinstance(name, str)
+        }
+        rrid_map = {
+            mid: rrid
+            for mid, rrid in zip(_cell_lkp["model_id"], _cell_lkp["rrid"])
+            if isinstance(rrid, str)
         }
 
     if sample_info_path.exists():
@@ -149,6 +155,12 @@ def load_ranking_data(predictions_path: Path, gene_lookup_path: Path,
             logger.info("metadata map loaded: %d lines", len(_meta_map))
         except Exception as exc:
             logger.warning("metadata map load failed: %s", exc)
+
+    # rrid comes from cell_line_lookup, a different source than sample_info --
+    # merge it into the same per-line metadata dict every ranking response
+    # already returns, so a line with no sample_info row still gets an rrid.
+    for mid, rrid in rrid_map.items():
+        _meta_map.setdefault(mid, {})["rrid"] = rrid
 
 
 def is_ready() -> bool:
