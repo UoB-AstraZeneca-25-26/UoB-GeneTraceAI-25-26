@@ -78,7 +78,7 @@ def load_ranking_data(predictions_path: Path, gene_lookup_path: Path,
     _pred_path = predictions_path
     logger.info("prediction index built: %d genes", _pred.index.nunique())
 
-    _gene_lkp = pd.read_parquet(gene_lookup_path, columns=["ensg_id", "hgnc_symbol"])
+    _gene_lkp = pd.read_parquet(gene_lookup_path, columns=["ensg_id", "hgnc_symbol", "approved_name"])
     # Vectorized zip — far faster than iterrows over the gene table.
     for ensg, sym in zip(_gene_lkp["ensg_id"], _gene_lkp["hgnc_symbol"]):
         pair = (ensg, sym)
@@ -127,15 +127,37 @@ def is_ready() -> bool:
 
 
 def list_genes() -> dict:
-    """The full recognised gene universe (symbol + ENSG), for client-side
-    autocomplete/validation -- so the UI can catch an unrecognised symbol
-    before submitting, instead of round-tripping to find out. Served from
-    the same in-memory table _resolve() already uses; no extra I/O."""
+    """The full recognised gene universe (symbol + ENSG + approved name), for
+    client-side autocomplete/validation and the Reference lookup page -- so
+    the UI can catch an unrecognised symbol before submitting, instead of
+    round-tripping to find out. Served from the same in-memory table
+    _resolve() already uses; no extra I/O."""
     genes = [
-        {"symbol": sym, "ensg": ensg}
-        for ensg, sym in zip(_gene_lkp["ensg_id"], _gene_lkp["hgnc_symbol"])
+        {"symbol": sym, "ensg": ensg, "name": name if isinstance(name, str) else None}
+        for ensg, sym, name in zip(_gene_lkp["ensg_id"], _gene_lkp["hgnc_symbol"], _gene_lkp["approved_name"])
     ]
     return {"genes": genes}
+
+
+def list_cell_lines() -> dict:
+    """The full recognised cell-line universe (model_id + display name +
+    lineage + primary disease), for the Reference lookup page -- one bulk
+    export computed from the same _cell_lkp / _meta_map tables already loaded
+    at startup, no extra I/O. Lines with no sample_info row (lineage-less,
+    see the lineage-grouped ranking's unassigned-count note) simply omit
+    lineage/primary_disease -- still resolvable by id/name."""
+    if _cell_lkp is None:
+        return {"cell_lines": []}
+    lines = []
+    for mid, name in zip(_cell_lkp["model_id"], _cell_lkp["cell_line_name"]):
+        meta = _meta_map.get(mid, {})
+        lines.append({
+            "model_id": mid.upper(),
+            "name": name if isinstance(name, str) else None,
+            "lineage": meta.get("lineage"),
+            "primary_disease": meta.get("primary_disease"),
+        })
+    return {"cell_lines": lines}
 
 
 def _resolve(query: str) -> tuple[str, str]:

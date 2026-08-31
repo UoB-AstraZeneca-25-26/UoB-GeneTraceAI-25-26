@@ -6,10 +6,22 @@ from pydantic import BaseModel, Field
 class GeneListItem(BaseModel):
     symbol: str
     ensg: str
+    name: str | None = None
 
 
 class GeneListResponse(BaseModel):
     genes: list[GeneListItem]
+
+
+class CellLineListItem(BaseModel):
+    model_id: str
+    name: str | None = None
+    lineage: str | None = None
+    primary_disease: str | None = None
+
+
+class CellLineListResponse(BaseModel):
+    cell_lines: list[CellLineListItem]
 
 
 class RankRequest(BaseModel):

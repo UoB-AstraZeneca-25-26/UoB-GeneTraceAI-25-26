@@ -12,12 +12,13 @@ from .ranking import exclude as _exclude
 from .ranking import exclude_by_lineage as _exclude_by_lineage
 from .ranking import exclude_many as _exclude_many
 from .ranking import exclude_many_by_lineage as _exclude_many_by_lineage
-from .ranking import is_ready, list_genes, rank
+from .ranking import is_ready, list_cell_lines, list_genes, rank
 from .ranking import rank_by_lineage as _rank_by_lineage
 from .ranking import rank_by_lineage_multi as _rank_by_lineage_multi
 from .ranking import rank_exclude_many as _rank_exclude_many
 from .ranking import rank_exclude_many_by_lineage as _rank_exclude_many_by_lineage
 from .schemas import (
+    CellLineListResponse,
     DetailResponse,
     ExcludeLineageRankedResponse,
     ExcludeManyLineageRankedResponse,
@@ -280,9 +281,17 @@ async def gene_detail_endpoint(
 
 @router.get("/genes/list", response_model=GeneListResponse)
 async def genes_list_endpoint() -> GeneListResponse:
-    """Full recognised gene universe, for client-side autocomplete/validation."""
+    """Full recognised gene universe, for client-side autocomplete/validation
+    and the Reference lookup page."""
     _guard()
     return GeneListResponse(**list_genes())
+
+
+@router.get("/cell_lines/list", response_model=CellLineListResponse)
+async def cell_lines_list_endpoint() -> CellLineListResponse:
+    """Full recognised cell-line universe, for the Reference lookup page."""
+    _guard()
+    return CellLineListResponse(**list_cell_lines())
 
 
 @router.get("/health", response_model=HealthResponse)
