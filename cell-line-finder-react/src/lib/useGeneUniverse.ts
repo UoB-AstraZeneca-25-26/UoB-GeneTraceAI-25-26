@@ -8,19 +8,24 @@ import { GENE_UNIVERSE } from './mockData';
  * Falls back to the small GENE_UNIVERSE demo list while loading or if the
  * fetch fails, so the search box is never empty. */
 
-let cache: { symbols: string[]; symbolSet: Set<string>; ensgSet: Set<string> } | null = null;
-let inflight: Promise<typeof cache> | null = null;
+type GeneRow = { symbol: string; ensg: string; name: string | null };
+type GeneCache = { symbols: string[]; symbolSet: Set<string>; ensgSet: Set<string>; rows: GeneRow[] };
+
+let cache: GeneCache | null = null;
+let inflight: Promise<GeneCache | null> | null = null;
 
 function load() {
   if (cache) return Promise.resolve(cache);
   if (!inflight) {
     inflight = fetchGeneList()
       .then((resp) => {
-        const symbols = resp.genes.map((g) => g.symbol).sort();
+        const rows = [...resp.genes].sort((a, b) => a.symbol.localeCompare(b.symbol));
+        const symbols = rows.map((g) => g.symbol);
         cache = {
           symbols,
           symbolSet: new Set(symbols.map((s) => s.toUpperCase())),
-          ensgSet: new Set(resp.genes.map((g) => g.ensg.toUpperCase())),
+          ensgSet: new Set(rows.map((g) => g.ensg.toUpperCase())),
+          rows,
         };
         return cache;
       })
@@ -54,5 +59,5 @@ export function useGeneUniverse() {
       }
     : undefined;
 
-  return { symbols, isKnown, ready };
+  return { symbols, isKnown, ready, rows: cache?.rows ?? null };
 }

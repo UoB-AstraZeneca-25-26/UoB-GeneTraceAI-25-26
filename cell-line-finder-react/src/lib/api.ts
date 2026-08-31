@@ -38,6 +38,7 @@ const EXCLUDE_MANY_BY_LINEAGE_URL = `${API}/exclude/many/by-lineage`;
 const GENES_EXCLUDE_MANY_URL = `${API}/genes/exclude/many`;
 const GENES_EXCLUDE_MANY_BY_LINEAGE_URL = `${API}/genes/exclude/many/by-lineage`;
 const GENES_LIST_URL = `${API}/genes/list`;
+const CELL_LINES_LIST_URL = `${API}/cell_lines/list`;
 
 // How many lines to request from the server (client slices further for display).
 const TOP_N = 30;
@@ -415,6 +416,7 @@ export async function fetchJointSelectivityLineageRanking(
 export interface GeneListApiItem {
   symbol: string;
   ensg: string;
+  name: string | null;
 }
 
 export interface GeneListApiResponse {
@@ -424,6 +426,24 @@ export interface GeneListApiResponse {
 export async function fetchGeneList(signal?: AbortSignal): Promise<GeneListApiResponse> {
   const data = await getJson<GeneListApiResponse>(GENES_LIST_URL, signal);
   if (!data || !Array.isArray(data.genes)) throw new Error('Unexpected /genes/list response shape.');
+  return data;
+}
+
+// ---------- /prod/cell_lines/list (full cell-line universe, for the Reference lookup) ----------
+export interface CellLineListApiItem {
+  model_id: string;
+  name: string | null;
+  lineage: string | null;
+  primary_disease: string | null;
+}
+
+export interface CellLineListApiResponse {
+  cell_lines: CellLineListApiItem[];
+}
+
+export async function fetchCellLineList(signal?: AbortSignal): Promise<CellLineListApiResponse> {
+  const data = await getJson<CellLineListApiResponse>(CELL_LINES_LIST_URL, signal);
+  if (!data || !Array.isArray(data.cell_lines)) throw new Error('Unexpected /cell_lines/list response shape.');
   return data;
 }
 

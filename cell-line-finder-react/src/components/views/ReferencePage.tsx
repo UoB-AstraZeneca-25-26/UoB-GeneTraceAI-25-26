@@ -1,41 +1,54 @@
 import React, { useMemo, useState } from 'react';
-import { CELL_LINE_DIRECTORY } from '../../lib/mockApi';
+import { useCellLineDirectory } from '../../lib/useCellLineDirectory';
+import { useGeneUniverse } from '../../lib/useGeneUniverse';
 import { GENE_REF } from '../../lib/mockData';
-import { Search, Dna, FlaskConical, Info } from 'lucide-react';
+import { Search, Dna, FlaskConical, Loader2 } from 'lucide-react';
 
 type Tab = 'lines' | 'genes';
 
 /**
  * A lookup table so users can find the ACH id for a cell-line name (and vice
- * versa), and confirm gene symbols. This is a representative preview; the full
- * DepMap / gene tables will be wired in behind the same search UI later.
+ * versa), and confirm gene symbols. Backed by the live /genes/list and
+ * /cell_lines/list endpoints (falls back to a small demo list while loading
+ * or if the fetch fails).
  */
 export const ReferencePage: React.FC = () => {
   const [tab, setTab] = useState<Tab>('lines');
   const [q, setQ] = useState('');
 
+  const { lines: cellLines, ready: linesReady } = useCellLineDirectory();
+  const { rows: geneRows, ready: genesReady } = useGeneUniverse();
+
   const query = q.trim().toLowerCase();
 
-  const lines = useMemo(() => {
-    if (!query) return CELL_LINE_DIRECTORY;
-    return CELL_LINE_DIRECTORY.filter(
+  // The real tables run to ~19K genes / ~1.8K cell lines -- render at most this
+  // many rows at once so the DOM stays responsive; a query narrows the pool
+  // before this cap ever matters in practice.
+  const MAX_ROWS = 200;
+
+  const matchedLines = useMemo(() => {
+    if (!query) return cellLines;
+    return cellLines.filter(
       (l) =>
         l.ach.toLowerCase().includes(query) ||
         l.name.toLowerCase().includes(query) ||
         l.lineage.toLowerCase().includes(query) ||
         l.disease.toLowerCase().includes(query)
     );
-  }, [query]);
+  }, [query, cellLines]);
+  const lines = useMemo(() => matchedLines.slice(0, MAX_ROWS), [matchedLines]);
 
-  const genes = useMemo(() => {
-    if (!query) return GENE_REF;
-    return GENE_REF.filter(
+  const matchedGenes = useMemo(() => {
+    const pool = geneRows ?? GENE_REF;
+    if (!query) return pool;
+    return pool.filter(
       (g) =>
         g.symbol.toLowerCase().includes(query) ||
-        g.name.toLowerCase().includes(query) ||
+        (g.name ?? '').toLowerCase().includes(query) ||
         g.ensg.toLowerCase().includes(query)
     );
-  }, [query]);
+  }, [query, geneRows]);
+  const genes = useMemo(() => matchedGenes.slice(0, MAX_ROWS), [matchedGenes]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -47,13 +60,12 @@ export const ReferencePage: React.FC = () => {
         </p>
       </div>
 
-      <div className="flex items-start gap-2 text-xs text-slate-500 bg-mulberry-50/60 border border-mulberry-100 rounded-lg p-3">
-        <Info className="w-4 h-4 text-mulberry-500 shrink-0 mt-0.5" />
-        <span>
-          This is a representative preview. The full cell-line and gene tables will be connected here later — the
-          search box will work the same way against the complete list.
-        </span>
-      </div>
+      {((tab === 'lines' && !linesReady) || (tab === 'genes' && !genesReady)) && (
+        <div className="flex items-center gap-2 text-xs text-slate-500 bg-mulberry-50/60 border border-mulberry-100 rounded-lg p-3">
+          <Loader2 className="w-4 h-4 text-mulberry-500 shrink-0 animate-spin" />
+          <span>Loading the full {tab === 'lines' ? 'cell-line' : 'gene'} table…</span>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="inline-flex bg-slate-100 rounded-lg p-0.5">
@@ -124,7 +136,7 @@ export const ReferencePage: React.FC = () => {
                 <tr key={g.symbol} className="hover:bg-slate-50/70">
                   <td className="px-4 py-2.5 font-mono font-semibold text-slate-800">{g.symbol}</td>
                   <td className="px-4 py-2.5 font-mono text-slate-500">{g.ensg}</td>
-                  <td className="px-4 py-2.5 text-slate-700">{g.name}</td>
+                  <td className="px-4 py-2.5 text-slate-700">{g.name ?? '—'}</td>
                 </tr>
               ))}
               {genes.length === 0 && <EmptyRow cols={3} />}
@@ -134,7 +146,23 @@ export const ReferencePage: React.FC = () => {
       </div>
 
       <p className="text-[11px] text-slate-400">
-        {tab === 'lines' ? `${lines.length} cell line${lines.length === 1 ? '' : 's'}` : `${genes.length} gene${genes.length === 1 ? '' : 's'}`} shown.
+        {tab === 'lines' ? (
+          matchedLines.length > lines.length ? (
+            <>
+              Showing first {lines.length} of {matchedLines.length.toLocaleString()} matching cell lines — refine your
+              search to narrow further.
+            </>
+          ) : (
+            <>{lines.length} cell line{lines.length === 1 ? '' : 's'} shown.</>
+          )
+        ) : matchedGenes.length > genes.length ? (
+          <>
+            Showing first {genes.length} of {matchedGenes.length.toLocaleString()} matching genes — refine your search
+            to narrow further.
+          </>
+        ) : (
+          <>{genes.length} gene{genes.length === 1 ? '' : 's'} shown.</>
+        )}
       </p>
     </div>
   );
