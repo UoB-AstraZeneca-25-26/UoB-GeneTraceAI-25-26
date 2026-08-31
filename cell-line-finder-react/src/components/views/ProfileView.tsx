@@ -125,9 +125,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
         <p className="text-[12px] text-slate-600 leading-relaxed bg-slate-50 border border-slate-100 rounded-lg p-3">
           <strong className="text-slate-700">How to read:</strong> each layer shows a level —{' '}
           <strong className="text-slate-700">Low, Moderate or High</strong> for {detail.gene} in this line{' '}
-          relative to other cell lines — and which datasets measured it (present or absent). Expression draws on
-          DepMap, HPA and GEO; proteomics on ProCan and CCLE. More sources present means the level is backed by
-          more independent evidence.
+          relative to other cell lines — the same level is also shown per dataset below (Low/Moderate/High, or No
+          if that dataset didn't measure it). Expression draws on DepMap, HPA and GEO; proteomics on ProCan and
+          CCLE. Sources can disagree — that's real, not an error.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -135,13 +135,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
             label="Expression (RNA)"
             level={detail.expressionLevel}
             allSources={EXPRESSION_SOURCES}
-            presentSources={detail.expressionSources}
+            sourceLevels={detail.expressionBySource}
           />
           <SourceRow
             label="Proteomics (protein)"
             level={detail.proteomicsLevel}
             allSources={PROTEOMICS_SOURCES}
-            presentSources={detail.proteomicsSources}
+            sourceLevels={detail.proteomicsBySource}
           />
         </div>
       </div>
@@ -152,14 +152,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <LayerCard
             label="Mutation"
-            present={detail.pMutation != null}
-            hint={detail.driverAlteration ? 'driver alteration' : detail.pMutation != null ? 'variant detected' : 'no variant detected'}
+            present={(detail.pMutation ?? 0) > 0}
+            hint={detail.driverAlteration ? 'driver alteration' : (detail.pMutation ?? 0) > 0 ? 'variant detected' : 'no variant detected'}
             badge={detail.driverAlteration ? 'driver' : undefined}
           />
           <LayerCard
             label="Fusion"
-            present={detail.pFusion != null}
-            hint={detail.pFusion != null ? 'fusion detected' : 'no fusion detected'}
+            present={(detail.pFusion ?? 0) > 0}
+            hint={(detail.pFusion ?? 0) > 0 ? 'fusion detected' : 'no fusion detected'}
           />
           <LayerCard
             label="Copy number"
@@ -365,8 +365,8 @@ const SourceRow: React.FC<{
   label: string;
   level: number | null;
   allSources: readonly string[];
-  presentSources: string[];
-}> = ({ label, level, allSources, presentSources }) => {
+  sourceLevels: Record<string, number | null>;
+}> = ({ label, level, allSources, sourceLevels }) => {
   const measured = level != null;
   const band = measured ? levelBand(level) : null;
   return (
@@ -385,19 +385,19 @@ const SourceRow: React.FC<{
         <span className="text-[10px] uppercase tracking-wide text-slate-400">Sources</span>
         <div className="flex flex-wrap gap-1.5 mt-1">
           {allSources.map((s) => {
-            const on = presentSources.includes(s);
+            const srcLevel = sourceLevels[s];
+            const srcBand = srcLevel != null ? levelBand(srcLevel) : null;
             return (
               <span
                 key={s}
-                title={on ? `${s}: present for this line` : `${s}: absent for this line`}
+                title={srcBand ? `${s}: ${srcBand.label} for this line` : `${s}: not measured for this line`}
                 className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${
-                  on
-                    ? 'bg-mulberry-50 text-mulberry-700 border-mulberry-200'
+                  srcBand
+                    ? TIER_PILL_CLASS[srcBand.tone]
                     : 'bg-slate-50 text-slate-400 border-dashed border-slate-200'
                 }`}
               >
-                {on ? <span aria-hidden>✓</span> : <span aria-hidden>×</span>}
-                {s}
+                {s}: {srcBand ? srcBand.label : 'No'}
               </span>
             );
           })}

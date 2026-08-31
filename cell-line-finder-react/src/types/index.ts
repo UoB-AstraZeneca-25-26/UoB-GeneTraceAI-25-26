@@ -149,8 +149,8 @@ export type CellLineDetail = {
   hasCnaAlteration: boolean;
   expressionLevel: number | null;   // within-gene percentile (0..1), or null if unmeasured
   proteomicsLevel: number | null;   // within-gene percentile (0..1), or null if unmeasured
-  expressionSources: string[];      // which expression datasets contributed (DepMap/HPA/GEO)
-  proteomicsSources: string[];      // which proteomics datasets contributed (ProCan/CCLE)
+  expressionBySource: Record<string, number | null>; // per-source level (0..1), e.g. {DepMap: 0.8, HPA: null}
+  proteomicsBySource: Record<string, number | null>; // per-source level (0..1), e.g. {ProCan: 0.4, CCLE: 0.6}
   expressionMeasurements: SourceMeasurement[]; // raw per-source expression values, if reported
   proteomicsMeasurements: SourceMeasurement[]; // raw per-source proteomics values, if reported
   tracks: TrackScores;         // per-layer signals reported by this endpoint

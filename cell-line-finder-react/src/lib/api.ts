@@ -116,6 +116,11 @@ export interface CellLineDetailApiResponse {
   // shows the level without a source breakdown.
   expression_sources?: string[] | null;
   proteomics_sources?: string[] | null;
+  // Per-source level (0-1), e.g. {"DepMap": 0.8, "HPA": null}. Optional --
+  // older deployments don't send these, in which case the UI falls back to
+  // showing the combined level only, no per-source breakdown.
+  expression_by_source?: Record<string, number | null> | null;
+  proteomics_by_source?: Record<string, number | null> | null;
   // Raw per-source measurements behind each level (DepMap TPM, HPA nTPM, etc.).
   // Optional — deployments that don't send them fall back to the source chips.
   expression_measurements?: { source: string; value: number; unit?: string; max?: number }[] | null;
@@ -563,14 +568,17 @@ function cleanMetadata(meta: Record<string, string | number | null>): MetadataIt
 
 export function toCellLineDetail(resp: CellLineDetailApiResponse): CellLineDetail {
   const tracks: TrackScores = {};
-  if (typeof resp.p_mutation === 'number' && Number.isFinite(resp.p_mutation)) {
+  // p_mutation/p_fusion are 0 for both "measured, clean" and "not measured" lines
+  // (the backend fills missing values with 0) -- > 0 is the backend's own
+  // presence rule (see driver_routing.py's has_alteration), not != null.
+  if (typeof resp.p_mutation === 'number' && Number.isFinite(resp.p_mutation) && resp.p_mutation > 0) {
     tracks.mutation = {
       present: true,
       score: resp.p_mutation,
       finding: resp.driver_alteration ? 'driver' : undefined,
     };
   }
-  if (typeof resp.p_fusion === 'number' && Number.isFinite(resp.p_fusion)) {
+  if (typeof resp.p_fusion === 'number' && Number.isFinite(resp.p_fusion) && resp.p_fusion > 0) {
     tracks.fusion = { present: true, score: resp.p_fusion };
   }
   tracks.cna = {
@@ -588,8 +596,6 @@ export function toCellLineDetail(resp: CellLineDetailApiResponse): CellLineDetai
   }
 
   const name = displayName(resp.cell_line.name, resp.cell_line.model_id);
-  const cleanSources = (v: unknown): string[] =>
-    Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string' && s.trim() !== '') : [];
   const cleanMeasurements = (v: unknown): SourceMeasurement[] => {
     if (!Array.isArray(v)) return [];
     const items = v
@@ -635,8 +641,8 @@ export function toCellLineDetail(resp: CellLineDetailApiResponse): CellLineDetai
       typeof resp.proteomics_level === 'number' && Number.isFinite(resp.proteomics_level)
         ? resp.proteomics_level
         : null,
-    expressionSources: cleanSources(resp.expression_sources),
-    proteomicsSources: cleanSources(resp.proteomics_sources),
+    expressionBySource: resp.expression_by_source ?? {},
+    proteomicsBySource: resp.proteomics_by_source ?? {},
     expressionMeasurements: cleanMeasurements(resp.expression_measurements),
     proteomicsMeasurements: cleanMeasurements(resp.proteomics_measurements),
     tracks,
