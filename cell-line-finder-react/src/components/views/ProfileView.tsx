@@ -25,13 +25,38 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
   const [error, setError] = useState<string | null>(null);
   const [showMethodology, setShowMethodology] = useState(false);
 
+  // When the query had multiple TARGET genes (multi / jointSelectivity), evidence
+  // (expression, proteomics, mutation, fusion, CNA) is only ever fetched for one
+  // gene at a time -- /gene/detail takes a single gene param. Let the user switch
+  // which target's evidence they're looking at, defaulting to the limiting gene
+  // since that's usually the one that matters most for interpreting the score.
+  const availableGenes = React.useMemo(() => {
+    const r = target.ranked;
+    if (r && (r.mode === 'multi' || r.mode === 'jointSelectivity') && r.genes.length > 1) return r.genes;
+    return [target.gene];
+  }, [target]);
+  const limitingGene =
+    target.ranked && (target.ranked.mode === 'multi' || target.ranked.mode === 'jointSelectivity')
+      ? target.ranked.limitingGene
+      : null;
+
+  const [selectedGene, setSelectedGene] = useState<string>(limitingGene ?? availableGenes[0] ?? target.gene);
+
+  // Reset which gene is selected whenever we navigate to a new inspect target
+  // (different line, or a fresh query) -- otherwise a stale selectedGene from
+  // the previous line could persist and silently fetch the wrong gene here.
+  useEffect(() => {
+    setSelectedGene(limitingGene ?? availableGenes[0] ?? target.gene);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target.modelId, target.gene]);
+
   useEffect(() => {
     let cancelled = false;
     const ctrl = new AbortController();
     setLoading(true);
     setError(null);
     setDetail(null);
-    fetchCellLineDetail(target.gene, target.modelId, ctrl.signal)
+    fetchCellLineDetail(selectedGene, target.modelId, ctrl.signal)
       .then((resp) => {
         if (!cancelled) setDetail(toCellLineDetail(resp));
       })
@@ -45,7 +70,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
       cancelled = true;
       ctrl.abort();
     };
-  }, [target.gene, target.modelId]);
+  }, [selectedGene, target.modelId]);
 
   const BackButton = (
     <button
@@ -64,7 +89,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
         <div className="text-center py-24">
           <Loader2 className="w-8 h-8 mx-auto animate-spin text-mulberry-600" />
           <p className="text-sm text-slate-500 mt-3">
-            Loading <strong className="font-mono">{target.cellLine}</strong> · {target.gene}…
+            Loading <strong className="font-mono">{target.cellLine}</strong> · {selectedGene}…
           </p>
         </div>
       </div>
@@ -105,7 +130,30 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
           to single-gene detail when opened outside a ranking) */}
       <TopCards detail={detail} ranked={target.ranked} />
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        {availableGenes.length > 1 ? (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-medium text-slate-500">Evidence below is for:</span>
+            {availableGenes.map((g) => (
+              <button
+                key={g}
+                onClick={() => setSelectedGene(g)}
+                className={`inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition ${
+                  g === selectedGene
+                    ? 'bg-mulberry-600 text-white border-mulberry-600'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-mulberry-300 hover:text-mulberry-700'
+                }`}
+              >
+                {g}
+                {g === limitingGene && (
+                  <span className={g === selectedGene ? 'text-[9px] text-white/80' : 'text-[9px] text-amber-600'}>▼ limiting</span>
+                )}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <span />
+        )}
         <button
           onClick={() => setShowMethodology(true)}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-mulberry-600 text-mulberry-600 text-sm font-semibold transition-colors hover:bg-mulberry-600 hover:text-white"
