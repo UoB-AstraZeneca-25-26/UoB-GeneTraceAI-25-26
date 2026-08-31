@@ -7,10 +7,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY final_pipeline/ ./final_pipeline/
 
-# Data files — large; override via env vars if mounting EFS instead
-COPY final_pipeline/outputs/predictions_with_confidence.parquet ./final_pipeline/outputs/predictions_with_confidence.parquet
-COPY final_pipeline/reference/gene_lookup.parquet              ./final_pipeline/reference/gene_lookup.parquet
-COPY final_pipeline/reference/cell_line_lookup.parquet         ./final_pipeline/reference/cell_line_lookup.parquet
-COPY final_pipeline/outputs/celllineselector.db                ./final_pipeline/outputs/celllineselector.db
+# No data files are baked in -- everything (predictions, gene/cell/sample_info
+# lookups, per-source omics parquets) is fetched from S3 at cold start (see
+# ranking.py's _resolve_data_path, DATA_BUCKET env var, s3://<bucket>/processed/).
+# The image never depends on what happens to exist on the machine running
+# `docker build` -- a fresh git clone with no data files builds an identical
+# image. .dockerignore also excludes any parquet/db that might be present
+# locally, so this holds even if someone forgets to remove local data first.
 
 CMD ["final_pipeline.api.handler.handler"]

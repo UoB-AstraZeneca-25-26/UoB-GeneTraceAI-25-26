@@ -1,0 +1,18 @@
+**/*.bak
+final_pipeline/outputs/*.log
+final_pipeline/*.log
+final_pipeline/**/*.log
+final_pipeline/01_Transcriptomics/results/
+final_pipeline/02_Proteinomics/results/
+final_pipeline/outputs/geo_meta/
+final_pipeline/geo_meta/
+.git/
+
+# All pipeline data (parquet + celllineselector.db) is fetched from S3 at
+# Lambda cold start (see final_pipeline/api/ranking.py's _resolve_data_path,
+# DATA_BUCKET env var). Excluding every parquet/db anywhere under
+# final_pipeline/ means the image build never depends on what happens to be
+# present on the machine running `docker build` -- a fresh clone builds an
+# identical image to one on a machine with the full local warehouse.
+final_pipeline/**/*.parquet
+final_pipeline/**/*.db

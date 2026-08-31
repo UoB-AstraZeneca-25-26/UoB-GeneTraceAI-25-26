@@ -27,22 +27,64 @@ def _env_path(env_var: str, default: Path) -> Path:
     return Path(val) if val else default
 
 
+# Where cold-start S3 downloads land -- Lambda's image filesystem is read-only,
+# /tmp is the only writable directory (backed by DATA_BUCKET's EphemeralStorage).
+_S3_CACHE_DIR = Path("/tmp") / "genetraceai_data"
+
+
+def _resolve_data_path(local_path: Path, s3_key: str) -> Path:
+    """Returns a local, readable path to a data file. If `local_path` already
+    exists (local dev, or any future image that still bakes data in), use it
+    directly -- no network. Otherwise download it from S3 (DATA_BUCKET env var,
+    key `processed/<s3_key>`) into /tmp once per cold start; every warm
+    invocation after that reuses the same container's /tmp, so the download
+    cost is paid at most once per execution environment, not per request."""
+    if local_path.exists():
+        return local_path
+    bucket = os.getenv("DATA_BUCKET")
+    if not bucket:
+        return local_path  # no S3 configured -- let the caller's own "missing file" handling apply
+    cached = _S3_CACHE_DIR / s3_key
+    if not cached.exists():
+        cached.parent.mkdir(parents=True, exist_ok=True)
+        import boto3
+        key = f"processed/{s3_key}"
+        logger.info("downloading s3://%s/%s -> %s", bucket, key, cached)
+        boto3.client("s3").download_file(bucket, key, str(cached))
+    return cached
+
+
 def ensure_loaded() -> None:
     """Idempotent data load. Safe to call from either the HTTP lifespan or the
-    Bedrock handler — loads once, no-ops thereafter. Paths come from env vars
-    (Lambda/EFS overrides) or the bundled defaults."""
+    Bedrock handler — loads once, no-ops thereafter. Every data file is
+    fetched from S3 on a cold start (see _resolve_data_path); local dev reuses
+    whatever's already on disk under final_pipeline/outputs|reference without
+    touching the network."""
     if is_ready():
         return
     load_ranking_data(
-        predictions_path=_env_path("PREDICTIONS_PATH",
-                                   _PIPELINE / "outputs" / "predictions_with_confidence.parquet"),
-        gene_lookup_path=_env_path("GENE_LOOKUP_PATH",
-                                   _PIPELINE / "reference" / "gene_lookup.parquet"),
-        cell_lookup_path=_env_path("CELL_LOOKUP_PATH",
-                                   _PIPELINE / "reference" / "cell_line_lookup.parquet"),
-        db_path=_env_path("RANKING_DB_PATH",
-                          _PIPELINE / "outputs" / "celllineselector.db"),
+        predictions_path=_resolve_data_path(
+            _env_path("PREDICTIONS_PATH", _PIPELINE / "outputs" / "predictions_with_confidence.parquet"),
+            "predictions_with_confidence.parquet"),
+        gene_lookup_path=_resolve_data_path(
+            _env_path("GENE_LOOKUP_PATH", _PIPELINE / "reference" / "gene_lookup.parquet"),
+            "gene_lookup.parquet"),
+        cell_lookup_path=_resolve_data_path(
+            _env_path("CELL_LOOKUP_PATH", _PIPELINE / "reference" / "cell_line_lookup.parquet"),
+            "cell_line_lookup.parquet"),
+        sample_info_path=_resolve_data_path(
+            _env_path("SAMPLE_INFO_PATH", _PIPELINE / "reference" / "sample_info.parquet"),
+            "sample_info.parquet"),
     )
+    # The four per-line omics parquets are read lazily, on demand, straight off
+    # disk by _omics_levels()/_omics_levels_by_source() (base = _pred_path.parent)
+    # -- pre-fetch them here too so the first /gene/detail request doesn't pay a
+    # surprise per-request download.
+    if _pred_path is not None:
+        base = _pred_path.parent
+        for fname in ["bulk_rna_z.parquet", "bulk_prot_z.parquet",
+                      "bulk_rna_z_by_source.parquet", "bulk_prot_z_by_source.parquet"]:
+            _resolve_data_path(base / fname, fname)
 
 _pred: pd.DataFrame | None = None  # index=ensg_id (categorical, sorted), cols: model_id, core_score
 _sym_index: dict[str, tuple[str, str]] = {}  # upper(symbol) -> (ensg_id, hgnc_symbol)
@@ -51,15 +93,14 @@ _gene_lkp: pd.DataFrame | None = None
 _cell_lkp: pd.DataFrame | None = None
 _cell_name: dict[str, str] = {}  # lower(model_id) -> cell_line_name
 _lineage_map: dict[str, str] = {}  # lower(model_id) -> lineage
-_meta_map: dict[str, dict] = {}  # lower(model_id) -> {lineage, subtype, disease, sex}
+_meta_map: dict[str, dict] = {}  # lower(model_id) -> full sample_info row (lineage, subtype, disease, sex, age, ...)
 _pred_path: Path | None = None  # kept so /gene/detail can pull the full row on demand
-_db_path: Path | None = None
 
 
 def load_ranking_data(predictions_path: Path, gene_lookup_path: Path,
-                      cell_lookup_path: Path, db_path: Path) -> None:
+                      cell_lookup_path: Path, sample_info_path: Path) -> None:
     global _pred, _sym_index, _ensg_index, _gene_lkp, _cell_lkp, _cell_name
-    global _lineage_map, _meta_map, _pred_path, _db_path
+    global _lineage_map, _meta_map, _pred_path
 
     if not predictions_path.exists():
         logger.warning("predictions not found at %s — /v1/rank will 503", predictions_path)
@@ -94,27 +135,15 @@ def load_ranking_data(predictions_path: Path, gene_lookup_path: Path,
             if isinstance(name, str)
         }
 
-    _db_path = db_path if db_path.exists() else None
-    if _db_path:
+    if sample_info_path.exists():
         try:
-            import duckdb
-            con = duckdb.connect(str(_db_path), read_only=True)
-            rows = con.execute(
-                "SELECT lower(model_id), lineage, lineage_subtype, "
-                "primary_disease, sex FROM sample_info"
-            ).fetchall()
-            con.close()
-            for mid, lineage, subtype, disease, sex in rows:
-                meta = {}
-                if lineage:
-                    meta["lineage"] = lineage
-                    _lineage_map[mid] = lineage
-                if subtype:
-                    meta["lineage_subtype"] = subtype
-                if disease:
-                    meta["primary_disease"] = disease
-                if sex:
-                    meta["sex"] = sex
+            info = pd.read_parquet(sample_info_path)
+            info["model_id"] = info["model_id"].str.lower()
+            for row in info.to_dict("records"):
+                mid = row.pop("model_id")
+                meta = {k: v for k, v in row.items() if v is not None and v == v}  # v==v excludes NaN
+                if "lineage" in meta:
+                    _lineage_map[mid] = meta["lineage"]
                 if meta:
                     _meta_map[mid] = meta
             logger.info("metadata map loaded: %d lines", len(_meta_map))
@@ -170,23 +199,20 @@ def _resolve(query: str) -> tuple[str, str]:
 
 
 def _lineage_model_ids(terms: list[str]) -> set[str] | None:
-    if not terms or _db_path is None:
+    """model_ids whose lineage or lineage_subtype contains any of `terms`
+    (case-insensitive substring) -- served from the in-memory _meta_map, no
+    file I/O per call."""
+    if not terms:
         return None
-    try:
-        import duckdb
-        con = duckdb.connect(str(_db_path), read_only=True)
-        clauses = " OR ".join(
-            f"(lower(lineage) LIKE '%{t.lower()}%' OR lower(lineage_subtype) LIKE '%{t.lower()}%')"
-            for t in terms
+    needles = [t.lower() for t in terms]
+    matched = {
+        mid for mid, meta in _meta_map.items()
+        if any(
+            n in meta.get("lineage", "").lower() or n in meta.get("lineage_subtype", "").lower()
+            for n in needles
         )
-        rows = con.execute(
-            f"SELECT lower(model_id) FROM sample_info WHERE {clauses}"
-        ).fetchall()
-        con.close()
-        return {r[0] for r in rows} or None
-    except Exception as exc:
-        logger.warning("lineage filter failed: %s", exc)
-        return None
+    }
+    return matched or None
 
 
 def _meta(model_id: str) -> dict:
@@ -729,28 +755,6 @@ def rank_exclude_many_by_lineage(gene_as: list[str], gene_bs: list[str],
     return {"genes": syms_a, "excluded_genes": syms_b, **grouped, "lines": lines}
 
 
-def _lineage_meta(model_id: str) -> dict:
-    if _db_path is None:
-        return {}
-    try:
-        import duckdb
-        con = duckdb.connect(str(_db_path), read_only=True)
-        row = con.execute(
-            "SELECT lineage, lineage_subtype, primary_disease, sex, age, "
-            "default_growth_pattern, primary_or_metastasis "
-            "FROM main.sample_info WHERE model_id = ?",
-            [model_id.lower()]
-        ).fetchone()
-        con.close()
-        if row:
-            keys = ["lineage", "lineage_subtype", "primary_disease", "sex",
-                    "age", "growth_pattern", "primary_or_metastasis"]
-            return {k: v for k, v in zip(keys, row) if v is not None}
-    except Exception as exc:
-        logger.warning("lineage meta failed: %s", exc)
-    return {}
-
-
 # sample_info columns surfaced in the detail metadata block, in the order the
 # UI labels them. Kept flat (single dict) because that's what the UI expects.
 _DETAIL_META_COLS = [
@@ -761,23 +765,10 @@ _DETAIL_META_COLS = [
 
 
 def _full_metadata(mid: str) -> dict:
-    """Flat metadata dict for one line, keyed as the UI's detail view expects."""
-    if _db_path is None:
-        return {}
-    try:
-        import duckdb
-        con = duckdb.connect(str(_db_path), read_only=True)
-        cols = ", ".join(_DETAIL_META_COLS)
-        row = con.execute(
-            f"SELECT {cols} FROM main.sample_info WHERE lower(model_id) = ?",
-            [mid.lower()],
-        ).fetchone()
-        con.close()
-        if row:
-            return {k: v for k, v in zip(_DETAIL_META_COLS, row) if v is not None}
-    except Exception as exc:
-        logger.warning("full metadata failed: %s", exc)
-    return {}
+    """Flat metadata dict for one line, keyed as the UI's detail view expects.
+    Served from the in-memory _meta_map, no file I/O per call."""
+    meta = _meta_map.get(mid.lower(), {})
+    return {k: meta[k] for k in _DETAIL_META_COLS if k in meta}
 
 
 def _prediction_row(ensg: str, mid: str) -> dict:
