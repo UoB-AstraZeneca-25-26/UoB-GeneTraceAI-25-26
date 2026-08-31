@@ -173,6 +173,8 @@ class DetailResponse(BaseModel):
     has_cna_alteration: bool
     expression_level: float | None = None
     proteomics_level: float | None = None
+    expression_by_source: dict[str, float | None] = {}
+    proteomics_by_source: dict[str, float | None] = {}
     metadata: dict = {}
     rna_alternatives: list = []
 

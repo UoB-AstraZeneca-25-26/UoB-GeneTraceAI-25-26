@@ -692,6 +692,53 @@ def _omics_levels(ensg: str, mid: str) -> dict:
     return out
 
 
+def _omics_levels_by_source(ensg: str, mid: str) -> dict:
+    """Per-source expression/proteomics level (0-1 each) -- DepMap/HPA/GEO for
+    RNA, ProCan/CCLE for protein. Purely additive: reads two new export files
+    (bulk_rna_z_by_source.parquet, bulk_prot_z_by_source.parquet) that sit
+    beside the existing combined ones and were built without touching any
+    scoring script or re-running the pipeline -- the per-source z-scores were
+    already computed as an internal step of the existing RNA/protein scorers,
+    just never persisted before now. Does not read or affect
+    expression_level/proteomics_level (the existing combined fields) at all."""
+    out = {"expression_by_source": {}, "proteomics_by_source": {}}
+    if _pred_path is None:
+        return out
+    base = _pred_path.parent
+    try:
+        import duckdb
+        con = duckdb.connect()
+        rna_path = base / "bulk_rna_z_by_source.parquet"
+        if rna_path.exists():
+            row = con.execute(
+                "SELECT z_depmap, z_hpa_rna, z_geo FROM read_parquet(?) "
+                "WHERE gene_id = ? AND lower(model_id) = ?",
+                [str(rna_path), ensg, mid.lower()],
+            ).fetchone()
+            if row:
+                out["expression_by_source"] = {
+                    "DepMap": _z_to_level(row[0]),
+                    "HPA": _z_to_level(row[1]),
+                    "GEO": _z_to_level(row[2]),
+                }
+        prot_path = base / "bulk_prot_z_by_source.parquet"
+        if prot_path.exists():
+            row = con.execute(
+                "SELECT z_procan, z_ccle FROM read_parquet(?) "
+                "WHERE gene_id = ? AND lower(model_id) = ?",
+                [str(prot_path), ensg, mid.lower()],
+            ).fetchone()
+            if row:
+                out["proteomics_by_source"] = {
+                    "ProCan": _z_to_level(row[0]),
+                    "CCLE": _z_to_level(row[1]),
+                }
+        con.close()
+    except Exception as exc:
+        logger.warning("per-source omics levels lookup failed: %s", exc)
+    return out
+
+
 def detail(gene: str, model_id: str) -> dict:
     """Rich per-line detail matching the UI's CellLineDetailApiResponse shape."""
     ensg, sym = _resolve(gene)
@@ -711,6 +758,7 @@ def detail(gene: str, model_id: str) -> dict:
     name = _cell_name.get(mid) or mid.upper()
     pr = _prediction_row(ensg, mid)
     omics = _omics_levels(ensg, mid)
+    omics_by_source = _omics_levels_by_source(ensg, mid)
 
     def _num(v):
         return float(v) if v is not None and pd.notna(v) else None
@@ -730,6 +778,8 @@ def detail(gene: str, model_id: str) -> dict:
         "has_cna_alteration": bool(pr.get("has_cna_alteration") or False),
         "expression_level": omics["expression_level"],
         "proteomics_level": omics["proteomics_level"],
+        "expression_by_source": omics_by_source["expression_by_source"],
+        "proteomics_by_source": omics_by_source["proteomics_by_source"],
         "metadata": _full_metadata(mid),
         "rna_alternatives": [],
     }
