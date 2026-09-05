@@ -95,12 +95,13 @@ _cell_name: dict[str, str] = {}  # lower(model_id) -> cell_line_name
 _lineage_map: dict[str, str] = {}  # lower(model_id) -> lineage
 _meta_map: dict[str, dict] = {}  # lower(model_id) -> full sample_info row (lineage, subtype, disease, sex, age, ...)
 _pred_path: Path | None = None  # kept so /gene/detail can pull the full row on demand
+_y_set: set[str] = set()  # ENSG IDs on the Y chromosome (chromosomal_location starts "Y")
 
 
 def load_ranking_data(predictions_path: Path, gene_lookup_path: Path,
                       cell_lookup_path: Path, sample_info_path: Path) -> None:
     global _pred, _sym_index, _ensg_index, _gene_lkp, _cell_lkp, _cell_name
-    global _lineage_map, _meta_map, _pred_path
+    global _lineage_map, _meta_map, _pred_path, _y_set
 
     if not predictions_path.exists():
         logger.warning("predictions not found at %s — /v1/rank will 503", predictions_path)
@@ -119,7 +120,12 @@ def load_ranking_data(predictions_path: Path, gene_lookup_path: Path,
     _pred_path = predictions_path
     logger.info("prediction index built: %d genes", _pred.index.nunique())
 
-    _gene_lkp = pd.read_parquet(gene_lookup_path, columns=["ensg_id", "hgnc_symbol", "approved_name"])
+    _gene_lkp = pd.read_parquet(gene_lookup_path,
+                                columns=["ensg_id", "hgnc_symbol", "approved_name",
+                                         "chromosomal_location"])
+    loc = _gene_lkp["chromosomal_location"].fillna("")
+    _y_set = set(_gene_lkp.loc[loc.str.startswith("Y"), "ensg_id"])
+    logger.info("Y-linked gene set: %d genes", len(_y_set))
     # Vectorized zip — far faster than iterrows over the gene table.
     for ensg, sym in zip(_gene_lkp["ensg_id"], _gene_lkp["hgnc_symbol"]):
         pair = (ensg, sym)
@@ -261,6 +267,39 @@ def _gene_series(ensg: str, lineage_ids: set[str] | None) -> pd.Series:
     return s
 
 
+def _sex_of(model_id: str) -> str:
+    """Return the sex of a line from _meta_map: 'male', 'female', or 'unknown'.
+    Values in sample_info.parquet are already lowercase ('male'/'female').
+    Missing entries (line absent from sample_info) → 'unknown'.
+    Matches cli.py's _line_sex() / fillna('unknown') convention exactly."""
+    return _meta_map.get(model_id.lower(), {}).get("sex", "unknown")
+
+
+def _apply_sex_guard_wide(wide: pd.DataFrame, y_set: set[str],
+                          resolved: list[tuple[str, str]],
+                          syms: list[str]) -> tuple[pd.DataFrame, int]:
+    """For each Y-linked gene in the query, set its score column to NaN for
+    female and unknown-sex lines.  Returns (wide, n_nulled).
+
+    Mirrors cli.py's cmd_genes sex-guard block exactly: NaN propagates through
+    min(skipna=False) so those lines get joint_score=NaN and are excluded by
+    the scoreable filter before the floor gate."""
+    ensgs = [e for e, _ in resolved]
+    y_in_query = [e for e in ensgs if e in y_set]
+    if not y_in_query:
+        return wide, 0
+
+    y_syms = [syms[ensgs.index(e)] for e in y_in_query]
+    non_male = wide["model_id"].map(_sex_of).isin(["female", "unknown"])
+    n_nulled = int(non_male.sum())
+    for sym in y_syms:
+        wide = wide.copy()
+        wide.loc[non_male, sym] = float("nan")
+    logger.info("sex guard: %d female/unknown-sex rows nulled for Y-linked genes %s",
+                n_nulled, y_syms)
+    return wide, n_nulled
+
+
 def rank(gene_syms: list[str], lineages: list[str],
          floor: float, top_n: int) -> dict:
     resolved = [_resolve(s) for s in gene_syms]
@@ -300,6 +339,12 @@ def rank(gene_syms: list[str], lineages: list[str],
     if wide is None or wide.empty:
         return {"genes": syms, "lineage": lineages, "floor": floor,
                 "total_passing": 0, "lines": []}
+
+    # Sex guard: Y-linked genes are structurally absent in female/unknown-sex
+    # lines — null their score columns before joint_score so those lines get
+    # joint_score=NaN and are excluded by the scoreable filter, not penalised
+    # as failed co-selection.  Mirrors cli.py cmd_genes guard exactly.
+    wide, _ = _apply_sex_guard_wide(wide, _y_set, resolved, syms)
 
     wide["joint_score"] = wide[syms].min(axis=1, skipna=False)
     scoreable = wide["joint_score"].notna()
@@ -344,6 +389,18 @@ def exclude_many(gene_a: str, gene_bs: list[str], lineages: list[str], top_n: in
         b = _gene_series(ensg_b, lineage_ids).rename(sym_b).reset_index()
         merged = merged.merge(b, on="model_id", how="inner")
 
+    # Sex guard: for each Y-linked exclusion gene, null its score column for
+    # female/unknown-sex lines before computing selectivity.  Mirrors cli.py
+    # cmd_exclude guard applied per exclusion gene.
+    for ensg_b, sym_b in resolved_b:
+        if ensg_b in _y_set:
+            non_male = merged["model_id"].map(_sex_of).isin(["female", "unknown"])
+            n_nulled = int(non_male.sum())
+            merged = merged.copy()
+            merged.loc[non_male, sym_b] = float("nan")
+            logger.info("sex guard (exclude_many): %d female/unknown-sex rows nulled "
+                        "for Y-linked %s", n_nulled, sym_b)
+
     selectivity = merged["score_a"].astype("float64").copy()
     for sym_b in syms_b:
         selectivity = selectivity * (1.0 - merged[sym_b])
@@ -383,6 +440,19 @@ def exclude(gene_a: str, gene_b: str, lineages: list[str], top_n: int) -> dict:
     b = _gene_series(ensg_b, lineage_ids).rename("score_b").reset_index()
 
     merged = a.merge(b, on="model_id", how="inner")
+
+    # Sex guard: if gene_b is Y-linked, score_b is structurally absent in
+    # female/unknown-sex lines — set it to NaN so selectivity=NaN and those
+    # lines are excluded, not rewarded for structural absence of the gene.
+    # Mirrors cli.py cmd_exclude guard exactly.
+    if ensg_b in _y_set:
+        non_male = merged["model_id"].map(_sex_of).isin(["female", "unknown"])
+        n_nulled = int(non_male.sum())
+        merged = merged.copy()
+        merged.loc[non_male, "score_b"] = float("nan")
+        logger.info("sex guard (exclude): %d female/unknown-sex rows nulled for Y-linked %s",
+                    n_nulled, sym_b)
+
     merged["selectivity"] = merged["score_a"] * (1.0 - merged["score_b"])
     merged = merged.sort_values("selectivity", ascending=False, na_position="last")
     scored = merged[merged["selectivity"].notna()]
