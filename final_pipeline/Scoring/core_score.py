@@ -1,6 +1,64 @@
 """
 Scoring/core_score.py
 ----------------------
+NaN-row-survival fix (promoted 2026-08-31): stop phantom rows from
+surviving into the output.
+
+`shared_models`/`shared_genes` (and, identically, the two n_layers=1
+fallback blocks below) are each built from the FULL row/column universe of
+a wide-pivoted table, not the true per-(model, gene) overlap of real
+measurements. This is harmless as long as a cell lacking real data produces
+NaN and that NaN then drops out before the row is written -- which is what
+`.stack()` used to do by default. In the pandas version this project now
+runs (3.0.1), `.stack()`'s default implementation no longer drops NaN rows
+(confirmed empirically: `.stack(dropna=True)` raises `ValueError: dropna
+must be unspecified as the new implementation does not introduce rows of NA
+values` under the current default `future_stack=True` -- that message
+refers only to alignment-introduced NaNs, not the genuine pre-existing NaN
+cells this grid has). Result: rows with NO real underlying RNA and/or
+protein measurement were surviving into `core_score.parquet` with
+`core_score=NaN`, while `n_layers`/`combination_variant` were stamped
+unconditionally as if the row were fully evidenced. `core_score` itself was
+never fabricated -- traced end to end for a concrete example
+(ach-001333 x CD86): every intermediate value (rna_std_z, prot_resid_z,
+core_z, core_pct) was correctly NaN; only row *survival* was the bug, not
+score *computation*.
+
+Exact scope measured before this fix: 9,188,147 / 26,558,496 rows (34.60%)
+of the live output, concentrated almost entirely in low-RNA-coverage genes
+(coverage-decile phantom rate ranged 97.4% for the least-covered decile to
+0.29% for the best-covered; correlation between a gene's real-row coverage
+and its phantom fraction was Pearson r = -1.000, i.e. mechanically
+deterministic, not stochastic). Confirmed NOT reaching real users: the live
+ranking API (`ranking.py`) and `Validation/eval.py` already filter on
+`core_score.notna()`/`.dropna()` before use. Confirmed reaching
+`run_gene_tests.py`'s printed tier-breakdown diagnostics and
+`predictions_with_confidence.parquet` for any analysis grouping by
+`confidence_tier`/`n_layers` without an explicit `.notna()` filter (e.g.
+CD86 showed 1,504 "LOW" rows, of which 1,397 were phantom).
+
+Fixed by `.dropna()` immediately on the stacked Series, before
+`.reset_index()`, at all three sites that build a row-per-(model,gene)
+frame from a dense grid (main combination; protein-free-line fallback;
+RNA-only-gene fallback). Chosen over `.stack(future_stack=False,
+dropna=True)` because pandas explicitly flags that old implementation
+itself for removal in a future version -- using it would trade one
+version-fragile assumption for another; `.stack().dropna()` works
+identically regardless of which `.stack()` implementation pandas defaults
+to next.
+
+Verified before promotion (core_score_v9_nan_fix.py, this fix's candidate
+file): output row count 17,370,349 (== the previously-confirmed "real-row"
+count exactly); every one of the 9,188,147 previously-phantom rows
+confirmed absent, not merely reset; every real row bit-identical to the
+pre-fix live file across core_score, n_layers, combination_variant,
+lineage, and stratum_rank (max abs core_score diff 0.0, 0 differences on
+every other column, verified via an outer merge with 100% "both" match and
+0 left/right-only rows); gene/model universe unchanged (16,992 genes, 1,563
+models, 0 genes lost entirely). See docs/WHY_REFERENCE.md for the full
+verification record and core_score_v6_pre_nan_fix_20260831_112601.py.bak /
+.parquet.bak for the pre-promotion snapshots.
+
 beta_g SD-shrinkage fix ("C3", promoted 2026-08-29): shrink sd_rna/sd_prot
 before forming beta_g.
 
@@ -493,7 +551,11 @@ def run():
           f"{n_regime3:,} / {is_regime3.size:,} ({n_regime3/is_regime3.size*100:.4f}%)")
 
     # ── Combined genes (RNA + Protein) — lines with protein data ───────────
-    core_long = core_pct.stack().reset_index()
+    # NaN-row-survival fix: .dropna() on the stacked Series, before
+    # .reset_index() -- see module docstring. Drops only genuinely-NaN cells
+    # (no real RNA and/or protein measurement for this exact model/gene);
+    # every real value is unaffected.
+    core_long = core_pct.stack().dropna().reset_index()
     core_long.columns = ["model_id", "ensg_id", "core_score"]
     core_long["lineage"] = lineage_map.reindex(core_long["model_id"]).values
     core_long["n_layers"] = 2
@@ -516,7 +578,8 @@ def run():
             stats.norm.cdf(fallback_core_z),
             index=rna_models_no_prot, columns=shared_genes,
         )
-        fallback_long = fallback_pct.stack().reset_index()
+        # NaN-row-survival fix: see module docstring / main combination block above.
+        fallback_long = fallback_pct.stack().dropna().reset_index()
         fallback_long.columns = ["model_id", "ensg_id", "core_score"]
         fallback_long["lineage"] = lineage_map.reindex(fallback_long["model_id"]).values
         fallback_long["n_layers"] = 1   # RNA-only for these lines (gene has protein, line doesn't)
@@ -534,7 +597,8 @@ def run():
             stats.norm.cdf(rna_only_core_z),
             index=rna_std_z_wide.index, columns=rna_only_genes,
         )
-        rna_only_long = rna_only_pct.stack().reset_index()
+        # NaN-row-survival fix: see module docstring / main combination block above.
+        rna_only_long = rna_only_pct.stack().dropna().reset_index()
         rna_only_long.columns = ["model_id", "ensg_id", "core_score"]
         rna_only_long["lineage"] = lineage_map.reindex(rna_only_long["model_id"]).values
         rna_only_long["n_layers"] = 1
