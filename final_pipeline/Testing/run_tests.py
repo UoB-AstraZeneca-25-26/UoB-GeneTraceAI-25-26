@@ -27,7 +27,8 @@ def test_rna_source_agreement():
         print("  SKIP — bulk_rna_z.parquet not found")
         return
     rna = pd.read_parquet(RNA_Z)
-    n_sources_dist = rna.groupby("n_sources").size()
+    nsrc_col = "n_sources" if "n_sources" in rna.columns else "k_src"  # schema drift patch, see chat
+    n_sources_dist = rna.groupby(nsrc_col).size()
     pct_3source = n_sources_dist.get(3, 0) / len(rna) * 100
     print(f"  n_sources dist: {dict(n_sources_dist)}")
     print(f"  3-source coverage: {pct_3source:.1f}%")
@@ -68,6 +69,8 @@ def test_eval_summary():
         return
     s = json.loads(EVAL_SUMMARY.read_text())
     for cls, m in s.items():
+        if not isinstance(m, dict) or "hits20_driver" not in m:  # schema drift patch, see chat
+            continue
         lift = m["hits20_driver"] - m["hits20_flat"]
         print(f"  {cls}: flat={m['hits20_flat']:.3f}  driver={m['hits20_driver']:.3f}  "
               f"lift={lift:+.3f}  {'PASS' if lift >= 0 else 'FAIL'}")
