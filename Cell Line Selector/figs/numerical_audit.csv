@@ -1,0 +1,77 @@
+key,value,source
+param.floor_q,0.2,/Users/trivenidhamdhere/Documents/MSc Data Science/MSc Dissertation - AZ copy/Cell Line Selector/data cleaning final/results/transcriptomics/chosen_params.json
+param.n0,100,/Users/trivenidhamdhere/Documents/MSc Data Science/MSc Dissertation - AZ copy/Cell Line Selector/data cleaning final/results/transcriptomics/chosen_params.json
+param.upper_cut,0.6,/Users/trivenidhamdhere/Documents/MSc Data Science/MSc Dissertation - AZ copy/Cell Line Selector/data cleaning final/results/transcriptomics/chosen_params.json
+param.lower_cut,0.2,/Users/trivenidhamdhere/Documents/MSc Data Science/MSc Dissertation - AZ copy/Cell Line Selector/data cleaning final/results/transcriptomics/chosen_params.json
+n_sources,3,tx.build_method_axes -> distinct .source
+n_methods,3,tx.build_method_axes -> len(axes)
+n_methods_geo,1,tx.build_method_axes
+n_samples_total,4521,sum(len(axis.raw_ids))
+n_cell_lines_axis_union,1583,union of axis.models
+n_genes_universe,18103,tx.gene_universe
+n_samples_by_source,"{'hpa_rna': 1107, 'depmap': 1495, 'geo': 1919}",sum len(raw_ids) by source
+fig2.sd_of_method_medians_log,1.7807,"sd over methods of median(log2 value), panel (b)"
+fig2.sd_of_method_medians_z,0.0,"sd over methods of median(z), panel (c)"
+fig2.n_methods_plotted,3,>=50 finite probe values
+fig2.scale_detected_counts,"{'linear': 2, 'log': 1}",MethodAxis.scale_detected
+fig2.metadata_vs_data_scale_conflicts,none,SOFT scale_hint != empirically detected scale
+fig2.floors_by_method,"{'depmap_rna_seq': 1.0, 'geo_UNKNOWN|unknown': 4.617, 'hpa_rna_seq': 1.0}",MethodAxis.floor (log2 units)
+fig3.basis,"probe sample, 800 genes","recomputed via tx.method_z, pre-filter"
+fig3.n_cells_evaluated,2504000,sum of regime counts
+fig3.count.ok,1476469,tx.method_z status codes
+fig3.pct.ok,58.96,share of evaluated cells
+fig3.count.censored_ranked,297246,tx.method_z status codes
+fig3.pct.censored_ranked,11.87,share of evaluated cells
+fig3.count.below_detection,663526,tx.method_z status codes
+fig3.pct.below_detection,26.5,share of evaluated cells
+fig3.count.no_data,66759,tx.method_z status codes
+fig3.pct.no_data,2.67,share of evaluated cells
+calib.n_combinations,480,/Users/trivenidhamdhere/Documents/MSc Data Science/MSc Dissertation - AZ copy/Cell Line Selector/data cleaning final/results/transcriptomics/grid_search.csv rows
+calib.rho_max,0.0578,/Users/trivenidhamdhere/Documents/MSc Data Science/MSc Dissertation - AZ copy/Cell Line Selector/data cleaning final/results/transcriptomics/grid_search.csv max rho
+calib.se,0.0007,sd(rho)/sqrt(n) over grid
+calib.n_within_1se,10,rho >= max - SE
+calib.rho_selected,0.0574,rho at the chosen_params.json setting
+calib.n0_rho_range,0.0002,spread of best rho across n0; small => n0 unidentified
+fig4b.gene,PTPRC (CD45) (ENSG00000081237),pre-declared candidate list; widest coverage
+fig4b.n_cell_lines,1067,transcriptomics_z rows for gene
+fig4b.n_haematological,205,lineage matches /lymph|myeloid|leuk|blood|haem|hema/i
+fig4b.median_z_lineage_haem,-0.09,transcriptomics_z
+fig4b.median_z_global_haem,-0.025,transcriptomics_z
+fig4b.mean_k_src,1.16,transcriptomics_z
+fig4b.mean_k_methods,1.16,transcriptomics_z
+fig4b.status_counts,"{'censored_ranked': 855, 'ok': 212}",transcriptomics_z
+fig4b.scale_source_counts,"{'shrunk': 1059, 'fallback_global': 8}",transcriptomics_z
+fig4b.median_z_hpa_rna,0.0,transcriptomics_z
+fig4b.median_z_depmap,0.003,transcriptomics_z
+fig4b.median_z_geo,0.0,transcriptomics_z
+fig_zdist.sample_n,500000,transcriptomics_z USING SAMPLE 500000
+fig_zdist.z_global.mean,-0.0081,transcriptomics_z
+fig_zdist.z_global.sd,1.1217,transcriptomics_z
+fig_zdist.z_global.n,486795,transcriptomics_z
+fig_zdist.z_lineage.mean,-0.0302,transcriptomics_z
+fig_zdist.z_lineage.sd,1.0571,transcriptomics_z
+fig_zdist.z_lineage.n,500000,transcriptomics_z
+fig_zdist.z_hpa_rna.mean,-0.0133,transcriptomics_z
+fig_zdist.z_hpa_rna.sd,1.0414,transcriptomics_z
+fig_zdist.z_hpa_rna.n,321204,transcriptomics_z
+fig_zdist.z_depmap.mean,-0.0246,transcriptomics_z
+fig_zdist.z_depmap.sd,0.9906,transcriptomics_z
+fig_zdist.z_depmap.n,419924,transcriptomics_z
+fig_zdist.z_geo.mean,0.0139,transcriptomics_z
+fig_zdist.z_geo.sd,0.959,transcriptomics_z
+fig_zdist.z_geo.n,174652,transcriptomics_z
+output.rows,22045461.0,transcriptomics_z
+output.genes,17168.0,transcriptomics_z
+output.cell_lines,1583.0,transcriptomics_z
+output.lineages,30.0,transcriptomics_z
+output.mean_k_src,1.831,transcriptomics_z
+output.mean_k_methods,1.831,transcriptomics_z
+output.mean_z_lin,24649.4561,transcriptomics_z
+output.sd_z_lin,8637109.4684,transcriptomics_z
+output.min_z_lin,-23.677000045776367,transcriptomics_z
+output.max_z_lin,9412443136.0,transcriptomics_z
+output.mean_det,0.8059,transcriptomics_z
+output.status_counts,"{'censored_ranked': 3388969, 'ok': 18656492}",transcriptomics_z
+output.scale_source_counts,"{'fallback_global': 197667, 'shrunk': 21847794}",transcriptomics_z
+output.k_src_counts,"{'1': 8602798, '2': 8566174, '3': 4876489}",transcriptomics_z
+output.k_methods_counts,"{'1': 8602798, '2': 8566174, '3': 4876489}",transcriptomics_z
