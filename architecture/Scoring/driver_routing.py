@@ -9,9 +9,9 @@ Gate logic:
   is_lof_alteration     = alteration is loss-of-function (truncating mutation or
                           deletion in TSG/both gene) — used for directional ranking
 
-Reads from:  final_pipeline/outputs/{core_score, mutations_scores, fusions_scores, cna_flags}.parquet
+Reads from:  architecture/outputs/{core_score, mutations_scores, fusions_scores, cna_flags}.parquet
              reference/gene_lookup.parquet  (gene_role for is_lof_alteration)
-Writes to:   final_pipeline/outputs/flags_with_driver.parquet
+Writes to:   architecture/outputs/flags_with_driver.parquet
 
 Schema: model_id, ensg_id, core_score, n_layers, stratum_rank,
         p_mutation, max_vep_rank, p_fusion, has_cna_alteration,
@@ -31,6 +31,33 @@ FUS_DRIVER_THRESHOLD  = 0.5   # p_fusion above this = driver fusion
 
 
 def run():
+    """
+    Merge core_score with alteration evidence into the driver-flag table.
+
+    Joins mutation/fusion/CNA evidence onto ``core_score``, recovers
+    alteration-driver (gene, cell-line) pairs that have no RNA/protein
+    score at all (setting ``core_score=NaN``, ``n_layers=0`` for those
+    — see module docstring for why this recovery matters), then
+    derives ``has_driver_alteration`` and the direction-aware
+    ``is_lof_alteration`` flag used downstream by confidence tiering.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+        Writes ``FLAGS_DRIVER`` (flags_with_driver.parquet, schema
+        listed in the module docstring). Prints input row counts,
+        the orphan-recovery count, and the final driver-alteration
+        rate to stdout.
+
+    Notes
+    -----
+    Raises ``SystemExit`` if any of ``CORE_SCORE``, ``MUTATIONS_SCR``,
+    ``FUSIONS_SCR``, ``CNA_FLAGS`` is missing.
+    """
     print("=" * 70)
     print("Scoring — driver-gated routing")
     print("=" * 70)

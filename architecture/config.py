@@ -1,18 +1,37 @@
 """
-final_pipeline/config.py
-------------------------
+architecture/config.py
+-----------------------
 Single source of truth for all paths. Import this in every stage script.
 """
 from pathlib import Path
 
 # ── repo root ──────────────────────────────────────────────────────────────
 REPO = Path(__file__).resolve().parent.parent      # UoB-GeneTraceAI-25-26/
-PIPELINE = Path(__file__).resolve().parent          # final_pipeline/
+PIPELINE = Path(__file__).resolve().parent          # architecture/
 
 # ── read-only shared resources ─────────────────────────────────────────────
-# Preferred location is inside final_pipeline/ (self-contained bundle); the
+# Preferred location is inside architecture/ (self-contained bundle); the
 # tracked copies live at the repo root, so fall back there when absent.
 def _shared(name: str) -> Path:
+    """
+    Resolve a shared resource, preferring the self-contained copy.
+
+    Parameters
+    ----------
+    name : str
+        Relative path/name of the resource, looked up first as
+        ``PIPELINE / name`` (e.g. ``architecture/reference``), then as
+        ``REPO / name`` (e.g. the repo-root ``reference/``) if the first
+        does not exist.
+
+    Returns
+    -------
+    pathlib.Path
+        ``PIPELINE / name`` if that path exists on disk, otherwise
+        ``REPO / name`` unconditionally (not itself checked for
+        existence — callers that need the file to exist should check
+        the returned path).
+    """
     local = PIPELINE / name
     return local if local.exists() else REPO / name
 

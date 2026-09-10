@@ -419,6 +419,41 @@ def _standardize_by_stratum_generic(long_df: pd.DataFrame, value_col: str, nsrc_
 
 
 def run():
+    """
+    Compute core_score for every (gene, cell-line) pair and write the result.
+
+    End-to-end entry point for this stage. Loads the RNA and protein
+    z-score tables plus the platform-tier table, standardizes each arm
+    (see :func:`_standardize_rna_by_stratum` and
+    :func:`_standardize_prot_resid_by_gene`), combines them into
+    ``core_z``/``core_score`` (Variant A, with the Regime-3 substitution
+    described in the module docstring), computes the n_layers=1 fallback
+    for protein-free lines and RNA-only genes, ranks rows within each
+    (gene, lineage) stratum, and writes both outputs to disk.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+        Writes ``CORE_SCORE`` (core_score.parquet: one row per scored
+        (gene_id, model_id) pair, columns ``model_id``, ``ensg_id``,
+        ``core_score``, ``lineage``, ``n_layers``, ``combination_variant``,
+        ``stratum_rank``) and ``GENE_DISP`` (gene_dispersion.parquet: one
+        row per gene, columns ``mean``, ``std``, ``cv`` of that gene's
+        core_score across all lines). Progress and summary counts are
+        printed to stdout.
+
+    Notes
+    -----
+    Raises ``SystemExit`` if any of the three required inputs
+    (``RNA_Z``, ``PROT_Z``, ``PROT_TIER``) is missing, instructing the
+    caller to run the prior stages first. See the module docstring for
+    the full combination formula, the Regime-3 substitution, and the
+    n_layers=1 fallback scaling fix.
+    """
     t0 = time.time()
     print("=" * 70)
     print("Scoring — core_score (RNA + Protein orthogonal combination)")

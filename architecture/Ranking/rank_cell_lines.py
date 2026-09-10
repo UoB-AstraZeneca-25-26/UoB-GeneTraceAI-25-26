@@ -20,6 +20,30 @@ TOP_N = 30
 
 
 def resolve_gene(query: str, gene_lkp: pd.DataFrame) -> tuple[str, str]:
+    """
+    Resolve a user-typed gene query to its canonical (ENSG ID, symbol) pair.
+
+    Tries an exact, case-insensitive match against ``hgnc_symbol``
+    first, then falls back to a case-insensitive match against
+    ``ensg_id``.
+
+    Parameters
+    ----------
+    query : str
+        User input — either a gene symbol (e.g. ``"BRAF"``) or an
+        ENSG ID (e.g. ``"ENSG00000157764"``), in any case.
+    gene_lkp : pandas.DataFrame
+        Must contain ``ensg_id`` and ``hgnc_symbol`` columns.
+
+    Returns
+    -------
+    tuple of (str, str)
+        ``(ensg_id, hgnc_symbol)`` of the first matching row.
+
+    Notes
+    -----
+    Raises ``ValueError`` if ``query`` matches neither column.
+    """
     q = query.strip().upper()
     match = gene_lkp[gene_lkp["hgnc_symbol"].str.upper() == q]
     if not match.empty:
@@ -34,6 +58,30 @@ def resolve_gene(query: str, gene_lkp: pd.DataFrame) -> tuple[str, str]:
 
 
 def rank(gene_query: str) -> pd.DataFrame:
+    """
+    Print and return the ranked cell lines for one gene.
+
+    Parameters
+    ----------
+    gene_query : str
+        Gene symbol or ENSG ID, resolved via :func:`resolve_gene`.
+
+    Returns
+    -------
+    pandas.DataFrame
+        All predictions for the resolved gene (not just the printed
+        top ``TOP_N``), sorted by ``core_score`` descending, with
+        ``cell_line_name`` merged in. Empty DataFrame if the gene
+        resolves but has no prediction rows.
+
+    Notes
+    -----
+    Raises ``SystemExit`` if any of ``PREDICTIONS``, ``CELL_LKP``,
+    ``GENE_LKP`` is missing. Raises ``ValueError`` (from
+    :func:`resolve_gene`) if ``gene_query`` doesn't match any known
+    gene. Prints a formatted top-``TOP_N`` table to stdout as a side
+    effect — this is a CLI convenience function, not a pure query.
+    """
     for p in [PREDICTIONS, CELL_LKP, GENE_LKP]:
         if not p.exists():
             raise SystemExit(f"Missing: {p} — run scoring stages first.")

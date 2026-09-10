@@ -62,9 +62,9 @@ confidence_tiers_v1_pre_no_evidence_fix_20260831_112601.py.bak /
 predictions_with_confidence_v1_pre_no_evidence_fix_20260831_112601.parquet.bak
 for the pre-promotion snapshots.
 
-Reads from:  final_pipeline/outputs/{core_score, flags_with_driver}.parquet
+Reads from:  architecture/outputs/{core_score, flags_with_driver}.parquet
              reference/gene_lookup.parquet  (gene regime via gene_role)
-Writes to:   final_pipeline/outputs/predictions_with_confidence.parquet
+Writes to:   architecture/outputs/predictions_with_confidence.parquet
 """
 import sys
 from pathlib import Path
@@ -79,6 +79,35 @@ TOP_SCORE_PERCENTILE = 0.80   # within-gene cutoff for HIGH/MEDIUM tier
 
 
 def run():
+    """
+    Assign a confidence tier to every (gene, cell-line) prediction and write it.
+
+    Loads ``flags_with_driver`` and joins it against the gene lookup's
+    ``gene_role`` to get each gene's regime, computes the within-gene
+    score percentile, then assigns HIGH/MEDIUM/CONTEXT/LOW by score
+    percentile x driver-alteration presence (direction-aware: LOF genes
+    rank by low expression, others by high — see module docstring),
+    and finally overrides any ``core_score`` NaN row to NO_EVIDENCE.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+        Writes ``PREDICTIONS`` (predictions_with_confidence.parquet:
+        ``flags_with_driver`` plus ``score_rank_pct`` and
+        ``confidence_tier``). Prints per-tier row counts to stdout.
+
+    Notes
+    -----
+    Raises ``SystemExit`` if ``FLAGS_DRIVER`` or ``CORE_SCORE`` is
+    missing. Asserts the tier partition is complete and consistent
+    (see the five assertions in the body) before writing — a failure
+    here means the tier logic itself has a gap, not just bad input
+    data, since every branch is exhaustive by construction.
+    """
     print("=" * 70)
     print("Scoring — confidence tiers")
     print("=" * 70)
