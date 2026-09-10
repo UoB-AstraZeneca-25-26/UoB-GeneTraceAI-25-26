@@ -132,14 +132,48 @@ async def test_agent_calls_score_explainer(executor):
     assert all({"key", "value"} <= set(step) for step in parsed)
     assert all(step.get("status", "active") in _STATUSES for step in parsed)
 
-    # TP53 is a tumour suppressor, so the inversion step applies to it.
-    inversion = next((s for s in parsed if "inver" in s["key"].lower()), None)
-    assert inversion is not None, "no TSG inversion step in the answer"
-    assert inversion.get("status") == "inverted"
+    # Step 6 (direction) is identified by position: the step keys are fixed
+    # labels and no longer contain the word "inversion".
+    #
+    # Its expected status follows the tool's is_tsg, not the gene's real
+    # biology. score_explainer no longer consults the local gene index, so
+    # in methodology mode is_tsg is null even for TP53 and the contract
+    # calls for "active" with both branches narrated conditionally.
+    observation = json.loads(steps[0][1]) if steps else {}
+    is_tsg = observation.get("is_tsg")
+    direction = parsed[5]
+    if is_tsg is None:
+        assert direction.get("status") == "active", (
+            f"is_tsg is null, so step 6 must be conditional/active: {direction!r}"
+        )
+        branches = direction["value"].lower()
+        assert "if" in branches and "invert" in branches, (
+            f"step 6 must narrate both branches when is_tsg is null: {direction!r}"
+        )
+    else:
+        assert direction.get("status") == ("inverted" if is_tsg else "skipped"), (
+            f"step 6 status does not match is_tsg={is_tsg}: {direction!r}"
+        )
 
     blob = json.dumps(parsed).lower()
-    for keyword in ("pit", "percentile", "correlation", "weight"):
+    # Terms from the corrected pipeline description (math_reference.md).
+    # "pit"/"correlation" are gone: step 1 is a robust z-score, step 2 is a
+    # within-lineage inverse-normal transform, step 5 combines the
+    # residualised protein signal rather than raw prot_z.
+    for keyword in ("robust_z", "mad", "lineage", "resid", "weight"):
         assert keyword in blob, f"methodology term {keyword!r} missing from the answer"
+
+    # Step 5 must combine e* (step 3's output), never raw prot_z. Guard the
+    # exact contradiction this contract was corrected to remove.
+    combine = json.dumps(parsed[4]).lower()
+    assert "e*" in combine or "resid" in combine, (
+        f"step 5 does not reference the residualised protein signal: {parsed[4]!r}"
+    )
+
+    # The old whole-panel framing must not come back.
+    assert "all ~950" not in blob and "all cell lines" not in blob, (
+        "step 2 still describes ranking across the whole panel, not within lineage"
+    )
 
 
 @pytest.mark.asyncio

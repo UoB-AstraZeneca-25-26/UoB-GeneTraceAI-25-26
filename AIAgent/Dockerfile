@@ -8,7 +8,6 @@ WORKDIR /app
 COPY AIAgent/requirements.lock.txt .
 RUN pip install --no-cache-dir -r requirements.lock.txt
 COPY AIAgent/ ./AIAgent/
-COPY reference/gene_lookup.parquet ./reference/gene_lookup.parquet
 RUN useradd -m app && chown -R app /app
 USER app
 WORKDIR /app/AIAgent

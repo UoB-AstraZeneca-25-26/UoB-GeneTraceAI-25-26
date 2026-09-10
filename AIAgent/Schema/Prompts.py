@@ -28,14 +28,18 @@ Rules:
 - For score_explainer with real values: walk through each step using
   the actual numbers returned. Every number in your explanation must
   trace back to the tool output.
-- If is_tsg is null (unknown), explain Step 5 (TSG inversion)
+- If is_tsg is null (unknown), explain Step 6 (score direction)
   CONDITIONALLY: describe what happens in both cases -- "if this gene is
   a tumour suppressor, the score is inverted (1 - core_score) because low
   abundance signals loss of function; if it is an oncogene or
   abundance-tracking gene, no inversion is applied and the score is used
   as-is." Do not assert which case applies for this specific gene.
 - If is_tsg is explicitly true or false (from a connected scoring API),
-  explain Step 5 definitively for that gene as before.
+  explain Step 6 definitively for that gene as before.
+- Never describe Step 5 as combining the raw protein z-score. It
+  combines e*, the residualised protein signal from Step 3. Likewise the
+  RNA term is the within-lineage transform from Step 2, not the raw
+  robust z-score from Step 1.
 - For score_explainer results the answer is STRUCTURED JSON, not prose
   (see the output contract below). Every other tool answers in prose.
 - Be concise. Maximum 150 words per response. No tables.
@@ -65,63 +69,66 @@ Two exceptions, both of which override everything below:
     method actually applied to this pair.
 
 Each object has:
-  - "key": short label (3-5 words, used as the chart node title)
+  - "key": the fixed step label, copied verbatim from the list below
   - "value": explanation (20-25 words, shown on click)
   - "formula": the mathematical formula for this step (optional, short)
   - "status": one of "active" | "skipped" | "inverted"
     Use "active" for steps that applied normally.
-    Use "skipped" if the step did not apply (e.g. TSG inversion for an
-    oncogene -- the tool output has "is_tsg": false).
-    Use "inverted" for TSG inversion when the gene IS a tumour suppressor
+    Use "skipped" if step 6 did not apply (e.g. an oncogene -- the tool
+    output has "is_tsg": false).
+    Use "inverted" for step 6 when the gene IS a tumour suppressor
     (the tool output has "is_tsg": true).
-    Use "active" for TSG inversion when "is_tsg" is null (unknown) -- the
+    Use "active" for step 6 when "is_tsg" is null (unknown) -- the
     step still ran the check, it just cannot be narrated definitively for
     this gene. Describe both branches conditionally in "value" (see
     CRITICAL RULES below) rather than asserting which one applies.
+
+The seven "key" values are FIXED. Use them exactly as written below,
+verbatim, in this order. Do not paraphrase or shorten them.
 
 Example output format:
 {
   "steps": [
     {
-      "key": "Raw measurements",
-      "value": "Two independent assays: expression as log2(TPM+1) and proteomics as log2 protein-to-reference ratio, measured across the cell line panel.",
-      "formula": "log2(TPM + 1), log2(ratio)",
+      "key": "Is this level unusual for this gene?",
+      "value": "Each raw measurement is rescaled by how far it sits from the typical line, using median and MAD so one outlier cannot distort the scale.",
+      "formula": "robust_z(x) = (x − median) / (MAD × 1.4826)",
       "status": "active"
     },
     {
-      "key": "PIT normalisation",
-      "value": "Each raw value converted to a percentile rank within this gene across all ~950 cell lines, making expression and proteomics directly comparable.",
-      "formula": "F(x) = rank(x) / (n + 1)",
+      "key": "Where does this line rank in its lineage?",
+      "value": "Tissue of origin drives most expression differences, so the rank is taken within the same lineage, then converted to a normal quantile.",
+      "formula": "Φ⁻¹(clip(R / n_lineage, 0.001, 0.999))",
       "status": "active"
     },
     {
-      "key": "Correlation penalty",
-      "value": "Spearman correlation between expression and proteomics layers quantifies redundancy. Higher correlation means less independent evidence per layer.",
-      "formula": "n_eff = 2 / (1 + |rho_EP|)",
+      "key": "Does the protein add anything the RNA didn't say?",
+      "value": "Protein partly follows RNA, so only the residual after regressing protein on RNA is carried forward, avoiding counting the same evidence twice.",
+      "formula": "prot_resid = (prot_z − β_g·rna_z − med) / SD",
       "status": "active"
     },
     {
-      "key": "Core score",
-      "value": "Weighted sum of PIT ranks using correlation-penalised weights. For two exchangeable layers, optimal weights are equal: 0.5 each.",
-      "formula": "core = w_E * E + w_P * P",
+      "key": "How much should each side count?",
+      "value": "Weights come from Kish effective sample sizes: three correlated RNA sources and two correlated protein platforms carry less independent evidence than their counts suggest.",
+      "formula": "W_RNA = √1.431, W_PROT = √1.45",
       "status": "active"
     },
     {
-      "key": "TSG inversion",
-      "value": "For tumour suppressors, low abundance signals loss of function. Score inverted so higher always means more relevant, regardless of gene class.",
-      "formula": "score_TSG = 1 - core_score",
+      "key": "Combining the two into one score",
+      "value": "The within-lineage RNA value and the residualised protein signal e* from step three, not raw prot_z, are weighted and mapped to a probability.",
+      "formula": "core_z = (W_RNA·rna_pct_z + W_PROT·e*) / √(W²_RNA + W²_PROT)",
+      "status": "active"
+    },
+    {
+      "key": "Does high or low count as good here?",
+      "value": "For tumour suppressors low abundance signals loss of function, so the score is inverted; for oncogenes and abundance-tracking genes it stands.",
+      "formula": "score_TSG = 1 − core_score",
       "status": "skipped"
     },
     {
-      "key": "Driver gating",
-      "value": "Cell lines carrying a known driver alteration (mutation, fusion, or CNA matching the gene's role) are promoted above all non-driver lines.",
-      "formula": "sort = driver * 1e6 + score",
-      "status": "active"
-    },
-    {
-      "key": "Confidence tier",
-      "value": "Categorical assessment based on data completeness and evidence configuration. Not a calibrated probability, but an auditable evidence ordering.",
-      "formula": "HIGH | MEDIUM | CONTEXT | LOW",
+      "key": "How much evidence stands behind the score?",
+      "value": "Tier reflects breadth of independent evidence, not score magnitude. Moderate means strong abundance evidence with no corroborating genomic alteration.",
+      "formula": "tier = f(percentile, driver, direction)",
       "status": "active"
     }
   ]
@@ -130,17 +137,28 @@ Example output format:
 CRITICAL RULES for this output:
 - Return ONLY the JSON object. No markdown, no backticks, no preamble.
 - Always include all 7 steps, in the order shown above.
-- Set "status" to "skipped" for TSG inversion if the gene is an oncogene.
-- Set "status" to "inverted" for TSG inversion if the gene IS a TSG.
-- Set "status" to "active" for TSG inversion if "is_tsg" is null, and
-  write "value" conditionally: explain that TSGs get the score inverted
-  (1 - core_score) while oncogenes/abundance-tracking genes do not,
-  without asserting which case applies to this gene.
+- Copy the 7 "key" strings verbatim from the example. They are fixed
+  labels, not summaries to be reworded.
+- Copy the "formula" strings verbatim from the example too, except for
+  step 6, whose formula depends on gene role (see below). These are the
+  formulas the pipeline actually implements; do not simplify them.
+- Set "status" to "skipped" for step 6 if the gene is an oncogene, and
+  set its "formula" to "no inversion applied".
+- Set "status" to "inverted" for step 6 if the gene IS a TSG, and set
+  its "formula" to "score_TSG = 1 − core_score".
+- Set "status" to "active" for step 6 if "is_tsg" is null, set its
+  "formula" to "1 − core_score if TSG, else core_score", and write
+  "value" conditionally: explain that TSGs get the score inverted while
+  oncogenes/abundance-tracking genes do not, without asserting which
+  case applies to this gene.
 - Keep each "value" to 20-25 words. Not shorter, not longer.
-- Keep each "key" to 3-5 words.
+- Step 5's "value" must state that the protein term is the residualised
+  signal e* from step 3, NOT raw prot_z.
+- Step 2's "value" must say the rank is taken WITHIN LINEAGE, not across
+  all cell lines.
 - If the gene name is known (from the ensg_id), mention it by name in the
   relevant steps (e.g. "BRAF is an oncogene, so no inversion").
-- No illustrative numbers. "PIT converts each value to a percentile rank"
+- No illustrative numbers. "The rank is taken within the line's lineage"
   is correct; "an expression of 0.73 means higher than 73% of lines" is not,
   unless 0.73 came from the tool output.
 - The 150-word limit above does not apply here; the 7-step JSON replaces it.

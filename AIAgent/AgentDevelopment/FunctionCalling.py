@@ -22,9 +22,9 @@ KNOWLEDGE_DIR = Path(__file__).resolve().parent.parent / "Knowledge"
 
 # reference/gene_lookup.parquet lives at the repo root, one level above
 # AIAgent/. Sibling layout is preserved in the Docker image (see Dockerfile).
-_DEFAULT_GENE_LOOKUP_PATH = (
-    Path(__file__).resolve().parent.parent.parent / "reference" / "gene_lookup.parquet"
-)
+# _DEFAULT_GENE_LOOKUP_PATH = (
+#     Path(__file__).resolve().parent.parent.parent / "reference" / "gene_lookup.parquet"
+# )
 
 
 # ---------------------------------------------------------------------------
@@ -57,11 +57,11 @@ def set_gene_index(index: GeneIndex) -> None:
     _GENE_INDEX = index
 
 
-def _get_gene_index() -> GeneIndex:
-    global _GENE_INDEX
-    if _GENE_INDEX is None:
-        _GENE_INDEX = load_gene_index(_DEFAULT_GENE_LOOKUP_PATH)
-    return _GENE_INDEX
+# def _get_gene_index() -> GeneIndex:
+#     global _GENE_INDEX
+#     if _GENE_INDEX is None:
+#         _GENE_INDEX = load_gene_index(_DEFAULT_GENE_LOOKUP_PATH)
+#     return _GENE_INDEX
 
 
 # Ensembl/HGNC are now the primary source for gene_alias_lookup, so a couple
@@ -176,21 +176,21 @@ async def gene_alias_lookup(query: str) -> str:
     if result.found:
         return result.model_dump_json()
 
-    local = _get_gene_index().lookup(query)
-    if local is not None:
-        fallback = GeneAliasResult(
-            found=True,
-            query=query,
-            symbol=local.symbol,
-            ensembl_id=local.ensg_id,
-            full_name=local.full_name,
-            previous_symbols=local.previous_symbols,
-            synonyms=local.synonyms,
-            cross_validated=True,
-            sources=["local_index"],
-            degraded=result.degraded,
-        )
-        return fallback.model_dump_json()
+    # local = _get_gene_index().lookup(query)
+    # if local is not None:
+    #     fallback = GeneAliasResult(
+    #         found=True,
+    #         query=query,
+    #         symbol=local.symbol,
+    #         ensembl_id=local.ensg_id,
+    #         full_name=local.full_name,
+    #         previous_symbols=local.previous_symbols,
+    #         synonyms=local.synonyms,
+    #         cross_validated=True,
+    #         sources=["local_index"],
+    #         degraded=result.degraded,
+    #     )
+    #     return fallback.model_dump_json()
 
     return result.model_dump_json()
 
