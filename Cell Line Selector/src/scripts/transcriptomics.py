@@ -26,6 +26,18 @@ Output goes to DuckDB only. At ~30M rows CSV is not a viable target.
 
 No side effects at import. All orchestration lives in
 05_transcriptomics_stat_layer.py.
+
+Module layout
+-------------
+1. GEO SOFT metadata -> method assignment
+2. Schema discovery
+3. Axes: method rows -> model_id -> lineage
+4. Chunked fetch
+5. Scale detection and detection floors
+6. Z-score core
+7. Sensitivity analysis
+8. Assembling and writing output
+9. Plots
 """
 
 from __future__ import annotations
@@ -55,9 +67,19 @@ LOW_MEMORY_GENE_CHUNK = 128  # safer default for laptops / warm CPUs
 N_CALIB_GENES = 1200
 MIN_CALIB_CELLS = 200    # min comparable (line, gene) pairs to score a combo
 
+#: Integer status code -> label, written to the output's ``status`` column.
+#: 0 parametric z; 1 rank inverse-normal under censoring; 2 below the
+#: detection floor (NaN, never 0); 3 nothing measured.
 STATUS = {0: "ok", 1: "censored_ranked", 2: "below_detection", 3: "no_data"}
+
+#: Integer scale-source code -> label, written to ``scale_source``. Records
+#: which population supplied the z denominator: the lineage alone, the
+#: lineage shrunk toward the method-global scale, or the global fallback
+#: used when the lineage was too thin to trust.
 SCALE_SRC = {0: "none", 1: "lineage", 2: "shrunk", 3: "fallback_global"}
 
+#: Parameter values swept by the sensitivity analysis. Combinations where
+#: ``lower_cut >= upper_cut`` are discarded in :func:`grid_combinations`.
 PARAM_GRID = dict(
     floor_q=[0.02, 0.05, 0.10, 0.20],
     n0=[5, 10, 25, 50, 100],
@@ -97,6 +119,31 @@ _ENSG = re.compile(r"(?i)^(ENSG\d+)(\.\d+)?$")
 
 @dataclass
 class Params:
+    """
+    The four empirically selected scoring parameters.
+
+    Attributes
+    ----------
+    floor_q : float
+        Quantile of a method's own value distribution used as its detection
+        floor. Applies to arrays only; RNA-seq sources use the fixed TPM
+        criterion instead.
+    n0 : int
+        Lineage shrinkage constant. A lineage of ``n`` cell lines gets weight
+        ``n / (n + n0)`` on its own scale, the remainder on the method-global
+        scale, so small lineages borrow strength rather than producing a
+        noisy MAD.
+    upper_cut : float
+        Detection fraction at or above which the parametric robust z is used.
+    lower_cut : float
+        Detection fraction below which a cell is marked below_detection and
+        returns NaN. Between the two cuts, the rank inverse-normal applies.
+
+    Notes
+    -----
+    Chosen by :func:`calibrate_params`, not set by hand. Serialised to
+    ``chosen_params.json`` so a scoring run can be reproduced exactly.
+    """
     floor_q: float
     n0: int
     upper_cut: float
@@ -105,7 +152,42 @@ class Params:
 
 @dataclass
 class MethodAxis:
-    """Row axis for one method: raw sample ids, their model_id, replicate map."""
+    """Row axis for one method: raw sample ids, their model_id, replicate map.
+
+    One method is one commensurable measurement scale — a whole source for
+    RNA-seq, or a single platform x processing combination for GEO.
+
+    Attributes
+    ----------
+    name : str
+        Unique axis name, e.g. ``geo_GPL570|rma``.
+    source : str
+        Parent source: ``hpa_rna``, ``depmap`` or ``geo``. Determines the
+        vote weight at the final combination stage.
+    table, id_col : str
+        Physical DuckDB table and the column holding its raw sample IDs.
+    units : str
+        Declared units — from the table for RNA-seq, from SOFT metadata for
+        GEO. A hint only; :func:`profile_method` trusts the data over it.
+    raw_ids, model_ids : numpy.ndarray
+        Parallel arrays, one entry per raw sample row.
+    models : numpy.ndarray
+        Unique ``model_id`` values, the axis's collapsed row order.
+    inv : numpy.ndarray
+        Index from each raw row into ``models``; drives replicate collapse.
+    n_samples : numpy.ndarray
+        Raw rows per model, used as the sqrt-n weight within GEO.
+    floor : float
+        Detection floor in log2 space. Set by :func:`profile_method`.
+    scale_detected : str
+        ``"log"``, ``"linear"`` or ``"unknown"``, set from the data by
+        :func:`profile_method`.
+
+    Notes
+    -----
+    Fields from ``models`` down are populated by :func:`make_axis` and
+    :func:`profile_method`, not at construction.
+    """
     name: str
     source: str
     table: str
@@ -125,7 +207,24 @@ class MethodAxis:
 # ======================================================================
 
 def parse_soft_file(path: Path) -> dict:
-    """Parse one GSMxxxx.txt SOFT sample record into a flat dict."""
+    """Parse one GSMxxxx.txt SOFT sample record into a flat dict.
+
+    Keys in :data:`_MULTI_KEYS` legitimately repeat within a record and are
+    joined with a pipe; every other key keeps its first value.
+
+    Parameters
+    ----------
+    path : Path
+        SOFT sample file. Decoding errors are replaced rather than raised,
+        since a stray byte should not lose a whole record.
+
+    Returns
+    -------
+    dict
+        ``!Sample_<key>`` names mapped to their values. If no
+        ``geo_accession`` line was present, one is recovered from the
+        filename where possible.
+    """
     rec = defaultdict(list)
     with open(path, errors="replace") as fh:
         for line in fh:
@@ -141,7 +240,26 @@ def parse_soft_file(path: Path) -> dict:
 
 
 def classify_processing(text: str) -> tuple[str, str]:
-    """!Sample_data_processing -> (proc_family, scale_hint)."""
+    """!Sample_data_processing -> (proc_family, scale_hint).
+
+    Matches :data:`PROC_RULES` in order, first match wins — gcRMA is tested
+    before RMA so the more specific label is not swallowed by the general
+    one.
+
+    Parameters
+    ----------
+    text : str
+        Free-text processing description from the SOFT record.
+
+    Returns
+    -------
+    proc_family : str
+        Pipeline family, or ``"unknown"`` if nothing matched.
+    scale_hint : str
+        ``"log"``, ``"linear"`` or ``"unknown"``. A hint only — the scale
+        actually used is detected from the values in
+        :func:`profile_method`.
+    """
     t = (text or "").lower()
     for name, pat, scale in PROC_RULES:
         if re.search(pat, t):
@@ -150,7 +268,38 @@ def classify_processing(text: str) -> tuple[str, str]:
 
 
 def build_geo_platform_frame(meta_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Parse geo_meta/*.txt -> (records, parse_failures)."""
+    """Parse geo_meta/*.txt -> (records, parse_failures).
+
+    Each sample's method is ``platform_id|proc_family``, the unit of
+    commensurability for GEO.
+
+    Parameters
+    ----------
+    meta_dir : Path
+        Directory of SOFT files. ``GSM*.txt`` is tried first, falling back
+        to all ``*.txt``.
+
+    Returns
+    -------
+    records : pandas.DataFrame
+        One row per sample: ``gsm_id``, ``platform_id``, ``proc_family``,
+        ``scale_hint``, ``method``, plus series and description fields.
+        Duplicate accessions are collapsed to the first occurrence.
+    failures : pandas.DataFrame
+        Columns ``file``, ``reason``, for records that could not be used.
+
+    Raises
+    ------
+    FileNotFoundError
+        If no ``.txt`` files are found under ``meta_dir``.
+
+    Notes
+    -----
+    Flag don't drop: a record missing ``platform_id`` is still kept, under
+    ``UNKNOWN_GPL``, and also listed in ``failures``. Only a missing
+    accession is fatal to the record, since without it nothing can be
+    joined.
+    """
     files = sorted(meta_dir.glob("GSM*.txt")) or sorted(meta_dir.glob("*.txt"))
     if not files:
         raise FileNotFoundError(f"no SOFT .txt files under {meta_dir}")
@@ -191,6 +340,27 @@ def build_geo_platform_frame(meta_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame
 
 
 def write_geo_platform(con, df: pd.DataFrame, table: str = "geo_platform") -> None:
+    """
+    Write the GEO method assignments to DuckDB, replacing any existing table.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open, writable connection.
+    df : pandas.DataFrame
+        Records frame from :func:`build_geo_platform_frame`.
+    table : str, optional
+        Destination table. Defaults to ``"geo_platform"``.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    The temporary registration is dropped in a ``finally`` block, so a
+    failed write does not leave a stale view bound to the connection.
+    """
     con.register("_geo_platform_tmp", df)
     try:
         con.execute(
@@ -201,7 +371,32 @@ def write_geo_platform(con, df: pd.DataFrame, table: str = "geo_platform") -> No
 
 
 def audit_geo_platform(con, df: pd.DataFrame) -> pd.DataFrame:
-    """Before/after coverage audit. Returns the method summary table."""
+    """Before/after coverage audit. Returns the method summary table.
+
+    Reports three things worth seeing before committing to an assignment:
+    how many samples each method holds, which processing strings failed to
+    classify, and how many ``geo_expr`` samples have no metadata record at
+    all.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection, used for the coverage check only.
+    df : pandas.DataFrame
+        Records frame from :func:`build_geo_platform_frame`.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Sample counts by ``platform_id``, ``proc_family`` and
+        ``scale_hint``, descending.
+
+    Notes
+    -----
+    The ``geo_expr`` coverage check is best-effort: if the table is absent
+    the check is logged as skipped rather than raising, so an audit can run
+    before the expression tables are loaded.
+    """
     summary = (df.groupby(["platform_id", "proc_family", "scale_hint"])
                  .size().rename("n_gsm").reset_index()
                  .sort_values("n_gsm", ascending=False))
@@ -229,6 +424,21 @@ def audit_geo_platform(con, df: pd.DataFrame) -> pd.DataFrame:
 # ======================================================================
 
 def describe_tables(con) -> pd.DataFrame:
+    """
+    Summarise every table in the database.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``table``, ``rows``, ``n_cols`` and ``head`` — the first ten
+        column names, enough to recognise a wide expression matrix without
+        printing thousands of gene columns.
+    """
     rows = []
     for t in con.execute("SHOW TABLES").fetchdf().iloc[:, 0]:
         n = con.execute(f'SELECT count(*) FROM "{t}"').fetchone()[0]
@@ -243,6 +453,26 @@ def ensg_columns(con, table: str) -> dict[str, str]:
 
     depmap_expr uses lowercase headers, geo_expr uppercase; (?i) catches both
     and .upper() puts them on one axis. Version suffixes are stripped.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection.
+    table : str
+        Wide expression table to inspect.
+
+    Returns
+    -------
+    dict
+        Canonical uppercase ENSG ID to the column's actual name, so the
+        original header can be quoted back in SQL.
+
+    Notes
+    -----
+    Non-ENSG columns are skipped silently up to a count of three (the
+    expected ID and metadata columns); beyond that a warning fires, since a
+    large skip count usually means the regex needs widening rather than
+    that the table genuinely has that much metadata.
     """
     cols = con.execute(f"PRAGMA table_info('{table}')").fetchdf()["name"].tolist()
     out, skipped = {}, []
@@ -263,6 +493,26 @@ def ensg_columns(con, table: str) -> dict[str, str]:
 # ======================================================================
 
 def make_axis(name, source, table, id_col, raw_ids, model_ids, units) -> MethodAxis:
+    """
+    Construct a :class:`MethodAxis` and derive its replicate structure.
+
+    Computes the unique model list, the inverse index from raw rows to
+    models, and the raw-sample count per model — the three things
+    :func:`collapse_replicates` and the GEO weighting need.
+
+    Parameters
+    ----------
+    name, source, table, id_col, units : str
+        Axis metadata; see :class:`MethodAxis`.
+    raw_ids, model_ids : iterable
+        Parallel sequences, one entry per raw sample row.
+
+    Returns
+    -------
+    MethodAxis
+        With ``models``, ``inv`` and ``n_samples`` populated. ``floor`` and
+        ``scale_detected`` remain unset until :func:`profile_method` runs.
+    """
     raw = np.asarray(list(raw_ids), dtype=object)
     mod = np.asarray(list(model_ids), dtype=object)
     models, inv = np.unique(mod, return_inverse=True)
@@ -276,6 +526,46 @@ def make_axis(name, source, table, id_col, raw_ids, model_ids, units) -> MethodA
 
 def build_method_axes(con, geo_platform_table: str = "geo_platform"
                       ) -> list[MethodAxis]:
+    """
+    Build one :class:`MethodAxis` per commensurable measurement scale.
+
+    Three sources contribute: ``hpa_rna`` and ``depmap_expr`` give one axis
+    each, while ``geo_expr`` is split into one axis per
+    ``platform_id|proc_family`` combination, since samples processed
+    differently are not on a common scale.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection.
+    geo_platform_table : str, optional
+        Method assignment table. Defaults to ``"geo_platform"``.
+
+    Returns
+    -------
+    list of MethodAxis
+        Every usable axis, logged with its row and model counts.
+
+    Raises
+    ------
+    RuntimeError
+        If no axis could be built — nothing downstream can proceed.
+
+    Notes
+    -----
+    Three degradations are warned about rather than raised, in keeping with
+    flag-don't-drop:
+
+    * a missing ``geo_platform`` table collapses all GEO samples into one
+      method, which is wrong but visible;
+    * GEO samples with no metadata record get their own
+      ``UNKNOWN|unknown`` method rather than being discarded;
+    * a method covering fewer than 20 cell lines is flagged, since its
+      lineage strata will mostly fall back to the method-global scale.
+
+    A source whose query fails is skipped with a warning, so the run
+    continues on whichever sources are available.
+    """
     axes: list[MethodAxis] = []
 
     # ---- hpa_rna (long) --------------------------------------------------
@@ -351,6 +641,24 @@ def build_method_axes(con, geo_platform_table: str = "geo_platform"
 
 
 def load_lineage_map(con) -> pd.Series:
+    """
+    Load ``model_id`` -> lineage from ``sample_info``.
+
+    Lineage is the reference population the z is computed against, not an
+    output key: one cell line has exactly one lineage.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection.
+
+    Returns
+    -------
+    pandas.Series
+        Lineage indexed by ``model_id``, NULLs filled as ``"unknown"`` and
+        the count of those warned about — an ``unknown`` stratum is still a
+        stratum and will be scored as one.
+    """
     s = (con.execute("""
             SELECT model_id, lineage FROM sample_info WHERE model_id IS NOT NULL
          """).fetchdf()
@@ -362,7 +670,18 @@ def load_lineage_map(con) -> pd.Series:
 
 
 def normalise_ensg(value) -> str | None:
-    """Return the canonical ENSG prefix, stripping version suffixes such as .7."""
+    """Return the canonical ENSG prefix, stripping version suffixes such as .7.
+
+    Parameters
+    ----------
+    value : any
+        Candidate identifier; None and empty strings are tolerated.
+
+    Returns
+    -------
+    str or None
+        Uppercase ENSG ID without version, or None if it does not match.
+    """
     if value is None:
         return None
     s = str(value).strip().upper()
@@ -373,7 +692,30 @@ def normalise_ensg(value) -> str | None:
 
 
 def filter_valid_ensg_ids(genes, valid_ids=None) -> list[str]:
-    """Keep only canonical, roster-approved ENSG IDs in a consistent order."""
+    """Keep only canonical, roster-approved ENSG IDs in a consistent order.
+
+    Normalises, optionally restricts to a roster, and de-duplicates while
+    preserving input order — so a caller-supplied gene subset keeps the
+    order it was given.
+
+    Parameters
+    ----------
+    genes : iterable
+        Candidate identifiers, in any case and with or without versions.
+    valid_ids : iterable, optional
+        Allowed IDs. When omitted or empty, no restriction is applied.
+
+    Returns
+    -------
+    list of str
+        Canonical IDs, de-duplicated, in first-seen order.
+
+    Notes
+    -----
+    Silently drops anything unrecognised, so a ``--genes`` argument with a
+    typo yields a shorter list rather than an error. Compare lengths if
+    that matters.
+    """
     valid = {str(v).strip().upper() for v in (valid_ids or []) if str(v).strip()}
     seen = set()
     out = []
@@ -391,7 +733,19 @@ def filter_valid_ensg_ids(genes, valid_ids=None) -> list[str]:
 
 
 def gene_roster_ensg_ids(con) -> set[str]:
-    """Gene roster IDs, normalised to the canonical ENSG form used in scoring."""
+    """Gene roster IDs, normalised to the canonical ENSG form used in scoring.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection.
+
+    Returns
+    -------
+    set of str
+        Canonical ENSG IDs. Empty if ``gene_roster`` is unavailable, which
+        :func:`filter_valid_ensg_ids` treats as no restriction.
+    """
     try:
         ids = con.execute("""
             SELECT DISTINCT upper(trim(gene_id)) AS gene_id
@@ -405,7 +759,27 @@ def gene_roster_ensg_ids(con) -> set[str]:
 
 def gene_universe(con, axes: list[MethodAxis],
                   colmaps: dict[str, dict]) -> list[str]:
-    """Union of gene axes restricted to canonical ENSG IDs from the gene roster."""
+    """Union of gene axes restricted to canonical ENSG IDs from the gene roster.
+
+    A gene measured by any one method is scoreable, so the union is taken
+    rather than the intersection — coverage is recorded per row as
+    ``k_src`` instead of being enforced up front.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection.
+    axes : list of MethodAxis
+        Axes to draw genes from.
+    colmaps : dict
+        Axis name to its ENSG column map; unused for ``hpa_rna``, which is
+        long-format and queried directly.
+
+    Returns
+    -------
+    list of str
+        Sorted canonical ENSG IDs. Empty if no axis contributed any.
+    """
     valid = gene_roster_ensg_ids(con)
     sets = []
     for ax in axes:
@@ -428,7 +802,28 @@ def gene_universe(con, axes: list[MethodAxis],
 
 def fetch_wide_chunk(con, table: str, id_col: str, genes: list[str],
                      colmap: dict[str, str]) -> pd.DataFrame:
-    """One read of a wide table for a gene chunk. Indexed by upper(id)."""
+    """One read of a wide table for a gene chunk. Indexed by upper(id).
+
+    Selects only the requested gene columns, aliased to their canonical
+    ENSG names, so a thousand-column matrix is never materialised whole.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection.
+    table, id_col : str
+        Wide table and its sample ID column.
+    genes : list of str
+        Canonical ENSG IDs for this chunk.
+    colmap : dict
+        Canonical ID to actual column name, from :func:`ensg_columns`.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Indexed by uppercased, trimmed sample ID, columns named by
+        canonical ENSG. Empty if no requested gene exists in this table.
+    """
     present = [(g, colmap[g]) for g in genes if g in colmap]
     if not present:
         return pd.DataFrame()
@@ -439,7 +834,25 @@ def fetch_wide_chunk(con, table: str, id_col: str, genes: list[str],
 
 
 def fetch_hpa_chunk(con, genes: list[str]) -> pd.DataFrame:
-    """Long -> wide for a gene chunk. median() collapses transcript duplicates."""
+    """Long -> wide for a gene chunk. median() collapses transcript duplicates.
+
+    HPA is stored long, with several transcript rows per gene; the median
+    is taken rather than the sum or max, so one high-expressing transcript
+    cannot stand in for the gene.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection.
+    genes : list of str
+        Canonical ENSG IDs for this chunk, bound as query parameters.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Indexed by uppercased ``model_id``, one column per gene. Empty if
+        nothing matched.
+    """
     if not genes:
         return pd.DataFrame()
     q = """
@@ -458,7 +871,18 @@ def fetch_hpa_chunk(con, genes: list[str]) -> pd.DataFrame:
 
 
 def normalize_ids(ids) -> np.ndarray:
-    """Fast uppercase/strip conversion for large arrays without pandas apply."""
+    """Fast uppercase/strip conversion for large arrays without pandas apply.
+
+    Parameters
+    ----------
+    ids : iterable
+        Identifiers to normalise.
+
+    Returns
+    -------
+    numpy.ndarray
+        Object array of uppercased, stripped strings, same length as input.
+    """
     arr = np.asarray(list(ids), dtype=object)
     out = np.empty(arr.shape, dtype=object)
     for i, v in enumerate(arr):
@@ -469,7 +893,27 @@ def normalize_ids(ids) -> np.ndarray:
 
 def align_axis_rows(ax: MethodAxis, wide: pd.DataFrame,
                     genes: list[str]) -> np.ndarray:
-    """Slice a shared table chunk down to this axis's raw rows."""
+    """Slice a shared table chunk down to this axis's raw rows.
+
+    Several GEO axes read the same ``geo_expr`` chunk, so each one
+    reindexes the shared frame onto its own sample list rather than
+    re-querying.
+
+    Parameters
+    ----------
+    ax : MethodAxis
+        Axis whose raw rows are wanted.
+    wide : pandas.DataFrame or None
+        Shared chunk indexed by normalised sample ID.
+    genes : list of str
+        Gene column order for the output.
+
+    Returns
+    -------
+    numpy.ndarray
+        ``(n_raw_ids, n_genes)`` float32, NaN where a sample or gene is
+        absent — missing stays missing rather than becoming zero.
+    """
     X = np.full((len(ax.raw_ids), len(genes)), np.nan, np.float32)
     if wide is None or wide.empty:
         return X
@@ -488,6 +932,23 @@ def fetch_chunk_by_table(con, axes: list[MethodAxis], genes: list[str],
 
     All GEO methods share geo_expr, so without this the table is scanned once
     per platform x processing combination.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection.
+    axes : list of MethodAxis
+        Axes needing data this chunk.
+    genes : list of str
+        Canonical ENSG IDs for this chunk.
+    colmaps : dict
+        Axis name to its ENSG column map.
+
+    Returns
+    -------
+    dict
+        Table name to its chunk frame, to be sliced per axis by
+        :func:`align_axis_rows`.
     """
     cache = {}
     for ax in axes:
@@ -506,6 +967,25 @@ def collapse_replicates(ax: MethodAxis, X: np.ndarray) -> np.ndarray:
 
     Not optional: some lines carry 9-14 GSMs, and without this they would
     dominate their own lineage's median.
+
+    Parameters
+    ----------
+    ax : MethodAxis
+        Axis supplying the raw-row-to-model index.
+    X : numpy.ndarray
+        ``(n_raw_ids, n_genes)`` values.
+
+    Returns
+    -------
+    numpy.ndarray
+        ``(n_models, n_genes)`` float32. Returned unchanged when the axis
+        has no replicates.
+
+    Notes
+    -----
+    Rows are sorted once by model index and the per-model spans located
+    with ``searchsorted``, so the collapse is a single pass rather than a
+    groupby per gene. Single-row models bypass ``nanmedian`` entirely.
     """
     if len(ax.models) == len(ax.raw_ids):
         return X
@@ -527,7 +1007,24 @@ def collapse_replicates(ax: MethodAxis, X: np.ndarray) -> np.ndarray:
 # ======================================================================
 
 def detect_scale_from_values(v: np.ndarray) -> str:
-    """Linear vs log2 from the data alone. GEO metadata is not trusted here."""
+    """Linear vs log2 from the data alone. GEO metadata is not trusted here.
+
+    Three signatures decide it: negative values can only be log; a very high
+    99th percentile, absolutely or relative to the median, indicates the
+    long right tail of linear expression; otherwise a low ceiling implies
+    log.
+
+    Parameters
+    ----------
+    v : numpy.ndarray
+        Finite-filtered value sample.
+
+    Returns
+    -------
+    str
+        ``"log"``, ``"linear"``, or ``"unknown"`` when fewer than 50 finite
+        values were available to judge on.
+    """
     v = v[np.isfinite(v)]
     if v.size < 50:
         return "unknown"
@@ -541,7 +1038,44 @@ def detect_scale_from_values(v: np.ndarray) -> str:
 
 def profile_method(con, ax: MethodAxis, colmap, probe_genes: list[str],
                    floor_q: float) -> None:
-    """Set ax.scale_detected and ax.floor in place. Warns on SOFT/data conflict."""
+    """Set ax.scale_detected and ax.floor in place. Warns on SOFT/data conflict.
+
+    Scale is taken from the declared units where those are authoritative
+    (the two RNA-seq sources) and from the data otherwise. Where SOFT
+    metadata and the data disagree, the data wins and the conflict is
+    logged — a mislabelled processing string is more likely than a
+    misbehaving distribution.
+
+    Floors differ by source for the same reason: RNA-seq uses HPA's own
+    ``>=1 TPM`` criterion, a published detection threshold, while arrays
+    have no such criterion and get an empirical quantile of their own
+    values.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection.
+    ax : MethodAxis
+        Axis to profile. Mutated in place.
+    colmap : dict or None
+        ENSG column map; None for ``hpa_rna``.
+    probe_genes : list of str
+        Random gene sample, large enough to characterise the distribution
+        without reading the full matrix.
+    floor_q : float
+        Quantile for the array detection floor.
+
+    Returns
+    -------
+    None
+        ``ax.scale_detected`` and ``ax.floor`` are set as side effects.
+
+    Notes
+    -----
+    An axis with fewer than 50 finite probe values gets scale
+    ``"unknown"`` and a floor of ``-inf``, which makes every observed value
+    count as detected rather than silently censoring the method.
+    """
     if ax.source == "hpa_rna":
         wide = fetch_hpa_chunk(con, probe_genes)
     else:
@@ -578,6 +1112,29 @@ def profile_method(con, ax: MethodAxis, colmap, probe_genes: list[str],
 
 
 def to_log2(ax: MethodAxis, X: np.ndarray) -> np.ndarray:
+    """
+    Put an axis's values on the common log2 scale.
+
+    Linear values become ``log2(x + 1)``, with negatives clipped to zero
+    first; values already on a log scale pass through. This is what makes
+    RNA-seq and array methods comparable before z-scoring.
+
+    Parameters
+    ----------
+    ax : MethodAxis
+        Axis, already profiled so ``scale_detected`` is set.
+    X : numpy.ndarray
+        Values in the axis's native scale.
+
+    Returns
+    -------
+    numpy.ndarray
+        Values in log2 space.
+
+    Notes
+    -----
+    An axis whose scale came out ``"unknown"`` is left untransformed.
+    """
     if ax.scale_detected == "linear":
         return np.log2(np.clip(X, 0, None) + 1.0)
     return X
@@ -593,6 +1150,21 @@ def nan_mad(X: np.ndarray, axis: int = 0):
     All-NaN slices are legitimate -- a gene absent from a method's platform,
     or a lineage where nothing was measured. They return NaN, which the
     branching below treats as no_data. The warning is suppressed; 
+
+    Parameters
+    ----------
+    X : numpy.ndarray
+        Values, typically ``(n_models, n_genes)``.
+    axis : int, optional
+        Axis to reduce over. Default 0, i.e. per gene.
+
+    Returns
+    -------
+    med : numpy.ndarray
+        Median ignoring NaN.
+    mad : numpy.ndarray
+        MAD scaled by 1.4826, making it a consistent estimator of sigma
+        under normality.
     """
     with np.errstate(invalid="ignore"), warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
@@ -610,6 +1182,40 @@ def method_z(V: np.ndarray, lineage: np.ndarray, floor: float, p: Params,
       lower<=det<upper : rank inverse-normal; floor ties share a midrank, so
                          censored lines get a lower bound not a point estimate
       det <  lower_cut : NaN + below_detection (must not vote as z=0)
+
+    Parameters
+    ----------
+    V : numpy.ndarray
+        ``(n_models, n_genes)`` values already on the log2 scale.
+    lineage : numpy.ndarray
+        Lineage label per model row.
+    floor : float
+        The axis's detection floor in log2 space.
+    p : Params
+        Cutoffs and the shrinkage constant.
+    stratify : bool
+        Score within lineage when True, over all models when False. The
+        caller runs both to produce ``z_lineage`` and ``z_global``.
+
+    Returns
+    -------
+    Z : numpy.ndarray
+        float32 z-scores, NaN where not scoreable.
+    S : numpy.ndarray
+        int8 status codes, keyed by :data:`STATUS`.
+    D : numpy.ndarray
+        float32 detection fraction per cell.
+    C : numpy.ndarray
+        int8 scale-source codes, keyed by :data:`SCALE_SRC`.
+
+    Notes
+    -----
+    Two guards keep the parametric branch honest on thin data. The scale is
+    floored at a tenth of the method-global MAD, so a lineage with almost
+    no spread cannot manufacture huge z-scores; and the lineage median is
+    only used as the centre when the stratum has at least five members,
+    falling back to the global median otherwise. Both conditions are
+    recorded in ``C`` rather than hidden.
     """
     n, G = V.shape
     Z = np.full((n, G), np.nan, np.float32)
@@ -678,6 +1284,21 @@ def stouffer(Z: np.ndarray, W: np.ndarray | None = None):
 
     Denominator is sqrt(sum w^2), not sum(w) -- that is what keeps the output
     unit-variance. Missing entries reduce k; they never vote as z=0.
+
+    Parameters
+    ----------
+    Z : numpy.ndarray
+        Z-scores stacked on a third axis, one slice per contributor.
+    W : numpy.ndarray or None, optional
+        Matching weights. None means equal weight — one contributor, one
+        vote.
+
+    Returns
+    -------
+    combined : numpy.ndarray
+        float32 combined z, NaN where no contributor supplied a value.
+    k_used : numpy.ndarray
+        int16 count of contributors that actually voted per cell.
     """
     m = np.isfinite(Z)
     Zf = np.where(m, Z, 0.0)
@@ -690,7 +1311,46 @@ def stouffer(Z: np.ndarray, W: np.ndarray | None = None):
 
 def process_chunk(con, axes, colmaps, genes, models, midx, lineage_map_s,
                   p: Params, stratify: bool = True) -> dict:
-    """Per-source stacks of method-level z, aligned to the global model axis."""
+    """Per-source stacks of method-level z, aligned to the global model axis.
+
+    Each axis is fetched, replicate-collapsed, put on log2, scored, then
+    scattered onto the full model axis so every method's output shares one
+    row order and the stacks can be combined directly.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection.
+    axes : list of MethodAxis
+        Axes to score, already profiled.
+    colmaps : dict
+        Axis name to ENSG column map.
+    genes : list of str
+        Canonical ENSG IDs for this chunk.
+    models : list of str
+        Global model axis.
+    midx : dict
+        ``model_id`` to its row index in ``models``.
+    lineage_map_s : pandas.Series
+        Lineage indexed by ``model_id``.
+    p : Params
+        Scoring parameters.
+    stratify : bool, optional
+        Passed through to :func:`method_z`. Default True.
+
+    Returns
+    -------
+    dict
+        Source name to a list of per-method dicts, each with ``name``,
+        ``z``, ``status``, ``det``, ``scale_src`` and ``n``, all on the
+        global ``(n_models, n_genes)`` shape.
+
+    Notes
+    -----
+    Models on an axis but not in ``midx`` are dropped by the ``rows >= 0``
+    mask; models in ``midx`` but absent from an axis keep their NaN and
+    status 3, so the two directions of mismatch are handled distinctly.
+    """
     nM, G = len(models), len(genes)
     cache = fetch_chunk_by_table(con, axes, genes, colmaps)
     per_src = {}
@@ -725,6 +1385,33 @@ def combine_sources(per_src: dict):
     equally trustworthy, and more robust to any single source's artefacts.
     With GEO split on platform x processing there may be 10+ GEO methods; flat
     Stouffer would hand GEO ~80% of the weight.
+
+    Parameters
+    ----------
+    per_src : dict
+        Source name to per-method dicts, from :func:`process_chunk`.
+
+    Returns
+    -------
+    z_final : numpy.ndarray
+        ``(n_models, n_genes)`` combined z across sources.
+    k_src : numpy.ndarray
+        Sources that voted per cell — 1 to 3.
+    src_z : dict
+        Source name to its stage-1 combined z, written out as the
+        ``z_hpa_rna`` / ``z_depmap`` / ``z_geo`` columns.
+    extra : dict
+        Per-source diagnostics: ``__k``, ``__status``, ``__scale_src``
+        stacks and the mean ``__det``.
+    order : list of str
+        Sources present, in fixed ``hpa_rna``, ``depmap``, ``geo`` order —
+        the column order the output frame relies on.
+
+    Notes
+    -----
+    Only GEO is weighted within a source, by ``sqrt(n_samples)``, since its
+    methods differ in how many replicates back each cell line. The RNA-seq
+    sources have one method each, so weighting would be a no-op.
     """
     src_z, extra = {}, {}
     for src, items in per_src.items():
@@ -750,12 +1437,46 @@ def combine_sources(per_src: dict):
 # ======================================================================
 
 def grid_combinations(grid: dict = None) -> list[tuple]:
+    """
+    Expand the parameter grid into valid combinations.
+
+    Parameters
+    ----------
+    grid : dict, optional
+        Values per parameter. Defaults to :data:`PARAM_GRID`.
+
+    Returns
+    -------
+    list of tuple
+        ``(floor_q, n0, upper_cut, lower_cut)`` for every combination where
+        ``lower_cut < upper_cut`` — the others describe no valid censoring
+        band.
+    """
     grid = grid or PARAM_GRID
     keys = ["floor_q", "n0", "upper_cut", "lower_cut"]
     return [c for c in itertools.product(*[grid[k] for k in keys]) if c[3] < c[2]]
 
 
 def sample_calibration_genes(all_genes, n=N_CALIB_GENES, rng=None) -> list[str]:
+    """
+    Draw a random gene sample for calibration.
+
+    Parameters
+    ----------
+    all_genes : sequence
+        Gene universe to sample from.
+    n : int, optional
+        Sample size, capped at the universe size. Defaults to
+        :data:`N_CALIB_GENES`.
+    rng : numpy.random.Generator, optional
+        Seeded generator, so calibration is reproducible. Defaults to seed
+        0.
+
+    Returns
+    -------
+    list of str
+        Genes sampled without replacement.
+    """
     rng = rng or np.random.default_rng(0)
     n = min(n, len(all_genes))
     return list(rng.choice(np.asarray(all_genes, dtype=object), size=n, replace=False))
@@ -763,7 +1484,42 @@ def sample_calibration_genes(all_genes, n=N_CALIB_GENES, rng=None) -> list[str]:
 
 def _score_params(con, axes, colmaps, genes, models, midx, lineage_s,
                   p: Params, holdouts, ref_cache) -> float | None:
-    """Held-out cross-source rank concordance for one parameter combination."""
+    """Held-out cross-source rank concordance for one parameter combination.
+
+    For each held-out RNA-seq source, the remaining axes are scored under
+    ``p`` and correlated against that source's reference scores. The
+    parameters never see the source they are judged against.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection.
+    axes : list of MethodAxis
+        All axes; the held-out source is excluded per fold.
+    colmaps, genes, models, midx, lineage_s
+        Universe and axis plumbing, as elsewhere.
+    p : Params
+        Combination under test.
+    holdouts : list of str
+        Source names to hold out in turn.
+    ref_cache : dict
+        Source name to its reference z, scored under the fixed
+        :data:`REF_PARAMS_RAW`.
+
+    Returns
+    -------
+    float or None
+        Mean Spearman rho across folds, or None if no fold had enough
+        comparable cells.
+
+    Notes
+    -----
+    Scoring is restricted to the ambiguous detection band (0.01 to 0.90).
+    Outside it every parameter setting agrees, so including those cells
+    would dilute the signal the search is trying to resolve. Folds with
+    fewer than :data:`MIN_CALIB_CELLS` comparable cells are skipped rather
+    than contributing a noisy correlation.
+    """
     rhos = []
     for h in holdouts:
         fit = [a for a in axes if a.source != h]
@@ -788,7 +1544,64 @@ def _score_params(con, axes, colmaps, genes, models, midx, lineage_s,
 
 def calibrate_params(con, axes, colmaps, all_genes, models, midx, lineage_s,
                      rng=None, grid: dict = None):
-    """Grid search + 1-SE rule. Returns (Params, grid_frame, genes_used)."""
+    """Grid search + 1-SE rule. Returns (Params, grid_frame, genes_used).
+
+    Each combination is scored by held-out concordance against an RNA-seq
+    source that did not contribute to the fit. The reference is itself
+    scored under fixed parameters (:data:`REF_PARAMS_RAW`), so the target
+    does not move with the setting being tested — otherwise the search
+    would be circular.
+
+    Selection is by the 1-SE rule rather than the argmax: every combination
+    within one standard error of the best is treated as tied, and the tie
+    is broken toward the conservative end — higher cuts, more rank-based
+    and less parametric scoring.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection.
+    axes : list of MethodAxis
+        All axes. Mutated by profiling as the search proceeds.
+    colmaps : dict
+        Axis name to ENSG column map.
+    all_genes : sequence
+        Gene universe to sample calibration genes from.
+    models, midx, lineage_s
+        Model axis plumbing.
+    rng : numpy.random.Generator, optional
+        Seeded generator. Defaults to seed 0.
+    grid : dict, optional
+        Parameter grid. Defaults to :data:`PARAM_GRID`.
+
+    Returns
+    -------
+    p : Params
+        Chosen parameters.
+    gdf : pandas.DataFrame
+        Every scorable combination with its rho, descending, with the
+        standard error in ``.attrs["se"]``. Empty on total failure.
+    genes : list of str
+        The calibration gene sample, returned for reproducibility.
+
+    Raises
+    ------
+    RuntimeError
+        If no RNA-seq source is available to hold out — with only array
+        methods there is no trustworthy reference to calibrate against.
+
+    Notes
+    -----
+    If no combination scores, the reference parameters are returned with a
+    warning rather than raising, so a run can still proceed on documented
+    defaults. Check the log: a run on reference parameters is not a
+    calibrated run and should not be described as one.
+
+    The argmax of a noisy surface is largely an artefact of the noise,
+    which is why the 1-SE rule is applied. The flatness of the ``n0`` sweep
+    (see :func:`plot_n0_sweep`) is the visual check on whether the data
+    identify that parameter at all.
+    """
     rng = rng or np.random.default_rng(0)
     genes = sample_calibration_genes(all_genes, rng=rng)
     holdouts = [s for s in ("depmap", "hpa_rna")
@@ -856,6 +1669,40 @@ def chunk_to_frame(models, lineage_vec, genes, z_lin, z_glb, k_src, extra,
     The source-level z columns are built from the SAME index as the rest of
     the frame. Splitting this across two functions once let the two traversal
     orders diverge, which misaligns z_depmap/z_geo silently.
+
+    Parameters
+    ----------
+    models, lineage_vec : sequence
+        Global model axis and its lineage labels, same order.
+    genes : sequence
+        Gene axis for this chunk.
+    z_lin, z_glb : numpy.ndarray
+        Lineage-stratified and global combined z.
+    k_src : numpy.ndarray
+        Sources voting per cell.
+    extra : dict
+        Per-source diagnostic stacks from :func:`combine_sources`.
+    order : list of str
+        Source order; also fixes the ``z_<source>`` column order.
+    src_z : dict
+        Per-source combined z.
+    min_k : int, optional
+        Drop rows backed by fewer than this many sources. Default 1.
+
+    Returns
+    -------
+    pandas.DataFrame
+        One row per surviving (gene, cell line), with ``status`` and
+        ``scale_source`` mapped to their labels. Empty if nothing survives.
+
+    Notes
+    -----
+    ``status`` and ``scale_source`` are collapsed across methods by
+    priority, in opposite directions. Status takes the *best* available
+    (any ``ok`` makes the cell ok), since one method scoring properly is
+    enough. Scale source takes the *worst* (any ``fallback_global`` marks
+    the cell as fallback), so the reported provenance is never rosier than
+    the weakest contributor.
     """
     st_all = np.concatenate([extra[f"{s}__status"] for s in order], axis=2)
     st = np.where((st_all == 0).any(axis=2), 0,
@@ -902,6 +1749,27 @@ def write_chunk(con, df: pd.DataFrame, table: str, first: bool) -> None:
     CREATE OR REPLACE on the first chunk gives idempotency across reruns;
     later chunks INSERT. DuckDB is the only sink -- at ~30M rows CSV would be
     ~4.5 GB and unusable.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open, writable connection.
+    df : pandas.DataFrame
+        Chunk frame from :func:`chunk_to_frame`. Empty frames are a no-op.
+    table : str
+        Output table name.
+    first : bool
+        True for the first written chunk, which creates or replaces the
+        table.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    The temporary registration is dropped in a ``finally`` block, so a
+    failed insert does not leave a stale view bound to the connection.
     """
     if df.empty:
         return
@@ -917,6 +1785,23 @@ def write_chunk(con, df: pd.DataFrame, table: str, first: bool) -> None:
 
 
 def summarise_chunk(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Reduce one chunk to diagnostic counts.
+
+    Counting per chunk and summing afterwards keeps the diagnostics small
+    regardless of how many rows were written.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Chunk frame from :func:`chunk_to_frame`.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Row counts by ``lineage``, ``status``, ``scale_source`` and
+        ``k_src``. Empty for an empty chunk.
+    """
     if df.empty:
         return pd.DataFrame()
     return (df.groupby(["lineage", "status", "scale_source", "k_src"],
@@ -924,7 +1809,26 @@ def summarise_chunk(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def verify_output(con, table: str) -> pd.DataFrame:
-    """Post-run sanity: row/gene/line counts and the k_src breakdown."""
+    """Post-run sanity: row/gene/line counts and the k_src breakdown.
+
+    The mean and SD of ``z_lineage`` are the check that matters: a mean
+    near 0 and an SD near 1 indicate the combination preserved the z-scale,
+    while a markedly smaller SD suggests the Stouffer denominator or the
+    shrinkage is over-damping.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection.
+    table : str
+        Output table to inspect.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Row counts and percentages by ``k_src``. The headline summary is
+        logged rather than returned.
+    """
     head = con.execute(f"""
         SELECT count(*) AS rows,
                count(DISTINCT ensg) AS genes,
@@ -947,6 +1851,17 @@ def verify_output(con, table: str) -> pd.DataFrame:
 # ======================================================================
 
 def _plt():
+    """
+    Import pyplot with a headless backend.
+
+    Imported lazily and forced to ``Agg`` so the library never requires a
+    display, and importing this module does not pull in matplotlib at all.
+
+    Returns
+    -------
+    module
+        ``matplotlib.pyplot``.
+    """
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -954,6 +1869,28 @@ def _plt():
 
 
 def plot_grid_rho(grid: pd.DataFrame, p: Params, out: Path) -> None:
+    """
+    Heatmap of held-out concordance over the two censoring cuts.
+
+    Sliced at the chosen ``floor_q`` and ``n0``, with the selected
+    combination starred. The 1-SE value in the title is the scale against
+    which apparent differences on the map should be judged.
+
+    Parameters
+    ----------
+    grid : pandas.DataFrame
+        Grid results from :func:`calibrate_params`.
+    p : Params
+        Chosen parameters.
+    out : Path
+        Output directory. Writes ``01_grid_rho.png``.
+
+    Returns
+    -------
+    None
+        Nothing is plotted for an empty grid or a slice of fewer than four
+        points.
+    """
     if grid is None or grid.empty:
         return
     plt = _plt()
@@ -977,6 +1914,26 @@ def plot_grid_rho(grid: pd.DataFrame, p: Params, out: Path) -> None:
 
 
 def plot_n0_sweep(grid: pd.DataFrame, p: Params, out: Path) -> None:
+    """
+    Concordance against the shrinkage constant, one line per upper cut.
+
+    The honest reading is in the subtitle: a flat sweep means the data do
+    not identify ``n0``, and whichever value the search picked is
+    arbitrary within that range. Worth knowing before defending the number.
+
+    Parameters
+    ----------
+    grid : pandas.DataFrame
+        Grid results from :func:`calibrate_params`.
+    p : Params
+        Chosen parameters; ``n0`` is marked.
+    out : Path
+        Output directory. Writes ``02_n0_sweep.png``.
+
+    Returns
+    -------
+    None
+    """
     if grid is None or grid.empty:
         return
     plt = _plt()
@@ -993,6 +1950,29 @@ def plot_n0_sweep(grid: pd.DataFrame, p: Params, out: Path) -> None:
 
 
 def plot_floors(axes: list[MethodAxis], out: Path) -> None:
+    """
+    Detection floor per method, annotated with its detected scale.
+
+    Makes it visible when one method's floor sits far from its peers, which
+    usually means its scale was misdetected rather than that its detection
+    genuinely differs.
+
+    Parameters
+    ----------
+    axes : list of MethodAxis
+        Profiled axes.
+    out : Path
+        Output directory. Writes ``03_floors.png``.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    An unset or infinite floor is drawn as 0 with its scale label shown as
+    is, so an unprofiled method is visible rather than breaking the axis.
+    """
     plt = _plt()
     fig, ax = plt.subplots(figsize=(max(6, 0.45 * len(axes)), 3.8))
     names = [a.name for a in axes]
@@ -1008,6 +1988,25 @@ def plot_floors(axes: list[MethodAxis], out: Path) -> None:
 
 
 def plot_status_by_lineage(diag: pd.DataFrame, out: Path) -> None:
+    """
+    Status composition per lineage, as proportions.
+
+    Shows which lineages are carried by properly scored cells and which
+    lean on censored ranks — the lineages whose z-scores deserve the least
+    weight downstream.
+
+    Parameters
+    ----------
+    diag : pandas.DataFrame
+        Aggregated chunk diagnostics.
+    out : Path
+        Output directory. Writes ``04_status_by_lineage.png``.
+
+    Returns
+    -------
+    None
+        Limited to the 18 largest lineages for legibility.
+    """
     if diag is None or diag.empty:
         return
     plt = _plt()
@@ -1023,6 +2022,24 @@ def plot_status_by_lineage(diag: pd.DataFrame, out: Path) -> None:
 
 
 def plot_coverage(diag: pd.DataFrame, out: Path) -> None:
+    """
+    Two bars: cells by contributing sources, and by scale provenance.
+
+    Together these answer how much of the output rests on a single source
+    and how much on a global rather than lineage scale — the two coverage
+    caveats that qualify the whole layer.
+
+    Parameters
+    ----------
+    diag : pandas.DataFrame
+        Aggregated chunk diagnostics.
+    out : Path
+        Output directory. Writes ``05_coverage.png``.
+
+    Returns
+    -------
+    None
+    """
     if diag is None or diag.empty:
         return
     plt = _plt()
@@ -1037,6 +2054,29 @@ def plot_coverage(diag: pd.DataFrame, out: Path) -> None:
 
 
 def make_plots(grid, p, axes, diag, out: Path) -> None:
+    """
+    Render the full diagnostic figure set.
+
+    Parameters
+    ----------
+    grid : pandas.DataFrame
+        Grid results; may be empty when parameters were supplied rather
+        than calibrated, in which case the two grid plots are skipped.
+    p : Params
+        Chosen parameters.
+    axes : list of MethodAxis
+        Profiled axes.
+    diag : pandas.DataFrame
+        Aggregated diagnostics; may be empty in calibrate-only mode, in
+        which case the two coverage plots are skipped.
+    out : Path
+        Output directory, created if absent.
+
+    Returns
+    -------
+    None
+        Writes ``01_grid_rho.png`` through ``05_coverage.png``.
+    """
     out.mkdir(parents=True, exist_ok=True)
     plot_grid_rho(grid, p, out)
     plot_n0_sweep(grid, p, out)
