@@ -401,7 +401,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
 
         {/* Contextual explainer for the visual on the left */}
         <div className="space-y-4">
-          <ViewExplainer view={activeView} count={results.length} />
+          <ViewExplainer view={activeView} mode={mode} count={results.length} />
         </div>
       </div>
     </div>
@@ -420,37 +420,97 @@ const ScorePair: React.FC<{ global: number; lineage: number }> = ({ global, line
   </div>
 );
 
-const VIEW_HELP: Record<
-  string,
-  { title: string; blurb: string; tips: string[] }
-> = {
-  table: {
-    title: 'Ranked results',
-    blurb:
-      'Every cell line that passed, ordered by score. Each row shows two scores: global (across all lines) and in-lineage (among shown lines of the same tissue). Cell lines are shown by their ACH id, with the common name beneath.',
-    tips: ['Hit Inspect on any line to open its full evidence profile.', 'Switch to the Evidence grid to compare layers across lines.'],
-  },
-  omics: {
-    title: 'Evidence grid',
-    blurb:
-      'A table of cell lines (rows) against evidence layers (columns). For selectivity and multi-gene queries the layers are shown per gene, so you can see a line is high in the target and low in the excluded gene at once.',
-    tips: ['Read down a column to compare one layer across lines.', 'Click a line to open its profile.'],
-  },
-  lineages: {
-    title: 'Lineages',
-    blurb:
-      'Groups the results by tissue lineage so you can compare candidates within and across tissues, ordered by each lineage’s best-placed line.',
-    tips: ['Use the filter pills to focus on a single lineage.', 'Click any line to inspect it.'],
-  },
-};
+type HelpItem = { term: string; desc: string };
+type Help = { title: string; intro: string; items: HelpItem[]; note?: string; tips: string[] };
 
-const ViewExplainer: React.FC<{ view: string; count: number }> = ({ view, count }) => {
-  const help = VIEW_HELP[view] ?? VIEW_HELP.table;
+function buildHelp(view: string, mode: string): Help {
+  if (view === 'omics') {
+    const note =
+      mode === 'selectivity'
+        ? 'Layers repeat per gene: you want the target gene’s block strong and the excluded gene’s block weak or absent.'
+        : mode === 'multi'
+        ? 'Layers repeat per gene — read across a row to see a line’s evidence for each of your targets.'
+        : 'Layers are shown once, for your target gene.';
+    return {
+      title: 'How to read the evidence grid',
+      intro: 'Rows are cell lines; columns are evidence layers. Two kinds of value appear:',
+      items: [
+        {
+          term: 'Expression & Proteomics — Low / Moderate / High',
+          desc: 'A relative level: where the line sits for that gene compared with other cell lines — not an absolute amount. “High” means more transcript / protein than most lines.',
+        },
+        {
+          term: 'Mutation / Fusion / Copy number — ✓ present / – absent',
+          desc: 'Simply whether the alteration is there for that line. A “driver” tag marks a known cancer-driver alteration, not just any variant.',
+        },
+      ],
+      note,
+      tips: ['Read down a column to compare one layer across lines.', 'Click a line to open its full profile.'],
+    };
+  }
+
+  if (view === 'lineages') {
+    return {
+      title: 'How to read the lineage view',
+      intro: 'Results grouped by tissue lineage. Within each group the best line for that tissue comes first.',
+      items: [
+        {
+          term: 'In-lineage order',
+          desc: 'Lines within a group are ordered by their in-lineage score (0–1) — how well they rank among cell lines of the same tissue, independent of the global ranking.',
+        },
+      ],
+      tips: ['Use the filter pills to focus on a single lineage.', 'Click any line to inspect it.'],
+    };
+  }
+
+  // Table (default)
+  const note =
+    mode === 'selectivity'
+      ? 'This is a selectivity ranking: it rewards lines HIGH in your target and LOW in the excluded gene(s). The component-score column shows the target score (want high) and each excluded score (want low).'
+      : mode === 'multi'
+      ? 'This is a joint ranking across your targets: the Joint score combines the per-gene scores (shown per gene). A gene with no evidence gets a PARTIAL flag, and ▼ marks the limiting gene — the weakest gene that caps the joint score.'
+      : 'This is a single-gene ranking: the score reflects how strongly the evidence supports your target gene in each line.';
+  return {
+    title: 'How to read the table',
+    intro: 'Each row is a cell line — ACH id on top, common name beneath — ordered best first.',
+    items: [
+      {
+        term: 'Score (global)',
+        desc: 'The model’s confidence (0–1) that the line is a good match, across ALL cell lines. Higher is better. Top scores bunch together, so treat the leading lines as a shortlist rather than a single winner.',
+      },
+      {
+        term: 'In-lineage (lin)',
+        desc: 'The same idea, but only among lines of the SAME tissue lineage (0–1). Use it when you care about a specific tissue.',
+      },
+    ],
+    note,
+    tips: ['Use the Lineage filter to re-rank within one tissue.', 'Hit Inspect on any line for its full evidence profile.'],
+  };
+}
+
+const ViewExplainer: React.FC<{ view: string; mode: string; count: number }> = ({ view, mode, count }) => {
+  const help = buildHelp(view, mode);
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-mulberry-600">About this view</span>
       <h3 className="text-lg font-bold text-slate-900 mt-1">{help.title}</h3>
-      <p className="text-sm text-slate-600 mt-2 leading-relaxed">{help.blurb}</p>
+      <p className="text-sm text-slate-600 mt-2 leading-relaxed">{help.intro}</p>
+
+      <dl className="mt-3 space-y-2.5">
+        {help.items.map((it) => (
+          <div key={it.term}>
+            <dt className="text-xs font-bold text-slate-800">{it.term}</dt>
+            <dd className="text-xs text-slate-500 leading-relaxed mt-0.5">{it.desc}</dd>
+          </div>
+        ))}
+      </dl>
+
+      {help.note && (
+        <p className="text-xs text-mulberry-800 bg-mulberry-50 border border-mulberry-100 rounded-lg p-3 mt-3 leading-relaxed">
+          {help.note}
+        </p>
+      )}
+
       <ul className="mt-3 space-y-1.5">
         {help.tips.map((t, i) => (
           <li key={i} className="flex gap-2 text-xs text-slate-500 leading-relaxed">
@@ -459,6 +519,7 @@ const ViewExplainer: React.FC<{ view: string; count: number }> = ({ view, count 
           </li>
         ))}
       </ul>
+
       <p className="text-[11px] text-slate-400 mt-4 pt-3 border-t border-slate-100">
         Showing your top {count} {count === 1 ? 'line' : 'lines'}.
       </p>
