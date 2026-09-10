@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ALL_GENES, GENE_UNIVERSE } from '../../lib/mockData';
+import { ALL_GENES } from '../../lib/mockData';
+import { useGeneUniverse } from '../../lib/useGeneUniverse';
 import { QueryParams } from '../../types';
 import { GeneSearch } from '../common/GeneSearch';
 import { Search, X, Eraser, BookMarked, Target, Ban, SlidersHorizontal } from 'lucide-react';
@@ -11,6 +12,7 @@ interface QueryBuilderProps {
 }
 
 export const QueryBuilder: React.FC<QueryBuilderProps> = ({ initialParams, onSubmit, onOpenReference }) => {
+  const { symbols: geneUniverse, isKnown } = useGeneUniverse();
   const [targets, setTargets] = useState<string[]>(initialParams.targets);
   const [exclusions, setExclusions] = useState<string[]>(initialParams.exclusions);
   const [topK, setTopK] = useState<number>(initialParams.topK);
@@ -50,9 +52,19 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({ initialParams, onSub
 
   // Query mode derived from the current selection (mirrors the routing in fetchRanking).
   const mode =
-    targets.length >= 2 ? 'MULTI' : targets.length === 1 && exclusions.length > 0 ? 'SELECTIVITY' : targets.length === 1 ? 'SINGLE' : '—';
+    targets.length >= 2 && exclusions.length > 0
+      ? 'JOINT_SELECTIVITY'
+      : targets.length >= 2
+      ? 'MULTI'
+      : targets.length === 1 && exclusions.length > 0
+      ? 'SELECTIVITY'
+      : targets.length === 1
+      ? 'SINGLE'
+      : '—';
   const modeHint =
-    mode === 'MULTI'
+    mode === 'JOINT_SELECTIVITY'
+      ? 'Joint across all targets, high; low in the excluded gene(s)'
+      : mode === 'MULTI'
       ? 'Joint ranking across all targets'
       : mode === 'SELECTIVITY'
       ? 'High in the target, low in the excluded gene(s)'
@@ -132,7 +144,8 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({ initialParams, onSub
               Target gene(s) <span className="text-rose-500">*</span>
             </label>
             <GeneSearch
-              suggestions={GENE_UNIVERSE}
+              suggestions={geneUniverse}
+              isKnown={isKnown}
               exclude={[...targets, ...exclusions]}
               placeholder="Search genes — type to filter, or enter any symbol…"
               onPick={addTarget}
@@ -160,7 +173,8 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({ initialParams, onSub
                 <span className="text-[11px] font-normal text-slate-400">optional</span>
               </label>
               <GeneSearch
-                suggestions={GENE_UNIVERSE}
+                suggestions={geneUniverse}
+                isKnown={isKnown}
                 exclude={[...exclusions, ...targets]}
                 placeholder="Gene to rank low…"
                 onPick={addExclusion}

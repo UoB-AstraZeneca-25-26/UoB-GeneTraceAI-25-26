@@ -166,9 +166,9 @@ export const EvidenceMatrix: React.FC<EvidenceMatrixProps> = ({ genes, lines, on
                     <React.Fragment key={g}>
                       <BandCell level={d.expressionLevel} edge={gi > 0} />
                       <BandCell level={d.proteomicsLevel} />
-                      <MarkCell yes={d.pMutation != null} tag={d.driverAlteration ? 'driver' : undefined} />
-                      <MarkCell yes={d.pFusion != null} />
-                      <MarkCell yes={d.hasCnaAlteration} />
+                      <MarkCell yes={(d.pMutation ?? 0) > 0} tag={d.mutationDriver ? 'driver' : undefined} />
+                      <MarkCell yes={(d.pFusion ?? 0) > 0} tag={d.fusionDriver ? 'driver' : undefined} />
+                      <MarkCell yes={d.hasCnaAlteration} tag={d.hasCnaAlteration ? 'driver' : undefined} />
                     </React.Fragment>
                   );
                 })}

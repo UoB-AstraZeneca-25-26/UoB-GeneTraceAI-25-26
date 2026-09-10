@@ -25,13 +25,38 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
   const [error, setError] = useState<string | null>(null);
   const [showMethodology, setShowMethodology] = useState(false);
 
+  // When the query had multiple TARGET genes (multi / jointSelectivity), evidence
+  // (expression, proteomics, mutation, fusion, CNA) is only ever fetched for one
+  // gene at a time -- /gene/detail takes a single gene param. Let the user switch
+  // which target's evidence they're looking at, defaulting to the limiting gene
+  // since that's usually the one that matters most for interpreting the score.
+  const availableGenes = React.useMemo(() => {
+    const r = target.ranked;
+    if (r && (r.mode === 'multi' || r.mode === 'jointSelectivity') && r.genes.length > 1) return r.genes;
+    return [target.gene];
+  }, [target]);
+  const limitingGene =
+    target.ranked && (target.ranked.mode === 'multi' || target.ranked.mode === 'jointSelectivity')
+      ? target.ranked.limitingGene
+      : null;
+
+  const [selectedGene, setSelectedGene] = useState<string>(limitingGene ?? availableGenes[0] ?? target.gene);
+
+  // Reset which gene is selected whenever we navigate to a new inspect target
+  // (different line, or a fresh query) -- otherwise a stale selectedGene from
+  // the previous line could persist and silently fetch the wrong gene here.
+  useEffect(() => {
+    setSelectedGene(limitingGene ?? availableGenes[0] ?? target.gene);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target.modelId, target.gene]);
+
   useEffect(() => {
     let cancelled = false;
     const ctrl = new AbortController();
     setLoading(true);
     setError(null);
     setDetail(null);
-    fetchCellLineDetail(target.gene, target.modelId, ctrl.signal)
+    fetchCellLineDetail(selectedGene, target.modelId, ctrl.signal)
       .then((resp) => {
         if (!cancelled) setDetail(toCellLineDetail(resp));
       })
@@ -45,7 +70,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
       cancelled = true;
       ctrl.abort();
     };
-  }, [target.gene, target.modelId]);
+  }, [selectedGene, target.modelId]);
 
   const BackButton = (
     <button
@@ -64,7 +89,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
         <div className="text-center py-24">
           <Loader2 className="w-8 h-8 mx-auto animate-spin text-mulberry-600" />
           <p className="text-sm text-slate-500 mt-3">
-            Loading <strong className="font-mono">{target.cellLine}</strong> · {target.gene}…
+            Loading <strong className="font-mono">{target.cellLine}</strong> · {selectedGene}…
           </p>
         </div>
       </div>
@@ -105,7 +130,30 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
           to single-gene detail when opened outside a ranking) */}
       <TopCards detail={detail} ranked={target.ranked} />
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        {availableGenes.length > 1 ? (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-medium text-slate-500">Evidence below is for:</span>
+            {availableGenes.map((g) => (
+              <button
+                key={g}
+                onClick={() => setSelectedGene(g)}
+                className={`inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition ${
+                  g === selectedGene
+                    ? 'bg-mulberry-600 text-white border-mulberry-600'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-mulberry-300 hover:text-mulberry-700'
+                }`}
+              >
+                {g}
+                {g === limitingGene && (
+                  <span className={g === selectedGene ? 'text-[9px] text-white/80' : 'text-[9px] text-amber-600'}>▼ limiting</span>
+                )}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <span />
+        )}
         <button
           onClick={() => setShowMethodology(true)}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-mulberry-600 text-mulberry-600 text-sm font-semibold transition-colors hover:bg-mulberry-600 hover:text-white"
@@ -125,9 +173,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
         <p className="text-[12px] text-slate-600 leading-relaxed bg-slate-50 border border-slate-100 rounded-lg p-3">
           <strong className="text-slate-700">How to read:</strong> each layer shows a level —{' '}
           <strong className="text-slate-700">Low, Moderate or High</strong> for {detail.gene} in this line{' '}
-          relative to other cell lines — and which datasets measured it (present or absent). Expression draws on
-          DepMap, HPA and GEO; proteomics on ProCan and CCLE. More sources present means the level is backed by
-          more independent evidence.
+          relative to other cell lines — the same level is also shown per dataset below (Low/Moderate/High, or No
+          if that dataset didn't measure it). Expression draws on DepMap, HPA and GEO; proteomics on ProCan and
+          CCLE. Sources can disagree — that's real, not an error.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -135,13 +183,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
             label="Expression (RNA)"
             level={detail.expressionLevel}
             allSources={EXPRESSION_SOURCES}
-            presentSources={detail.expressionSources}
+            sourceLevels={detail.expressionBySource}
           />
           <SourceRow
             label="Proteomics (protein)"
             level={detail.proteomicsLevel}
             allSources={PROTEOMICS_SOURCES}
-            presentSources={detail.proteomicsSources}
+            sourceLevels={detail.proteomicsBySource}
           />
         </div>
       </div>
@@ -152,24 +200,27 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <LayerCard
             label="Mutation"
-            present={detail.pMutation != null}
-            hint={detail.driverAlteration ? 'driver alteration' : detail.pMutation != null ? 'variant detected' : 'no variant detected'}
-            badge={detail.driverAlteration ? 'driver' : undefined}
+            present={(detail.pMutation ?? 0) > 0}
+            hint={detail.mutationDriver ? 'driver alteration' : (detail.pMutation ?? 0) > 0 ? 'variant detected' : 'no variant detected'}
+            badge={detail.mutationDriver ? 'driver' : undefined}
           />
           <LayerCard
             label="Fusion"
-            present={detail.pFusion != null}
-            hint={detail.pFusion != null ? 'fusion detected' : 'no fusion detected'}
+            present={(detail.pFusion ?? 0) > 0}
+            hint={detail.fusionDriver ? 'driver alteration' : (detail.pFusion ?? 0) > 0 ? 'fusion detected' : 'no fusion detected'}
+            badge={detail.fusionDriver ? 'driver' : undefined}
           />
           <LayerCard
             label="Copy number"
             present={detail.hasCnaAlteration}
             hint={detail.hasCnaAlteration ? 'copy-number altered' : 'no alteration'}
+            badge={detail.hasCnaAlteration ? 'driver' : undefined}
           />
         </div>
         <p className="text-[11px] text-slate-400">
           Alteration layers are categorical — each is simply present or absent for this line. A “driver”
-          tag means the mutation is a known cancer driver, not just any variant.
+          tag on a layer means that specific alteration (mutation, fusion, or copy-number change) is
+          strong enough to be treated as a likely driver, not just any variant.
         </p>
       </div>
 
@@ -274,6 +325,15 @@ const GeneScores: React.FC<{ ranked?: RankedCellLine; gene: string; score: numbe
       const lim = ranked.limitingGene === g;
       return chip(`${g} ${v != null ? v.toFixed(3) : '—'}${lim ? ' ▼' : ''}`, lim ? 'limit' : 'neutral', g);
     });
+  } else if (ranked.mode === 'jointSelectivity') {
+    chips = [
+      ...ranked.genes.map((g) => {
+        const v = ranked.geneScores[g];
+        const lim = ranked.limitingGene === g;
+        return chip(`${g} ${v != null ? v.toFixed(3) : '—'}${lim ? ' ▼' : ''}`, lim ? 'limit' : 'high', g);
+      }),
+      ...ranked.excludedGenes.map((g) => chip(`${g} ${(ranked.exclusionScores[g] ?? 0).toFixed(3)} ↓`, 'low', g)),
+    ];
   } else {
     chips = [
       chip(`${ranked.geneHigh} ${ranked.scoreHigh.toFixed(3)} ↑`, 'high', ranked.geneHigh),
@@ -305,16 +365,26 @@ const TopCards: React.FC<{ detail: CellLineDetail; ranked?: RankedCellLine }> = 
 
   // From a ranking: show the score/rank the user actually clicked.
   const modeLabel =
-    ranked.mode === 'selectivity' ? 'selectivity ranking' : ranked.mode === 'multi' ? 'joint ranking' : 'single-gene ranking';
+    ranked.mode === 'selectivity'
+      ? 'selectivity ranking'
+      : ranked.mode === 'jointSelectivity'
+      ? 'joint selectivity ranking'
+      : ranked.mode === 'multi'
+      ? 'joint ranking'
+      : 'single-gene ranking';
   const metric =
     ranked.mode === 'selectivity'
       ? { label: 'Selectivity', value: ranked.selectivity }
+      : ranked.mode === 'jointSelectivity'
+      ? { label: 'Combined score', value: ranked.combinedScore }
       : ranked.mode === 'multi'
       ? { label: 'Joint score', value: ranked.jointScore }
       : { label: 'Score', value: ranked.score };
   const scoreSub =
     ranked.mode === 'selectivity'
       ? `${ranked.geneHigh} high vs ${ranked.excludedGenes.join('/')} low`
+      : ranked.mode === 'jointSelectivity'
+      ? `${ranked.genes.filter((g) => ranked.geneScores[g] != null).length}/${ranked.genes.length} targets scored, vs ${ranked.excludedGenes.join('/')} low`
       : ranked.mode === 'multi'
       ? `${ranked.genes.filter((g) => ranked.geneScores[g] != null).length}/${ranked.genes.length} genes scored`
       : `${confTier(detail.tier).label} tier`;
@@ -365,8 +435,8 @@ const SourceRow: React.FC<{
   label: string;
   level: number | null;
   allSources: readonly string[];
-  presentSources: string[];
-}> = ({ label, level, allSources, presentSources }) => {
+  sourceLevels: Record<string, number | null>;
+}> = ({ label, level, allSources, sourceLevels }) => {
   const measured = level != null;
   const band = measured ? levelBand(level) : null;
   return (
@@ -385,19 +455,19 @@ const SourceRow: React.FC<{
         <span className="text-[10px] uppercase tracking-wide text-slate-400">Sources</span>
         <div className="flex flex-wrap gap-1.5 mt-1">
           {allSources.map((s) => {
-            const on = presentSources.includes(s);
+            const srcLevel = sourceLevels[s];
+            const srcBand = srcLevel != null ? levelBand(srcLevel) : null;
             return (
               <span
                 key={s}
-                title={on ? `${s}: present for this line` : `${s}: absent for this line`}
+                title={srcBand ? `${s}: ${srcBand.label} for this line` : `${s}: not measured for this line`}
                 className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${
-                  on
-                    ? 'bg-mulberry-50 text-mulberry-700 border-mulberry-200'
+                  srcBand
+                    ? TIER_PILL_CLASS[srcBand.tone]
                     : 'bg-slate-50 text-slate-400 border-dashed border-slate-200'
                 }`}
               >
-                {on ? <span aria-hidden>✓</span> : <span aria-hidden>×</span>}
-                {s}
+                {s}: {srcBand ? srcBand.label : 'No'}
               </span>
             );
           })}
