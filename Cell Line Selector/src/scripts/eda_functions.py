@@ -95,6 +95,15 @@ MAX_CORR_COLS = 40
 MAX_GAUSSIAN_COLS = 250
 MAX_AGG_CHUNK = 250
 MAX_MULTI_AGG_CHUNK = 100
+MAX_RAW_FACET_VALUES = 20_000
+GAUSSIAN_FACET_TABLES = {
+    "depmap_expr", "geo_expr", "hpa_rna", "proteomics", "metabolomics", "mirna",
+}
+MISSINGNESS_FACET_TABLES = (
+    "depmap_expr", "geo_expr", "hpa_rna", "mutations", "fusions", "proteomics",
+    "metabolomics", "mirna", "signatures", "sample_info", "cellosaurus", "hpa_desc",
+    "depmap_profiles", "geo_info",
+)
 
 GENE_MATRIX_TABLES = {"depmap_expr", "geo_expr"}
 
@@ -235,6 +244,43 @@ def fetch_sample(con, table: str, cols: Optional[list] = None, max_rows: Optiona
         if total > max_rows:
             query += f" USING SAMPLE {max_rows} ROWS (reservoir, {seed})"
     return con.execute(query).fetchdf()
+
+
+def raw_measurement_cols(con, table: str) -> list:
+    """Return numeric columns that are likely measurements, not identifiers."""
+    excluded_tokens = ("id", "index", "start", "end", "position", "chromosome", "coord")
+    return [
+        col for col in numeric_cols(con, table)
+        if not any(token in col.lower() for token in excluded_tokens)
+    ]
+
+
+def fetch_raw_value_sample(con, table: str, cols: list,
+                           max_values: int = MAX_RAW_FACET_VALUES,
+                           seed: int = 7) -> np.ndarray:
+    """Sample pooled values from wide raw tables without materializing them."""
+    if not cols:
+        return np.array([], dtype=float)
+
+    max_batches = 5
+    if len(cols) > max_batches * 100:
+        positions = np.linspace(0, len(cols) - 1, max_batches * 100, dtype=int)
+        cols = [cols[position] for position in positions]
+    rows_per_query = max(1, min(500, max_values // len(cols)))
+    values = []
+    for start in range(0, len(cols), 100):
+        batch = cols[start:start + 100]
+        query_cols = ", ".join(f'"{col}"' for col in batch)
+        query = f'SELECT {query_cols} FROM "{table}" LIMIT {rows_per_query}'
+        sampled = con.execute(query).fetchdf()
+        values.append(sampled.to_numpy(dtype=float, na_value=np.nan).ravel())
+
+    pooled = np.concatenate(values) if values else np.array([], dtype=float)
+    pooled = pooled[np.isfinite(pooled)]
+    if len(pooled) > max_values:
+        rng = np.random.default_rng(seed)
+        pooled = rng.choice(pooled, size=max_values, replace=False)
+    return pooled
 
 
 # ============================================================
@@ -695,8 +741,13 @@ def column_moments(con, table: str, chunk: int = MAX_AGG_CHUNK, cols: Optional[l
 def plot_gaussian_per_column(con, tables: list, out_path: Path, max_cols: int = MAX_GAUSSIAN_COLS,
                               ncols: int = 3, grid: int = 400, seed: int = 7,
                               table_cols: Optional[dict] = None) -> tuple:
+    tables = [table for table in tables if table in GAUSSIAN_FACET_TABLES]
     nr = -(-len(tables) // ncols)
-    fig, axes = plt.subplots(nr, ncols, figsize=(5.1 * ncols, 3.5 * nr), squeeze=False)
+    plt.rcParams.update({
+        "font.family": "serif",
+        "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
+    })
+    fig, axes = plt.subplots(nr, ncols, figsize=(11.69, 8.27), squeeze=False)
     axes = axes.flatten()
     allm = []
 
@@ -719,17 +770,20 @@ def plot_gaussian_per_column(con, tables: list, out_path: Path, max_cols: int = 
             ax.plot(xs, np.exp(-0.5 * ((xs - mu) / sd) ** 2) / (sd * np.sqrt(2 * np.pi)),
                     lw=0.55, alpha=0.32, color=cmap(r), zorder=3)
 
-        ax.set_title(f"{t}   ({len(d):,} of {len(m):,} cols)", fontsize=10.5, loc="left", pad=6)
-        ax.set_xlabel("value", fontsize=9)
-        ax.set_ylabel("density", fontsize=9)
+        display_name = t.replace("_", " ").title()
+        ax.set_title(f"{display_name}   ({len(d):,} of {len(m):,} columns)",
+                 fontsize=11.5, fontweight="bold", loc="left", pad=7)
+        ax.set_xlabel("Value", fontsize=12)
+        ax.set_ylabel("Density", fontsize=12)
+        ax.tick_params(axis="both", labelsize=10)
         style_axis(ax, grid_axis="both")
 
     for ax in axes[len(tables):]:
         ax.axis("off")
 
-    fig.suptitle("Fitted Gaussian per column — N(column mean, column sd)",
-                 fontsize=12.5, x=0.008, ha="left", y=0.998)
-    fig.tight_layout(rect=[0, 0, 1, 0.965])
+    fig.suptitle("Distribution and Scale of Numeric Variables Across Datasets",
+                 fontsize=18, fontweight="bold", x=0.5, ha="center", y=0.985)
+    fig.tight_layout(rect=[0, 0, 1, 0.94], h_pad=1.8, w_pad=1.4)
 
     moments = pd.concat(allm, ignore_index=True) if allm else pd.DataFrame()
     _safe_savefig(fig, out_path)
@@ -751,6 +805,7 @@ def missing_pct(con, table: str, chunk: int = MAX_AGG_CHUNK, cols: Optional[list
 
 
 def plot_missingness(con, tables: list, out_path: Path, ncols: int = 4, table_cols: Optional[dict] = None):
+    tables = [table for table in MISSINGNESS_FACET_TABLES if table in tables]
     data = {}
     for t in tables:
         s = missing_pct(con, t, cols=(table_cols or {}).get(t))
@@ -758,42 +813,41 @@ def plot_missingness(con, tables: list, out_path: Path, ncols: int = 4, table_co
             pd.cut(s, bins=MISS_BINS, labels=MISS_LABELS).value_counts().reindex(MISS_LABELS, fill_value=0)
         )
 
+    plt.rcParams.update({
+        "font.family": "serif",
+        "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
+    })
     nrows = -(-len(tables) // ncols)
-    fig, axes = plt.subplots(nrows, ncols, figsize=(3.6 * ncols, 2.7 * nrows), squeeze=False)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(11.69, 8.27), squeeze=False)
     axes = axes.flatten()
     ypos = np.arange(len(MISS_LABELS))[::-1]
 
-    for ax, t in zip(axes, tables):
-        counts = data[t]
+    for ax, table in zip(axes, tables):
+        counts = data[table]
         if counts is None:
-            ax.text(0.5, 0.5, "no rows", ha="center", va="center", color="#999",
-                     fontsize=9, transform=ax.transAxes)
-            ax.set_title(t, fontsize=10, loc="left")
-            ax.set_xticks([])
-            ax.set_yticks([])
-            for sp in ax.spines.values():
-                sp.set_visible(False)
+            ax.axis("off")
             continue
-
         n_total = int(counts.sum())
-        ax.barh(ypos, counts.values, color=MISS_COLORS, height=0.72, zorder=3)
+        ax.barh(ypos, counts.values, color=MISS_COLORS, height=0.7,
+                edgecolor="white", linewidth=0.3, zorder=3)
         ax.set_yticks(ypos)
-        ax.set_yticklabels(MISS_LABELS, fontsize=8)
-        ax.set_title(f"{t}   ({n_total:,} cols)", fontsize=10, loc="left", pad=6)
+        ax.set_yticklabels(MISS_LABELS, fontsize=8.5)
+        ax.set_title(f"{table.replace('_', ' ').title()}  ({n_total:,} columns)",
+                     fontsize=10.5, fontweight="bold", loc="left", pad=5)
         ax.set_xlim(0, max(counts.max() * 1.3, 1))
+        ax.tick_params(axis="x", labelsize=8)
         style_axis(ax)
-        for y, v in zip(ypos, counts.values):
-            if v:
-                ax.text(v + counts.max() * 0.03, y, f"{v:,} ({v/n_total*100:.0f}%)",
-                        va="center", fontsize=7.5, color="#444")
 
     for ax in axes[len(tables):]:
         ax.axis("off")
 
     fig.legend(handles=[Patch(facecolor=c, label=l) for c, l in zip(MISS_COLORS, MISS_LABELS)],
-               loc="lower center", ncol=7, frameon=False, fontsize=8.5, bbox_to_anchor=(0.5, -0.015))
-    fig.suptitle("Column missingness distribution by table", fontsize=13, y=0.995)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.97])
+               loc="lower center", ncol=7, frameon=False, fontsize=10,
+               bbox_to_anchor=(0.5, -0.055))
+    fig.suptitle("Distribution of Column Missingness Across Selected Tables",
+                 fontsize=17, fontweight="bold", x=0.5, ha="center", y=0.985)
+    fig.subplots_adjust(left=0.075, right=0.985, top=0.925, bottom=0.34,
+                        wspace=0.42, hspace=0.85)
 
     _safe_savefig(fig, out_path)
     return fig

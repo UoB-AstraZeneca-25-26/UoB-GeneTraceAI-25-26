@@ -11,6 +11,40 @@ Layout of this file:
   2. Cell-line roster (build_cell_line_roster)
   3. Gene roster + consistency check (build_gene_roster, check_gene_name_consistency)
   4. model_id attachment (attach_model_id, attach_model_id_everywhere, summarize_model_id_attachment)
+
+Design notes
+------------
+* Multi-valued by default. A model_id legitimately has several names and
+  accessions, and a gene_id several symbols, so roster fields hold
+  semicolon-joined unique lists rather than a single chosen value. The
+  ``(s)`` suffix in a column name marks this.
+* Two normalisation regimes, deliberately not unified. Name matching for
+  model_id attachment strips punctuation and case
+  (:func:`_normalise_join_key`), so ``A-375`` and ``A375`` match; the
+  Cellosaurus accession bridges match exact strings, which under-matches
+  rather than risking a wrong accession. Gene symbols use a third form
+  (:func:`_normalise_gene_symbol`, uppercase). Which applies is stated
+  per function.
+* Column names are resolved, not assumed. :func:`_resolve_column` allows
+  case drift between sources, so a cleaned lowercase header and an
+  original uppercase one both find their column.
+* Bridges are inverted rather than re-matched. Once a roster column
+  carries external IDs, the reverse mapping is derived from it
+  (:func:`_invert_multivalue_column`) so the two directions cannot
+  disagree.
+* Idempotent where it matters. The COSMIC and model_id attach functions
+  return early when their output column is already populated, so a
+  re-run does not overwrite or duplicate work.
+
+Order dependencies
+------------------
+:func:`add_cellosaurus_synonyms_to_cell_line_roster` before
+:func:`expand_cvcl_ids_from_names`;
+:func:`build_gene_roster` before
+:func:`add_missing_proteomics_genes_to_gene_roster` before the COSMIC
+bridges; :func:`add_cosmic_cnv_id_to_gene_roster` before
+:func:`add_gene_id_to_cosmic_cna` (and likewise for the census pair).
+Each is restated on the function itself.
 """
 
 from typing import Optional
@@ -35,6 +69,23 @@ def extract_cvcl_from_rrid(value) -> Optional[str]:
     like 'rrid:cvcl_1234' or 'cvcl_1234'. Returns None if no CVCL
     pattern is found (e.g. an RRID pointing at a non-Cellosaurus
     resource).
+
+    Parameters
+    ----------
+    value : any
+        Candidate RRID string. Non-strings return None rather than
+        raising, so this can be mapped over a mixed column.
+
+    Returns
+    -------
+    str or None
+        The CVCL token as it appeared, or None.
+
+    Notes
+    -----
+    Searches rather than anchoring, so a CVCL embedded mid-string is
+    still found. Case is preserved from the input — callers that need a
+    stable key lowercase it themselves.
     """
     if not isinstance(value, str):
         return None
@@ -55,6 +106,26 @@ def find_ach_column(df: pd.DataFrame, match_threshold: float = 0.9) -> Optional[
     attach_model_id) rather than relying on this heuristic — a real
     model_id column with enough NaNs or format drift can fall below
     match_threshold and be missed here.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Table to inspect. Only object-dtype columns are considered.
+    match_threshold : float, optional
+        Minimum fraction of non-null values that must match the ACH
+        pattern. Default 0.9.
+
+    Returns
+    -------
+    str or None
+        Name of the best-matching column, or None if none cleared the
+        threshold.
+
+    Notes
+    -----
+    The pattern is anchored and expects lowercase, since ``base_clean``
+    lowercases values upstream. A table whose IDs were not passed through
+    cleaning will not match.
     """
     best_col, best_ratio = None, 0.0
     for col in df.select_dtypes(include="object").columns:
@@ -72,6 +143,30 @@ def aggregate_by_key(df: pd.DataFrame, key_col: str, agg_cols: list) -> pd.DataF
     Group by `key_col` and collapse each of `agg_cols` into a sorted,
     unique, semicolon-joined string per key. Rows missing `key_col`
     are dropped before grouping.
+
+    This is the shape every roster field takes: one row per key, with all
+    values ever seen for it preserved rather than one arbitrarily chosen.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Long frame with one row per (key, value) observation.
+    key_col : str
+        Column to group on.
+    agg_cols : list of str
+        Columns to collapse. Names absent from ``df`` are skipped.
+
+    Returns
+    -------
+    pandas.DataFrame
+        One row per key. If no requested column was present, the unique
+        keys are returned alone.
+
+    Notes
+    -----
+    Values are sorted for determinism, so the same input always produces
+    the same string and reruns diff cleanly. Everything is cast to ``str``
+    — a numeric ID becomes its string form.
     """
     df = df.dropna(subset=[key_col])
 
@@ -86,7 +181,23 @@ def aggregate_by_key(df: pd.DataFrame, key_col: str, agg_cols: list) -> pd.DataF
 
 
 def _split_multivalue_string(value) -> list:
-    """Split a semicolon/comma-delimited string or list-like value into items."""
+    """Split a semicolon/comma-delimited string or list-like value into items.
+
+    The inverse of :func:`aggregate_by_key`'s join, tolerant of the
+    variants that arrive from source tables: already-a-list, semicolon-
+    joined, comma-joined, or a mix.
+
+    Parameters
+    ----------
+    value : any
+        String, list, tuple or set. NaN returns an empty list.
+
+    Returns
+    -------
+    list of str
+        Stripped tokens, with empties and the string forms of missing
+        values (``nan``, ``none``, ``null``) discarded.
+    """
     if pd.isna(value):
         return []
     if isinstance(value, (list, tuple, set)):
@@ -107,7 +218,22 @@ def _split_multivalue_string(value) -> list:
 
 
 def _normalise_join_key(value) -> str:
-    """Standardise name variations so A-375, A 375 and A375 all match."""
+    """Standardise name variations so A-375, A 375 and A375 all match.
+
+    The permissive normalisation, used for cell-line name matching during
+    model_id attachment. Contrast with the Cellosaurus accession bridges,
+    which match exact strings on purpose.
+
+    Parameters
+    ----------
+    value : any
+        Name to normalise. NaN returns an empty string.
+
+    Returns
+    -------
+    str
+        Lowercase, alphanumeric-only key.
+    """
     if pd.isna(value):
         return ""
     return re.sub(r"[^a-z0-9]+", "", str(value).strip().lower())
@@ -119,6 +245,25 @@ def _invert_multivalue_column(df: pd.DataFrame, key_col: str, multivalue_col: st
     holding a semicolon-joined list of external IDs (e.g. cosmic_cnv_id),
     build the INVERSE mapping: external_id -> semicolon-joined unique
     key_col values that reference it.
+
+    Deriving the reverse direction from the forward bridge, rather than
+    re-matching symbols backwards, guarantees the two directions agree.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Table carrying the already-populated forward bridge.
+    key_col : str
+        Column holding the internal key, e.g. ``gene_id``.
+    multivalue_col : str
+        Column holding the semicolon-joined external IDs.
+
+    Returns
+    -------
+    dict
+        External ID to a semicolon-joined, sorted, unique list of keys.
+        Many-to-many in both directions: one external ID can map back to
+        several keys.
     """
     sub = df[[key_col, multivalue_col]].dropna(subset=[key_col])
     sub = sub.assign(**{multivalue_col: sub[multivalue_col].map(_split_multivalue_string)})
@@ -135,7 +280,19 @@ def _invert_multivalue_column(df: pd.DataFrame, key_col: str, multivalue_col: st
 
 
 def canonical_ensg_id(value) -> Optional[str]:
-    """Return a canonical ENSG ID without version suffixes, otherwise None."""
+    """Return a canonical ENSG ID without version suffixes, otherwise None.
+
+    Parameters
+    ----------
+    value : any
+        Candidate identifier. None and NaN are tolerated.
+
+    Returns
+    -------
+    str or None
+        Uppercase ENSG ID with any ``.N`` version stripped, or None if the
+        value is not a well-formed ENSG ID.
+    """
     if value is None or pd.isna(value):
         return None
     text = str(value).strip().upper()
@@ -146,7 +303,39 @@ def canonical_ensg_id(value) -> Optional[str]:
 
 
 def filter_protein_coding_expression_tables(tables: dict, gene_roster: Optional[pd.DataFrame] = None) -> dict:
-    """Drop non-protein-coding ENSG IDs from depmap_expr, hpa_rna and geo_expr."""
+    """Drop non-protein-coding ENSG IDs from depmap_expr, hpa_rna and geo_expr.
+
+    The roster's ``gene_id`` set defines what counts as protein-coding
+    (see :func:`build_gene_roster`). Filtering here rather than downstream
+    means the expression matrices carry only scoreable genes, which
+    substantially narrows the widest tables in the project.
+
+    Two shapes are handled: ``hpa_rna`` is long and filtered by row on its
+    ``gene_id`` column; ``depmap_expr`` and ``geo_expr`` are wide and
+    filtered by column, with surviving columns renamed to their canonical
+    unversioned ENSG form.
+
+    Parameters
+    ----------
+    tables : dict
+        Cleaned tables. Not mutated — a shallow copy is returned.
+    gene_roster : pandas.DataFrame, optional
+        Roster to filter against. Falls back to ``tables["gene_roster"]``.
+
+    Returns
+    -------
+    dict
+        Copy of ``tables`` with the three expression tables replaced.
+        Returned unchanged if no roster is available, the roster lacks
+        ``gene_id``, or no valid ENSG IDs could be extracted from it.
+
+    Notes
+    -----
+    Where a wide table carries the same gene under several versioned
+    columns, only the first is kept — the alternative would be duplicate
+    canonical column names. ``profile_id`` and ``gsm_id`` are preserved as
+    the tables' key columns; every other non-ENSG column is dropped.
+    """
     roster = gene_roster if gene_roster is not None else tables.get("gene_roster")
     if roster is None or roster.empty:
         return tables
@@ -226,6 +415,40 @@ def add_cellosaurus_synonyms_to_cell_line_roster(
     delimited. We match on cvcl_id and append any synonym names to the
     corresponding roster `cell_line_name(s)` values while preserving
     the existing names.
+
+    This is the accession-to-names direction. Run
+    :func:`expand_cvcl_ids_from_names` afterwards for the reverse, so the
+    names added here also get a chance to resolve further accessions.
+
+    Parameters
+    ----------
+    cell_line_roster : pandas.DataFrame
+        Roster from :func:`build_cell_line_roster`.
+    cellosaurus : pandas.DataFrame
+        Cleaned Cellosaurus table.
+    roster_cvcl_col, roster_name_col : str, optional
+        Roster columns, resolved case-insensitively.
+    cellosaurus_cvcl_col, cellosaurus_synonym_col : str, optional
+        Cellosaurus columns, resolved case-insensitively.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Copy of the roster with widened ``cell_line_name(s)``. Row count
+        is unchanged.
+
+    Raises
+    ------
+    ValueError
+        If either frame is None, or if a required column cannot be
+        resolved on either side.
+
+    Notes
+    -----
+    Accession matching is case-insensitive (keys are lowercased), but the
+    synonym text is appended as written. Existing names are kept and come
+    first; new ones are appended in Cellosaurus order and deduplicated on
+    exact string.
     """
     if cell_line_roster is None:
         raise ValueError("cell_line_roster is required")
@@ -307,6 +530,38 @@ def expand_cvcl_ids_from_names(
     deduplicated, and semicolon-joined. Call AFTER
     add_cellosaurus_synonyms_to_cell_line_roster so the synonyms it
     added also get a chance to resolve accessions.
+
+    Parameters
+    ----------
+    cell_line_roster : pandas.DataFrame
+        Roster, ideally already widened with Cellosaurus synonyms.
+    cellosaurus : pandas.DataFrame
+        Cleaned Cellosaurus table.
+    roster_name_col, roster_cvcl_col : str, optional
+        Roster columns, resolved case-insensitively.
+    cellosaurus_name_col, cellosaurus_cvcl_col, cellosaurus_synonym_col : str, optional
+        Cellosaurus columns. The synonym column is optional; without it,
+        only primary names are indexed.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Copy of the roster with widened ``cvcl_id(s)``. Row count is
+        unchanged.
+
+    Raises
+    ------
+    ValueError
+        If either frame is None, or if a required column cannot be
+        resolved.
+
+    Notes
+    -----
+    Prints three counts: the size of the name index, how many model_ids
+    gained accessions and how many were added, and how many model_ids
+    matched more than one CVCL. That last number is the one to watch — a
+    model_id resolving to several accessions is expected for re-derived
+    lines but is also what a bad name collision looks like.
     """
     if cell_line_roster is None:
         raise ValueError("cell_line_roster is required")
@@ -412,6 +667,31 @@ def build_cell_line_roster(tables: dict) -> pd.DataFrame:
     model_id rows with no other identifier present, those model_ids
     won't appear in the roster at all -- worth checking against your
     data if roster row counts look lower than expected.
+
+    Parameters
+    ----------
+    tables : dict
+        Cleaned tables. Missing tables are skipped, so the roster is
+        built from whichever sources are present.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``model_id``, ``cell_line_name(s)``, ``cvcl_id(s)``,
+        ``ccle_name(s)``, ``geo_accession(s)``, in that order. Columns
+        with no contributing source are present but empty.
+
+    Notes
+    -----
+    ``rrid`` columns on direct tables are mined for a CVCL accession via
+    :func:`extract_cvcl_from_rrid` and used to fill gaps in ``cvcl_id``,
+    never to overwrite an existing value.
+
+    Bridge joins match exact strings, with no normalisation on either
+    side — a name spelled differently between a bridge table and a direct
+    table will not join. Both bridge directions are applied where
+    possible and their results concatenated, so a bridge row can
+    contribute through either route.
     """
     id_cols = ["cell_line_name", "cvcl_id", "ccle_id", "geo_accession"]
 
@@ -498,7 +778,24 @@ def build_cell_line_roster(tables: dict) -> pd.DataFrame:
 # ============================================================
 
 def _find_gene_name_col(df: pd.DataFrame) -> Optional[str]:
-    """Look for a gene-symbol column under a few common cleaned names."""
+    """Look for a gene-symbol column under a few common cleaned names.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Table to inspect.
+
+    Returns
+    -------
+    str or None
+        First matching column from ``gene_name``, ``hugo_symbol``,
+        ``hugosymbol``, ``gene_symbol``, ``symbol``, or None.
+
+    Notes
+    -----
+    Exact, case-sensitive matching against cleaned lowercase names — use
+    :func:`_resolve_column` where case drift is possible.
+    """
     for candidate in ["gene_name", "hugo_symbol", "hugosymbol", "gene_symbol", "symbol"]:
         if candidate in df.columns:
             return candidate
@@ -506,21 +803,73 @@ def _find_gene_name_col(df: pd.DataFrame) -> Optional[str]:
 
 
 def get_gene_name_pairs(df: pd.DataFrame, id_col: str = "gene_id", name_col: str = "gene_name") -> pd.DataFrame:
-    """Extract deduped (id_col, name_col) pairs from a table, if both columns are present."""
+    """Extract deduped (id_col, name_col) pairs from a table, if both columns are present.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame or None
+        Source table.
+    id_col, name_col : str, optional
+        Column names to pull.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Deduplicated pairs, or an empty frame with those columns when the
+        table is None or missing either column — so callers can
+        concatenate the result unconditionally.
+    """
     if df is None or id_col not in df.columns or name_col not in df.columns:
         return pd.DataFrame(columns=[id_col, name_col])
     return df[[id_col, name_col]].dropna(subset=[id_col, name_col]).drop_duplicates()
 
 
 def _normalise_gene_symbol(value) -> str:
-    """Normalize a gene symbol so roster aliases and CNA gene_symbol values match."""
+    """Normalize a gene symbol so roster aliases and CNA gene_symbol values match.
+
+    The uppercase regime, used only for the COSMIC bridges. Distinct from
+    :func:`_normalise_join_key` (lowercase, punctuation-stripped) — gene
+    symbols carry meaningful hyphens, so only spaces are removed here.
+
+    Parameters
+    ----------
+    value : any
+        Symbol to normalise. NaN returns an empty string.
+
+    Returns
+    -------
+    str
+        Uppercase symbol with internal spaces removed.
+    """
     if pd.isna(value):
         return ""
     return str(value).strip().upper().replace(" ", "")
 
 
 def _resolve_column(df: pd.DataFrame, *candidates: str) -> Optional[str]:
-    """Return a matching column name, ignoring case and allowing cleaned lowercase names."""
+    """Return a matching column name, ignoring case and allowing cleaned lowercase names.
+
+    Lets a function accept the original header (``GENE_SYMBOL``) and find
+    it after cleaning has lowercased it, without every call site knowing
+    which stage the frame came from.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame or None
+        Table to search. None returns None.
+    *candidates : str
+        Names to try, in preference order.
+
+    Returns
+    -------
+    str or None
+        The actual column name as it appears in ``df``, or None.
+
+    Notes
+    -----
+    Exact matches are preferred over case-insensitive ones for each
+    candidate in turn.
+    """
     if df is None:
         return None
     lowered = {str(col).lower(): col for col in df.columns}
@@ -533,7 +882,24 @@ def _resolve_column(df: pd.DataFrame, *candidates: str) -> Optional[str]:
 
 
 def _explode_gene_name_aliases(df: pd.DataFrame, id_col: str = "gene_id", name_col: str = "gene_name(s)") -> pd.DataFrame:
-    """Explode a semicolon-delimited gene_name(s) field into one row per gene alias."""
+    """Explode a semicolon-delimited gene_name(s) field into one row per gene alias.
+
+    Splits on both semicolons and commas and normalises each alias, giving
+    the long form the COSMIC symbol bridges join on.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame or None
+        Frame carrying the ID and the joined names.
+    id_col, name_col : str, optional
+        Column names.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``[id_col, "gene_name"]``, one row per (id, alias),
+        deduplicated. Empty with those columns if the input is unusable.
+    """
     if df is None or id_col not in df.columns or name_col not in df.columns:
         return pd.DataFrame(columns=[id_col, "gene_name"])
 
@@ -564,6 +930,40 @@ def add_cosmic_cnv_id_to_gene_roster(
     The bridge is intentionally many-to-many: a gene symbol may map to several
     CNV IDs, and a roster gene_id may have several gene aliases. The final value
     is a semicolon-joined, unique list of matching COSMIC CNV IDs.
+
+    Parameters
+    ----------
+    gene_roster : pandas.DataFrame
+        Roster with ``gene_id`` and joined gene names.
+    cosmic_cna : pandas.DataFrame
+        COSMIC CNA table.
+    roster_name_col : str, optional
+        Roster name column, resolved case-insensitively.
+    cosmic_symbol_col, cosmic_cnv_col : str, optional
+        COSMIC columns, resolved case-insensitively.
+    output_col : str, optional
+        Column to write. Default ``"cosmic_cnv_id"``.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Copy of the roster with the output column added. The column is
+        all-null when the roster has no aliases or nothing matched.
+
+    Raises
+    ------
+    ValueError
+        If either frame is None, or a required column cannot be resolved.
+
+    Notes
+    -----
+    Idempotent: if the output column already holds any non-empty value,
+    the roster is returned untouched, so a re-run neither overwrites nor
+    duplicates. Both sides are normalised with
+    :func:`_normalise_gene_symbol` before joining.
+
+    Run before :func:`add_gene_id_to_cosmic_cna`, which inverts this
+    column rather than re-matching symbols.
     """
     if gene_roster is None:
         raise ValueError("gene_roster is required")
@@ -634,6 +1034,34 @@ def add_cosmic_gene_id_to_gene_roster(
     gene symbol can have multiple aliases and the roster may assemble several
     names per gene_id. We aggregate the matched gene IDs into a unique,
     semicolon-joined list per gene_id.
+
+    Parameters
+    ----------
+    gene_roster : pandas.DataFrame
+        Roster with ``gene_id`` and joined gene names.
+    cosmic_gene_census : pandas.DataFrame
+        COSMIC Cancer Gene Census table.
+    roster_name_col : str, optional
+        Roster name column, resolved case-insensitively.
+    cosmic_symbol_col, cosmic_gene_id_col : str, optional
+        COSMIC columns, resolved case-insensitively.
+    output_col : str, optional
+        Column to write. Default ``"cosmic_gene_id(s)"``.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Copy of the roster with the output column added.
+
+    Raises
+    ------
+    ValueError
+        If either frame is None, or a required column cannot be resolved.
+
+    Notes
+    -----
+    Idempotent on an already-populated output column, as with the CNA
+    bridge. Run before :func:`add_gene_id_to_cosmic_gene_census`.
     """
     if gene_roster is None:
         raise ValueError("gene_roster is required")
@@ -705,6 +1133,41 @@ def add_gene_id_to_cosmic_cna(
     also mirroring the value into `ensg_id` if that column is present
     on the table. That keeps older code paths expecting an ENSEMBL-style
     `ensg_id` column working without breaking the newer `gene_id` naming.
+
+    Parameters
+    ----------
+    cosmic_cna : pandas.DataFrame
+        COSMIC CNA table to annotate.
+    gene_roster : pandas.DataFrame
+        Roster whose CNV bridge column is already populated.
+    roster_gene_id_col, roster_cosmic_cnv_col : str, optional
+        Roster columns, resolved case-insensitively.
+    cosmic_cnv_col : str, optional
+        CNV ID column on the CNA table.
+    output_col : str, optional
+        Column to write. Default ``"gene_id"``.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Copy of the CNA table with the output column added, and
+        ``ensg_id`` gap-filled where that column exists.
+
+    Raises
+    ------
+    ValueError
+        If either frame is None, or a required column cannot be resolved.
+        A missing roster bridge column names
+        :func:`add_cosmic_cnv_id_to_gene_roster` in the message, since
+        that is the fix.
+
+    Notes
+    -----
+    Inverting the forward bridge guarantees the two directions cannot
+    disagree — the alternative, re-matching symbols backwards, could
+    produce an asymmetric mapping. Idempotent on an already-populated
+    output column, though the ``ensg_id`` mirror is still applied in that
+    branch.
     """
     if cosmic_cna is None:
         raise ValueError("cosmic_cna is required")
@@ -756,7 +1219,17 @@ def add_ensg_id_to_cosmic_cna(
     cosmic_cnv_col: str = "COSMIC_CNV_ID",
     output_col: str = "ensg_id",
 ) -> pd.DataFrame:
-    """Backward-compatible wrapper for older code that expects `ensg_id`."""
+    """Backward-compatible wrapper for older code that expects `ensg_id`.
+
+    Delegates to :func:`add_gene_id_to_cosmic_cna` with the output column
+    renamed. See that function for the full parameter and return
+    description.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Copy of the CNA table with an ``ensg_id`` column.
+    """
     return add_gene_id_to_cosmic_cna(
         cosmic_cna,
         gene_roster,
@@ -783,6 +1256,31 @@ def add_gene_id_to_cosmic_gene_census(
 
     Mirror the value into `ensg_id` when that column exists so older
     projects expecting the ENSEMBL-style name still work.
+
+    Parameters
+    ----------
+    cosmic_gene_census : pandas.DataFrame
+        Census table to annotate.
+    gene_roster : pandas.DataFrame
+        Roster whose census bridge column is already populated.
+    roster_gene_id_col, roster_cosmic_gene_id_col : str, optional
+        Roster columns, resolved case-insensitively.
+    cosmic_gene_id_col : str, optional
+        COSMIC gene ID column on the census table.
+    output_col : str, optional
+        Column to write. Default ``"gene_id"``.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Copy of the census table with the output column added.
+
+    Raises
+    ------
+    ValueError
+        If either frame is None, or a required column cannot be resolved.
+        A missing roster bridge column names
+        :func:`add_cosmic_gene_id_to_gene_roster` in the message.
     """
     if cosmic_gene_census is None:
         raise ValueError("cosmic_gene_census is required")
@@ -833,7 +1331,16 @@ def add_ensg_id_to_cosmic_gene_census(
     cosmic_gene_id_col: str = "COSMIC_GENE_ID",
     output_col: str = "ensg_id",
 ) -> pd.DataFrame:
-    """Backward-compatible wrapper for older code that expects `ensg_id`."""
+    """Backward-compatible wrapper for older code that expects `ensg_id`.
+
+    Delegates to :func:`add_gene_id_to_cosmic_gene_census` with the output
+    column renamed. See that function for the full description.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Copy of the census table with an ``ensg_id`` column.
+    """
     return add_gene_id_to_cosmic_gene_census(
         cosmic_gene_census,
         gene_roster,
@@ -857,6 +1364,31 @@ def check_gene_name_consistency(tables: dict) -> pd.DataFrame:
     rather than a normal naming alias.
 
     Read-only diagnostic -- doesn't modify or filter gene_roster.
+
+    Parameters
+    ----------
+    tables : dict
+        Cleaned tables. ``mutations``, ``fusions`` and ``hpa_rna`` are
+        used; each may be absent.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``gene_id``, ``names_mutations_fusions``,
+        ``names_hpa_rna``, one row per disjoint gene_id. Empty when
+        either side has no pairs at all, or when nothing is disjoint.
+
+    Notes
+    -----
+    Only gene_ids present on *both* sides are compared — a gene known to
+    one source alone is not a mismatch. Comparison is on exact strings,
+    so a case or spacing difference between sources would read as
+    disjoint; treat a large result as a normalisation problem before
+    treating it as a data problem.
+
+    Matters for :func:`build_gene_roster`, which aggregates names from
+    these same sources without checking for conflict — a disjoint gene_id
+    ends up with both names in ``gene_name(s)``.
     """
     mutations = tables.get("mutations")
     fusions = tables.get("fusions")
@@ -897,17 +1429,23 @@ def check_gene_name_consistency(tables: dict) -> pd.DataFrame:
 
 def build_gene_roster(tables: dict) -> pd.DataFrame:
     """
-    One row per gene_id found in mutations. NOT filtered to
-    protein_coding genes -- instead flagged via is_protein_coding, so
-    non-protein-coding genes stay visible in the roster rather than
-    silently disappearing.
+    One row per protein-coding gene_id found in mutations.
+
+    The mutations table's biotype column defines the gene universe: a
+    gene_id is kept if it is flagged protein_coding on ANY of its
+    mutation rows, and dropped otherwise. Restricting here is what makes
+    the roster usable as the protein-coding filter for the expression
+    tables (see filter_protein_coding_expression_tables).
+
+    Fields assembled per gene_id:
 
     gene_name(s): from a gene-symbol column in mutations if one
     exists, topped up with fusions' gene1/gene2 name<->id pairs and
     hpa_rna's gene_id/gene_name pairs for any genes missing a name
     elsewhere. One gene_id can have multiple gene_names (aliases,
     annotation drift across sources) -- all are kept, not deduped
-    down to one.
+    down to one. Names that are themselves ENSG IDs are discarded, so a
+    source that fell back to the ID as a label doesn't pollute the field.
     geo_gsm_id(s): GSM samples in geo_expr with a non-null value for
     that gene.
     profile_id(s): profiles in depmap_expr with a non-null value for
@@ -916,10 +1454,51 @@ def build_gene_roster(tables: dict) -> pd.DataFrame:
     gene_name text match (proteomics has no gene_id of its own) --
     see check_gene_name_consistency for how reliable that bridge is
     on your data.
+    procan_uniprot_id: preferentially read straight from the raw ProCan
+    header rows (row 0 accessions, row 1 symbols), falling back to
+    proteomics_gene_map's procan_uniprot_ids column when the raw file
+    isn't available.
 
+    Parameters
+    ----------
+    tables : dict
+        Cleaned tables. ``mutations`` is required; ``fusions``,
+        ``hpa_rna``, ``geo_expr``, ``depmap_expr``,
+        ``proteomics_gene_map`` and ``raw_procan`` are each optional and
+        contribute a field when present.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``gene_id``, ``gene_name(s)``, ``geo_gsm_id(s)``,
+        ``profile_id(s)``, ``uniprot_id(s)``, ``procan_uniprot_id``.
+        Fields with no contributing source are present but empty.
+
+    Raises
+    ------
+    ValueError
+        If ``mutations`` is absent or lacks ``gene_id``, or if the
+        biotype column is missing — the message lists the available
+        columns, since the expected name is a project assumption worth
+        verifying.
+
+    Warns
+    -----
+    Two module-level constants at the top of this function,
+    ``PROTEIN_CODING_COL`` and ``PROTEIN_CODING_VALUE``, are marked in
+    the source as needing verification against your cleaned mutations
+    table. If either is wrong, the roster comes out empty or wrongly
+    populated without any error being raised — check the row count.
+
+    Notes
+    -----
     Melting the full expression matrices is memory-heavy on large
     tables -- if depmap_expr/geo_expr are very wide, this may need
     chunking.
+
+    depmap_expr's gene columns are lowercase while roster gene_ids are
+    uppercase, so the melted IDs are upper-cased before joining. The
+    UniProt bridge upper-cases both sides for the same reason.
     """
     PROTEIN_CODING_COL = "vepbiotype"        # <-- verify against your cleaned mutations columns
     PROTEIN_CODING_VALUE = "protein_coding"  # <-- verify the exact string used
@@ -1068,6 +1647,35 @@ def build_combined_proteomics_gene_map(
 
     Raises only if NEITHER source table is available. If just one is
     missing, proceeds with the other alone and prints a warning.
+
+    Parameters
+    ----------
+    tables : dict
+        Cleaned tables containing one or both source maps.
+    proteomics_key, procan_key : str, optional
+        Keys of the two source maps.
+    procan_uniprot_output_col : str, optional
+        Name to give the ProCan accession column in the output.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``gene_name``, ``uniprot_id``,
+        ``procan_uniprot_ids`` — one row per gene name, accessions
+        collapsed to semicolon-joined lists.
+
+    Raises
+    ------
+    ValueError
+        If neither source map is present.
+
+    Notes
+    -----
+    Gene names are lowercased and stripped before joining, so the two
+    maps align regardless of case. Prints the combined row count
+    alongside each source's contribution — a combined count close to the
+    sum of the two means the join found little overlap, which is worth
+    investigating.
     """
     proteomics_map = tables.get(proteomics_key)
     procan_map = tables.get(procan_key)
@@ -1140,6 +1748,44 @@ def add_missing_proteomics_genes_to_gene_roster(
     Call this AFTER build_gene_roster but BEFORE any COSMIC-bridge
     calls, so newly-added proteomics-only genes also get a chance to
     match a COSMIC symbol.
+
+    Parameters
+    ----------
+    gene_roster : pandas.DataFrame
+        Roster from :func:`build_gene_roster`.
+    proteomics_gene_map : pandas.DataFrame
+        The combined protein map. An empty map is a no-op.
+    roster_name_col : str, optional
+        Roster name column, resolved case-insensitively.
+    proteomics_name_col, proteomics_uniprot_col, proteomics_procan_col : str, optional
+        Columns on the protein map. The two ID columns are optional —
+        whichever resolves is carried across.
+    roster_uniprot_col, roster_procan_col : str, optional
+        Destination columns on the roster, created if absent.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Roster with the new rows appended. Row order is existing genes
+        first, then the additions.
+
+    Raises
+    ------
+    ValueError
+        If either frame is None, or if the roster name column or the
+        protein map's name column cannot be resolved.
+
+    Notes
+    -----
+    Coverage is checked against every alias in ``gene_name(s)``, not just
+    a primary name, so a protein whose symbol matches any existing alias
+    is treated as covered. New rows are padded to the roster's full
+    column set with nulls, so the concatenated frame keeps one schema.
+
+    Prints the resolved column names and the number of rows added — if
+    the added count is close to the size of the protein map, the coverage
+    check probably failed to match anything and the normalisation is
+    worth checking.
     """
     if gene_roster is None:
         raise ValueError("gene_roster is required")
@@ -1225,6 +1871,39 @@ def attach_model_id_to_protein_matrix(
     One matrix row can match one or several roster model_ids; when there are
     several, we collapse them to a unique semicolon-joined model_id string so
     the output remains one row per protein-matrix row.
+
+    Parameters
+    ----------
+    protein_matrix : pandas.DataFrame
+        Wide protein matrix keyed by cell-line name.
+    cell_line_roster : pandas.DataFrame
+        Roster with ``model_id`` and its name columns.
+    protein_name_col, roster_name_col : str, optional
+        Columns to match on, resolved case-insensitively.
+    output_col : str, optional
+        Column to write. Default ``"model_id"``.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Copy of the matrix with the output column added. Unmatched rows
+        get ``pd.NA``. Row count is preserved.
+
+    Raises
+    ------
+    ValueError
+        If either frame is None, if a match column cannot be resolved, or
+        if the roster has no usable name columns.
+
+    Notes
+    -----
+    Row count is preserved deliberately — a wide protein matrix cannot be
+    duplicated per ambiguous match without corrupting its shape, so
+    ambiguity is collapsed into the value instead. This differs from
+    :func:`attach_model_id`, which duplicates rows.
+
+    Idempotent: returns unchanged if the output column exists with any
+    non-null value.
     """
     if protein_matrix is None:
         raise ValueError("protein_matrix is required")
@@ -1287,6 +1966,35 @@ def attach_model_id_to_model_list(
 
     The roster stores CVCL IDs in `cvcl_id(s)` as semicolon-delimited values,
     so we explode those and join one-to-many via CVCL ID.
+
+    Parameters
+    ----------
+    model_list : pandas.DataFrame
+        Table carrying RRIDs.
+    cell_line_roster : pandas.DataFrame
+        Roster with ``model_id`` and ``cvcl_id(s)``.
+    rrid_col, roster_cvcl_col : str, optional
+        Columns to match on, resolved case-insensitively.
+    output_col : str, optional
+        Column to write. Default ``"model_id"``.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Copy of the table with the output column added. Unmatched rows
+        get ``pd.NA``; row count is preserved.
+
+    Raises
+    ------
+    ValueError
+        If either frame is None, or a required column cannot be resolved.
+
+    Notes
+    -----
+    Accession matching is on the lowercased CVCL token, so it is
+    case-insensitive — unlike the Cellosaurus name bridges, which match
+    exact strings. All CVCL tokens in a value are extracted, so an RRID
+    field listing several accessions contributes all of their model_ids.
     """
     if model_list is None:
         raise ValueError("model_list is required")
@@ -1352,6 +2060,39 @@ def attach_model_id(df: pd.DataFrame, roster: pd.DataFrame, table_name: str) -> 
     unassigned, since a genuinely ambiguous cell line legitimately
     belongs to more than one row here. Every such case is still
     logged in `flagged` so it's visible, even though it's kept.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Table to annotate.
+    roster : pandas.DataFrame
+        Cell-line roster to look up against.
+    table_name : str
+        Name recorded on any flagged rows, so a combined flag frame can
+        be traced back to its source table.
+
+    Returns
+    -------
+    df_with_id : pandas.DataFrame
+        The table with ``model_id`` attached. Returned unchanged when the
+        table already has an ID, has no usable lookup column, or the
+        roster has no matching column for the one it has.
+    flagged : pandas.DataFrame
+        Columns ``table``, ``row_identifier``, ``matched_model_ids`` —
+        one row per input row whose identifier was ambiguous. Empty when
+        nothing was ambiguous or the table was skipped.
+
+    Notes
+    -----
+    Row count is NOT preserved: an ambiguous match duplicates the row.
+    This is deliberate here and is the opposite of
+    :func:`attach_model_id_to_protein_matrix`'s behaviour. Any change in
+    row count is reported by :func:`summarize_model_id_attachment`.
+
+    Name matching goes through :func:`_normalise_join_key`, so
+    punctuation and case differences do not block a match. The first
+    usable lookup column wins, in the order ``cell_line_name``,
+    ``cvcl_id``, ``ccle_id``, ``ccle_name``.
     """
     no_flags = pd.DataFrame(columns=["table", "row_identifier", "matched_model_ids"])
 
@@ -1402,6 +2143,28 @@ def attach_model_id_everywhere(tables: dict, roster: pd.DataFrame) -> tuple[dict
     Run attach_model_id across every table in `tables`. Returns the
     updated tables dict and one combined DataFrame of all flagged
     ambiguous-identifier rows across all tables.
+
+    Parameters
+    ----------
+    tables : dict
+        Cleaned tables. Not mutated — a new dict is returned.
+    roster : pandas.DataFrame
+        Cell-line roster to look up against.
+
+    Returns
+    -------
+    updated : dict
+        Every table, annotated where possible and unchanged otherwise.
+    combined_flags : pandas.DataFrame
+        All ambiguous rows across all tables, with the source table
+        named. Empty with the expected columns if nothing was flagged.
+
+    Notes
+    -----
+    Tables that could not be annotated pass through unchanged rather than
+    being dropped, so the returned dict always has the same keys as the
+    input. Some tables will have gained rows — see
+    :func:`attach_model_id`'s duplication behaviour.
     """
     updated = {}
     all_flags = []
@@ -1423,6 +2186,32 @@ def summarize_model_id_attachment(tables_before: dict, tables_after: dict) -> pd
     attach merge duplicated any rows (a sign a lookup value matched
     more than one model_id and slipped through as extra rows rather
     than being caught by the ambiguous-value check).
+
+    Parameters
+    ----------
+    tables_before : dict
+        Tables as they were before attachment.
+    tables_after : dict
+        Tables after attachment. Keys absent here are skipped.
+
+    Returns
+    -------
+    pandas.DataFrame
+        One row per table with ``table``, ``had_ach_before``,
+        ``model_id_attached``, ``rows_before``, ``rows_after``,
+        ``duplicated_rows``.
+
+    Notes
+    -----
+    ``duplicated_rows`` is the number to read first. A non-zero value is
+    expected wherever ambiguous identifiers were found — cross-check it
+    against the flag frame from :func:`attach_model_id_everywhere`. A
+    non-zero count with no corresponding flags means rows were duplicated
+    by a path the ambiguity check did not catch.
+
+    This requires the caller to have deep-copied the tables before
+    attachment; a shallow copy would make both dicts point at the same
+    frames and the comparison meaningless.
     """
     rows = []
     for name, before in tables_before.items():
