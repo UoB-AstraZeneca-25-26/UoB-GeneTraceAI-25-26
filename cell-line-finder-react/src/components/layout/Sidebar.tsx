@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, BarChart3, Info, RotateCcw, Dna, Sparkles } from 'lucide-react';
+import { Search, BarChart3, Info, RotateCcw, Dna, BookOpen, BookMarked } from 'lucide-react';
 import { ViewType } from '../../types';
 
 interface SidebarProps {
@@ -10,28 +10,32 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, onReset, hasResults }) => {
+  const navClass = (active: boolean, disabled = false) =>
+    `w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
+      disabled
+        ? 'opacity-40 cursor-not-allowed text-plum-muted'
+        : active
+        ? 'bg-mulberry-600 text-white shadow-sm'
+        : 'text-plum-muted hover:bg-plum-accent hover:text-white'
+    }`;
+
   return (
-    <aside className="w-64 bg-slate-900 text-slate-100 flex flex-col justify-between p-4 shrink-0 border-r border-slate-800">
-      <div className="space-y-6">
+    <aside className="w-64 bg-plum text-white flex flex-col justify-between p-4 shrink-0 border-r border-plum-border">
+      <div className="space-y-7">
         {/* Header */}
-        <div className="flex items-center space-x-3 px-2">
-          <div className="p-2 bg-indigo-600 rounded-lg text-white">
+        <div className="flex items-center space-x-3 px-2 pt-1">
+          <div className="p-2 bg-mulberry-600 rounded-lg text-white">
             <Dna className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="font-bold text-base leading-tight">Cell Line Finder</h1>
-            <p className="text-xs text-slate-400">Multi-Omics Selection</p>
+            {/* <p className="text-[10px] font-semibold tracking-[0.14em] text-mulberry-300 uppercase">AstraZeneca R&amp;D</p> */}
+            <h1 className="font-bold text-base leading-tight -mt-0.5">Cell Line Finder</h1>
           </div>
         </div>
 
         {/* Navigation items */}
         <nav className="space-y-1">
-          <button
-            onClick={() => setView('query')}
-            className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
-              currentView === 'query' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-            }`}
-          >
+          <button onClick={() => setView('query')} className={navClass(currentView === 'query')}>
             <Search className="w-4 h-4" />
             <span>Find Cell Lines</span>
           </button>
@@ -39,31 +43,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, onReset,
           <button
             onClick={() => setView('results')}
             disabled={!hasResults}
-            className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
-              !hasResults ? 'opacity-40 cursor-not-allowed text-slate-500' :
-              currentView === 'results' || currentView === 'profile' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-            }`}
+            className={navClass(currentView === 'results' || currentView === 'profile', !hasResults)}
           >
             <BarChart3 className="w-4 h-4" />
             <span>Results</span>
           </button>
 
-          <button
-            onClick={() => setView('assistant')}
-            className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
-              currentView === 'assistant' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-            }`}
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Assistant</span>
+          <button onClick={() => setView('reference')} className={navClass(currentView === 'reference')}>
+            <BookMarked className="w-4 h-4" />
+            <span>Reference</span>
           </button>
 
-          <button
-            onClick={() => setView('about')}
-            className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
-              currentView === 'about' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-            }`}
-          >
+          <button onClick={() => setView('guide')} className={navClass(currentView === 'guide')}>
+            <BookOpen className="w-4 h-4" />
+            <span>How to use</span>
+          </button>
+
+          <button onClick={() => setView('about')} className={navClass(currentView === 'about')}>
             <Info className="w-4 h-4" />
             <span>About</span>
           </button>
@@ -71,17 +67,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, onReset,
       </div>
 
       {/* Bottom Controls */}
-      <div className="border-t border-slate-800 pt-4 space-y-3">
+      <div className="border-t border-plum-border pt-4 space-y-3">
         <button
           onClick={onReset}
-          className="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 bg-slate-800 hover:bg-slate-700 hover:text-white transition"
+          className="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium text-white/80 bg-plum-accent hover:bg-plum-border hover:text-white transition"
         >
           <RotateCcw className="w-4 h-4" />
           <span>New Query</span>
         </button>
-        <div className="text-center">
-          <span className="text-[11px] text-slate-400 uppercase tracking-wider">MVP Prototype</span>
-        </div>
+        <p className="text-[11px] leading-relaxed text-plum-muted px-1">
+          Internal research tool. Rankings are model predictions from multi-omics evidence — confirm
+          experimentally before use.
+        </p>
       </div>
     </aside>
   );

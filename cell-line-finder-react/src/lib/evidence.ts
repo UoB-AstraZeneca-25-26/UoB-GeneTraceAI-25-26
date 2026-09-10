@@ -11,12 +11,15 @@ import {
 /* The six evidence layers every cell line is scored on. `kind` records what the
    number actually is, so the UI never implies a magnitude the pipeline lacks:
      level -> within-gene percentile of a measured quantity (real gradient)
-     ratio -> deviation from diploid copy number (real gradient)
+     ratio -> deviation from diploid copy number (real gradient) — not currently
+              produced by any track; the pipeline calls CNA categorically (see
+              final_pipeline/03_Altercations/cna_layer.py) to avoid a ploidy
+              confound, so it's a 'call' like mutation/fusion, not a gradient.
      call  -> categorical evidence, shown full/half strength, never interpolated */
 export const TRACKS: EvidenceTrack[] = [
   { key: 'expression', label: 'Expression', color: '#4f46e5', kind: 'level' },
   { key: 'proteomics', label: 'Proteomics', color: '#059669', kind: 'level' },
-  { key: 'cna', label: 'Copy number', color: '#0891b2', kind: 'ratio' },
+  { key: 'cna', label: 'Copy number', color: '#0891b2', kind: 'call' },
   { key: 'mutation', label: 'Mutation', color: '#e11d48', kind: 'call' },
   { key: 'fusion', label: 'Fusion', color: '#9333ea', kind: 'call' },
   { key: 'signature', label: 'Signature', color: '#d97706', kind: 'call' },
@@ -28,6 +31,22 @@ export const TRACK_BY_KEY = Object.fromEntries(TRACKS.map((t) => [t.key, t])) as
 >;
 
 export const pct = (x: number) => Math.round((x || 0) * 100);
+
+/* The datasets each measured layer can draw evidence from. The detail endpoint
+   reports which of these actually contributed for a given line; the UI shows the
+   full set and marks the ones present, so absence is visible, not hidden. */
+export const EXPRESSION_SOURCES = ['DepMap', 'HPA', 'GEO'] as const;
+export const PROTEOMICS_SOURCES = ['ProCan', 'CCLE'] as const;
+
+/* A within-gene percentile (0..1) turned into a plain band. This is a level
+   relative to other cell lines for the same gene — not an absolute amount and
+   not a probability. */
+export function levelBand(score: number): { label: 'Low' | 'Moderate' | 'High'; tone: TierTone } {
+  const p = pct(score);
+  if (p <= 33) return { label: 'Low', tone: 'low' };
+  if (p <= 66) return { label: 'Moderate', tone: 'medium' };
+  return { label: 'High', tone: 'high' };
+}
 
 /* The tier is an ordinal band from the pipeline. It is NOT derived from the score
    here — deriving a band from the number would re-introduce exactly the
@@ -103,7 +122,13 @@ export function deriveVerdict(results: RankedCellLine[]): Verdict | null {
   }
 
   const metric = (r: RankedCellLine) =>
-    r.mode === 'selectivity' ? r.selectivity : r.mode === 'multi' ? r.jointScore : r.score;
+    r.mode === 'selectivity'
+      ? r.selectivity
+      : r.mode === 'jointSelectivity'
+      ? r.combinedScore
+      : r.mode === 'multi'
+      ? r.jointScore
+      : r.score;
   const vals = results.map(metric).sort((a, b) => b - a);
   const top = vals[0];
   const median = vals[Math.floor(vals.length / 2)];
@@ -114,7 +139,8 @@ export function deriveVerdict(results: RankedCellLine[]): Verdict | null {
   // the top. Flag it when partial-coverage lines are the majority — a high rank
   // there does NOT mean "high across all your targets".
   const multi = results.filter(
-    (r): r is Extract<RankedCellLine, { mode: 'multi' }> => r.mode === 'multi'
+    (r): r is Extract<RankedCellLine, { mode: 'multi' | 'jointSelectivity' }> =>
+      r.mode === 'multi' || r.mode === 'jointSelectivity'
   );
   if (multi.length > 0) {
     const partial = multi.filter((r) => r.genes.some((g) => r.geneScores[g] === null));

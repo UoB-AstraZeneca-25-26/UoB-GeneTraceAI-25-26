@@ -2,8 +2,8 @@
 // adapter and view runs identically. Toggle via USE_MOCK in api.ts.
 import type {
   JointApiResponse,
-  ExcludeApiResponse,
-  ExcludeApiLine,
+  ExcludeManyApiResponse,
+  ExcludeManyApiLine,
   CellLineDetailApiResponse,
   LineMetadata,
 } from './api';
@@ -126,24 +126,30 @@ function mockJointResponse(genesRaw: string[]): JointApiResponse {
 export const mockGeneResponse = (gene: string): JointApiResponse => mockJointResponse([gene]);
 export const mockGenesResponse = (genes: string[]): JointApiResponse => mockJointResponse(genes);
 
-// ---------- /exclude ----------
-export function mockExcludeResponse(aRaw: string, bRaw: string): ExcludeApiResponse {
+// ---------- /exclude/many ----------
+export function mockExcludeManyResponse(aRaw: string, bsRaw: string[]): ExcludeManyApiResponse {
   const a = clampGene(aRaw);
-  const b = clampGene(bRaw);
-  const lines: ExcludeApiLine[] = POOL.map((p) => {
+  const bs = bsRaw.map(clampGene).filter(Boolean);
+  const lines: ExcludeManyApiLine[] = POOL.map((p) => {
     const sa = round(0.85 + rand(a + p.model_id) * 0.149);
-    const sb = round(rand(b + p.model_id) * 0.5);
+    const exclusion_scores: Record<string, number> = {};
+    let selectivity = sa;
+    bs.forEach((b) => {
+      const sb = round(rand(b + p.model_id) * 0.5);
+      exclusion_scores[b] = sb;
+      selectivity *= 1 - sb;
+    });
     return {
       model_id: p.model_id,
       name: p.name,
       score_a: sa,
-      score_b: sb,
-      selectivity: round(sa * (1 - sb)),
+      exclusion_scores,
+      selectivity: round(selectivity),
       metadata: metaOf(p),
     };
   }).sort((x, y) => y.selectivity - x.selectivity);
 
-  return { gene_a: a, gene_b: b, lineage: [], total_ranked: 912, lines };
+  return { gene_a: a, excluded_genes: bs, lineage: [], total_ranked: 912, lines };
 }
 
 // ---------- /gene/detail ----------
@@ -158,7 +164,50 @@ export function mockCellLineDetailResponse(geneRaw: string, modelId: string): Ce
     .map((x) => ({ x, sim: round(0.55 + rand(p.model_id + x.model_id) * 0.35, 3) }))
     .sort((m, n) => n.sim - m.sim)
     .slice(0, 5)
-    .map(({ x, sim }) => ({ model_id: x.model_id, name: x.name, similarity: sim }));
+    .map(({ x, sim }) => ({ model_id: x.model_id, name: x.name, similarity: sim, lineage: x.lineage, primary_disease: x.primary_disease }));
+
+  const exprLevel = round(0.3 + rand('rna' + gene + p.model_id) * 0.69, 3);
+  const protLevel = rand('prot' + gene + p.model_id) > 0.3 ? round(0.2 + rand('prot2' + gene + p.model_id) * 0.79, 3) : null;
+
+  // Which datasets contributed — DepMap always present for expression.
+  const exprSources = [
+    'DepMap',
+    ...(rand('hpa' + gene + p.model_id) > 0.4 ? ['HPA'] : []),
+    ...(rand('geo' + gene + p.model_id) > 0.6 ? ['GEO'] : []),
+  ];
+  const protSources =
+    protLevel != null
+      ? [
+          ...(rand('procan' + gene + p.model_id) > 0.35 ? ['ProCan'] : []),
+          ...(rand('ccle' + gene + p.model_id) > 0.45 ? ['CCLE'] : []),
+        ]
+      : [];
+
+  // Raw per-source measurements. Units differ per source; `max` sets each bar's
+  // own scale. Values track the modality level so the numbers stay coherent.
+  const EXPR_UNIT: Record<string, { unit: string; max: number }> = {
+    DepMap: { unit: 'log2(TPM+1)', max: 16 },
+    HPA: { unit: 'nTPM', max: 140 },
+    GEO: { unit: 'z-score', max: 4 },
+  };
+  const PROT_UNIT: Record<string, { unit: string; max: number }> = {
+    ProCan: { unit: 'log2 intensity', max: 10 },
+    CCLE: { unit: 'norm. quant', max: 6 },
+  };
+  const exprMeasurements = exprSources.map((s) => {
+    const { unit, max } = EXPR_UNIT[s];
+    const v = exprLevel * max * (0.7 + rand('em' + s + gene + p.model_id) * 0.3);
+    return { source: s, value: round(Math.min(v, max), 2), unit, max };
+  });
+  const protMeasurements = protSources.map((s) => {
+    const { unit, max } = PROT_UNIT[s];
+    const v = (protLevel ?? 0) * max * (0.7 + rand('pm' + s + gene + p.model_id) * 0.3);
+    return { source: s, value: round(Math.min(v, max), 2), unit, max };
+  });
+
+  const lineageTotal = POOL.filter((x) => x.lineage === p.lineage).length + Math.floor(rand('lt' + p.lineage) * 40) + 6;
+  const lineageRank = 1 + Math.floor(rand('lr' + gene + p.model_id) * Math.min(lineageTotal - 1, 10));
+  const lineageScore = round(Math.min(1, score * (0.92 + rand('ls' + gene + p.model_id) * 0.12)));
 
   return {
     gene,
@@ -167,12 +216,21 @@ export function mockCellLineDetailResponse(geneRaw: string, modelId: string): Ce
     rank: 1 + Math.floor(rand('r' + gene + p.model_id) * 1522),
     total: 1523,
     score,
+    lineage_score: lineageScore,
+    lineage_rank: lineageRank,
+    lineage_total: lineageTotal,
     tier,
     n_layers: 1 + Math.floor(rand('l' + gene + p.model_id) * 3),
     driver_alteration: driver,
     p_mutation: driver ? round(0.6 + rand('pm' + p.model_id) * 0.39, 3) : (rand('pm' + p.model_id) > 0.5 ? round(rand('pm2' + p.model_id) * 0.4, 3) : null),
     p_fusion: rand('pf' + p.model_id) > 0.75 ? round(rand('pf2' + p.model_id), 3) : null,
     has_cna_alteration: rand('cna' + gene + p.model_id) > 0.6,
+    expression_level: exprLevel,
+    proteomics_level: protLevel,
+    expression_sources: exprSources,
+    proteomics_sources: protSources,
+    expression_measurements: exprMeasurements,
+    proteomics_measurements: protMeasurements,
     metadata: {
       lineage: p.lineage,
       lineage_subtype: p.lineage_subtype,
@@ -190,3 +248,12 @@ export function mockCellLineDetailResponse(geneRaw: string, modelId: string): Ce
 }
 
 export const mockDelay = (ms = 350) => new Promise((r) => setTimeout(r, ms));
+
+/** Demo cell-line directory for the Reference lookup (ACH id ↔ name). To be
+ *  replaced by the full DepMap table later. */
+export const CELL_LINE_DIRECTORY: { ach: string; name: string; lineage: string; disease: string }[] = POOL.map((p) => ({
+  ach: p.model_id,
+  name: p.name.toUpperCase(),
+  lineage: p.lineage.replace(/_/g, ' '),
+  disease: p.primary_disease,
+}));
