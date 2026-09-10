@@ -3,20 +3,38 @@
 05_transcriptomics_stat_layer.py
 
 Orchestrator for the transcriptomics statistical layer. All logic lives in
-transcriptomics.py; this file only sequences it.
+``src/scripts/transcriptomics.py``; this file only sequences it, so each
+``step_*`` function below is a thin wrapper that pulls arguments together,
+calls into ``tx``, and logs or writes what comes back.
 
 Pipeline
-    1. parse geo_meta/*.txt   -> geo_platform  (method = GPL x processing)
-    2. build method axes      -> hpa_rna, depmap, N x geo
-    3. sensitivity analysis   -> censoring cutoffs, n0, floor quantile
-    4. genome-wide z          -> lineage-stratified and global, per cell line
-    5. diagnostics + plots
+--------
+1. parse ``geo_meta/*.txt``   -> ``geo_platform`` (method = GPL x processing)
+2. build method axes          -> ``hpa_rna``, ``depmap``, N x ``geo``
+3. sensitivity analysis       -> censoring cutoffs, ``n0``, floor quantile
+4. genome-wide z              -> lineage-stratified and global, per cell line
+5. diagnostics + plots
 
-Output table (~20k genes x ~2k cell lines, gene-major):
+Output table (~20k genes x ~2k cell lines, gene-major)
+------------------------------------------------------
     ensg | model_id | lineage | z_lineage | z_global | k_src | k_methods
          | det_frac | status | scale_source | z_hpa_rna | z_depmap | z_geo
 
+Design notes
+------------
+* Scoring runs in gene chunks rather than all at once, appending each
+  chunk to the output table, so peak memory stays flat regardless of how
+  many genes are on the union axis.
+* Every gene chunk is processed twice — once lineage-stratified, once
+  global — giving the paired ``z_lineage`` and ``z_global`` columns.
+* Read-only DuckDB connections are used for the pure-reporting modes, so
+  a discovery or audit run cannot modify the database.
+* Parameters can be supplied via ``--params`` to skip the sensitivity
+  analysis entirely, which makes a scoring run reproducible from a saved
+  ``chosen_params.json``.
+
 Usage
+-----
     python 05_transcriptomics_stat_layer.py --discover
     python 05_transcriptomics_stat_layer.py --audit-geo
     python 05_transcriptomics_stat_layer.py --build-geo-platform
@@ -55,6 +73,28 @@ RAW_DIR = PROJECT_ROOT / "geo_meta"
 
 
 def setup_logging(level=logging.INFO):
+    """
+    Configure root logging for the run.
+
+    Sets a compact console format — time, level, logger name, message —
+    with second-resolution timestamps, suitable for following a long
+    chunked scoring run in a terminal.
+
+    Parameters
+    ----------
+    level : int, optional
+        Standard :mod:`logging` level. Defaults to ``logging.INFO``.
+
+    Returns
+    -------
+    None
+        Configures the root logger as a side effect.
+
+    Notes
+    -----
+    Uses :func:`logging.basicConfig`, which is a no-op if the root logger
+    already has handlers attached.
+    """
     logging.basicConfig(
         level=level,
         format="%(asctime)s %(levelname)-7s %(name)s | %(message)s",
@@ -68,6 +108,25 @@ log = get_logger("05_transcriptomics")
 # ----------------------------------------------------------------------
 
 def resolve_project_path(value: str | Path) -> Path:
+    """
+    Resolve a path argument against the project root.
+
+    Absolute paths are returned unchanged; relative ones are interpreted
+    relative to ``PROJECT_ROOT`` rather than the current working
+    directory, so the CLI defaults behave the same whether the script is
+    run from the repository top or from ``pipelines/``.
+
+    Parameters
+    ----------
+    value : str or Path
+        Path as supplied on the command line.
+
+    Returns
+    -------
+    Path
+        Absolute path. Relative inputs are additionally resolved, so
+        ``..`` segments and symlinks are collapsed.
+    """
     path = Path(value)
     if path.is_absolute():
         return path
@@ -75,6 +134,32 @@ def resolve_project_path(value: str | Path) -> Path:
 
 
 def parse_args():
+    """
+    Define and parse the command-line interface.
+
+    The parser exposes four mutually compatible mode flags — ``--discover``,
+    ``--audit-geo``, ``--build-geo-platform`` and ``--calibrate-only`` —
+    plus the paths, scoring parameters and subsetting options used by a
+    full run. The module docstring is reused as the help description.
+
+    Returns
+    -------
+    argparse.Namespace
+        Parsed arguments. Notable fields:
+
+        * ``db``, ``meta_dir``, ``out_dir`` (str) — paths, resolved
+          against the project root later in :func:`main`;
+        * ``write_table`` (str) — DuckDB output table for the z-scores;
+        * ``genes`` (str or None) — comma-separated ENSG subset;
+        * ``min_k`` (int) — drop rows backed by fewer than this many
+          sources;
+        * ``gene_chunk`` (int) — genes per scoring batch; the default is
+          the smaller of ``tx.GENE_CHUNK`` and ``tx.LOW_MEMORY_GENE_CHUNK``
+          so laptops keep CPU and RAM usage down;
+        * ``params`` (str or None) — path to ``chosen_params.json``, to
+          skip the sensitivity analysis;
+        * ``seed`` (int) — RNG seed for calibration and profiling.
+    """
     ap = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -101,11 +186,59 @@ def parse_args():
 
 
 def step_discover(con):
+    """
+    Print the schema of the tables this layer reads.
+
+    Inspection mode for checking what is actually in the database before
+    committing to a run — column names, types and shapes of the source
+    tables.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection, typically read-only in this mode.
+
+    Returns
+    -------
+    None
+        The schema table is printed to stdout.
+    """
     log.info("=== schema")
     print(tx.describe_tables(con).to_string(index=False))
 
 
 def step_geo_platform(con, meta_dir: Path, out: Path, audit_only: bool):
+    """
+    Parse GEO metadata into method assignments and audit the coverage.
+
+    Reads every ``*.txt`` under ``meta_dir``, derives a method per sample
+    as GPL crossed with processing type, audits how that assignment covers
+    the GEO samples already in the database, and — unless auditing only —
+    writes the resulting ``geo_platform`` table.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection. Must be writable unless ``audit_only`` is True.
+    meta_dir : Path
+        Directory of raw GEO metadata text files.
+    out : Path
+        Output directory for the CSV reports.
+    audit_only : bool
+        When True, report coverage without writing ``geo_platform``.
+
+    Returns
+    -------
+    None
+        Writes ``geo_methods.csv`` to ``out`` always, and
+        ``geo_meta_parse_failures.csv`` when any file failed to parse.
+
+    Notes
+    -----
+    Parse failures are reported and logged as a warning, not raised — a
+    handful of unparseable metadata files should not block the rest of the
+    assignment. Check the failures CSV to see what was dropped.
+    """
     log.info("=== GEO metadata -> method assignment")
     df, failures = tx.build_geo_platform_frame(meta_dir)
     if len(failures):
@@ -119,6 +252,51 @@ def step_geo_platform(con, meta_dir: Path, out: Path, audit_only: bool):
 
 
 def step_build_axes(con, args):
+    """
+    Build the method axes and the gene and cell-line universes to score over.
+
+    Constructs one axis per measurement method (``hpa_rna``, ``depmap``,
+    and one per GEO method), loads the lineage map, and resolves the
+    ENSG column list for each axis. ``hpa_rna`` is long-format rather than
+    a gene-column matrix, so it gets no column map.
+
+    The gene universe is either the ``--genes`` subset — validated against
+    ``gene_roster`` so an invalid ENSG cannot silently produce an empty
+    result — or the union across all axes. The cell-line universe is the
+    union of models across axes, with lineages defaulting to ``unknown``
+    where the map has no entry.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection.
+    args : argparse.Namespace
+        Parsed arguments; ``genes`` is the only field read.
+
+    Returns
+    -------
+    axes : list
+        Method axis objects, each carrying ``name``, ``source``, ``table``
+        and ``models``.
+    colmaps : dict
+        Axis name to its ENSG column map, or None for ``hpa_rna``.
+    genes_all : list of str
+        ENSG IDs on the union axis, in scoring order.
+    models : list of str
+        Sorted union of ``model_id`` values across all axes.
+    midx : dict
+        ``model_id`` to its integer position in ``models``.
+    lineage_s : pandas.Series
+        Raw lineage map as loaded, indexed by ``model_id``.
+    lineage_vec : pandas.Series
+        Lineage per entry of ``models``, aligned and gap-filled with
+        ``"unknown"``.
+
+    Notes
+    -----
+    ``midx`` and ``lineage_vec`` exist so the scoring loop can address
+    cell lines positionally in NumPy arrays rather than by label.
+    """
     log.info("=== axes")
     axes = tx.build_method_axes(con)
     lineage_s = tx.load_lineage_map(con)
@@ -144,6 +322,42 @@ def step_build_axes(con, args):
 
 
 def step_params(con, args, axes, colmaps, genes_all, models, midx, lineage_s, out):
+    """
+    Obtain the scoring parameters, either from file or by calibration.
+
+    If ``--params`` was supplied, the saved JSON is loaded and returned
+    as-is, skipping calibration entirely — this is what makes a scoring
+    run reproducible. Otherwise a sensitivity analysis runs a grid search
+    over censoring cutoffs, ``n0`` and the floor quantile, selecting by the
+    1-SE rule on held-out concordance.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection.
+    args : argparse.Namespace
+        Parsed arguments; ``params`` and ``seed`` are read.
+    axes, colmaps, genes_all, models, midx, lineage_s
+        Universe and axis objects from :func:`step_build_axes`.
+    out : Path
+        Output directory for ``grid_search.csv`` and
+        ``chosen_params.json``.
+
+    Returns
+    -------
+    p : tx.Params
+        The chosen parameters.
+    grid : pandas.DataFrame
+        Full grid-search results. Empty when parameters were supplied via
+        ``--params``, since no search ran.
+
+    Notes
+    -----
+    The chosen parameters are always written to
+    ``out/chosen_params.json`` when calibration runs, so a later run can
+    reproduce this one with ``--params``. Nothing is written in the
+    supplied-parameters branch.
+    """
     if args.params:
         p = tx.Params(**json.loads(Path(args.params).read_text()))
         log.info("using supplied parameters: %s", asdict(p))
@@ -159,6 +373,41 @@ def step_params(con, args, axes, colmaps, genes_all, models, midx, lineage_s, ou
 
 
 def step_profile(con, axes, colmaps, genes_all, p, seed):
+    """
+    Detect each axis's value scale and set its detection floor.
+
+    Profiles every axis against a random probe of up to 500 genes, which
+    is enough to identify whether values are log or linear and to place
+    the detection floor at quantile ``p.floor_q`` without reading the full
+    matrix.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection.
+    axes : list
+        Method axis objects from :func:`step_build_axes`.
+    colmaps : dict
+        Axis name to ENSG column map.
+    genes_all : list of str
+        Gene universe to sample the probe from.
+    p : tx.Params
+        Chosen parameters; ``floor_q`` is read.
+    seed : int
+        Base RNG seed. Offset by 1 so the probe differs from the draw used
+        during calibration.
+
+    Returns
+    -------
+    None
+        Each axis is updated in place with its detected scale and floor.
+
+    Notes
+    -----
+    Must run before :func:`step_score`, which relies on the detected
+    scale and floors when combining sources. The resulting scale choice
+    surfaces per row as ``scale_source`` in the output table.
+    """
     log.info("=== scale detection and detection floors")
     rng = np.random.default_rng(seed + 1)
     probe = list(rng.choice(np.asarray(genes_all, dtype=object),
@@ -169,6 +418,50 @@ def step_profile(con, axes, colmaps, genes_all, p, seed):
 
 def step_score(con, args, axes, colmaps, genes_all, models, midx, lineage_s,
                lineage_vec, p, out):
+    """
+    Score every gene against every cell line, in chunks, and write the results.
+
+    Iterates the gene universe in batches of ``args.gene_chunk``. Each
+    batch is processed twice — once lineage-stratified and once globally —
+    and the two z-score sets are assembled into one frame alongside the
+    per-source columns, source counts and status flags. Rows backed by
+    fewer than ``args.min_k`` sources are dropped.
+
+    Each chunk is appended to the output table as it completes, so memory
+    stays flat across the full ~20k gene x ~2k cell line run and progress
+    survives as rows in the database rather than only in memory.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open, writable connection.
+    args : argparse.Namespace
+        Parsed arguments; ``gene_chunk``, ``min_k`` and ``write_table``
+        are read.
+    axes, colmaps, genes_all, models, midx, lineage_s, lineage_vec
+        Universe and axis objects from :func:`step_build_axes`.
+    p : tx.Params
+        Chosen parameters, with scales and floors already set by
+        :func:`step_profile`.
+    out : Path
+        Output directory for ``diagnostics.csv``.
+
+    Returns
+    -------
+    diag : pandas.DataFrame
+        Per-chunk summaries aggregated into counts by ``lineage``,
+        ``status``, ``scale_source`` and ``k_src``. Empty if no chunk
+        produced rows.
+    n_rows : int
+        Total rows written to the output table.
+
+    Notes
+    -----
+    The first chunk creates or replaces the output table (``first=True``);
+    every later chunk appends. An empty chunk is skipped without
+    consuming that flag, so the table is still created correctly if the
+    first few chunks yield nothing.
+    """
     log.info("=== scoring %d genes x %d cell lines in chunks of %d -> %s",
              len(genes_all), len(models), args.gene_chunk, args.write_table)
 
@@ -206,6 +499,37 @@ def step_score(con, args, axes, colmaps, genes_all, models, midx, lineage_s,
 
 
 def report(con, p, diag, n_rows, table):
+    """
+    Print the end-of-run summary.
+
+    Reports the chosen parameters, the status and scale-source breakdowns
+    from the diagnostics, source coverage read back from the written
+    table, and the total row count.
+
+    Parameters
+    ----------
+    con : duckdb.DuckDBPyConnection
+        Open connection, used to verify the written output.
+    p : tx.Params
+        Parameters the run used.
+    diag : pandas.DataFrame
+        Aggregated diagnostics from :func:`step_score`.
+    n_rows : int
+        Total rows written.
+    table : str
+        Name of the output table.
+
+    Returns
+    -------
+    None
+        Output is printed to stdout.
+
+    Notes
+    -----
+    Each block is conditional: the diagnostics breakdowns are skipped when
+    ``diag`` is empty, and coverage is only read back when rows were
+    actually written.
+    """
     print("\n--- parameters (1-SE rule on held-out concordance) ---")
     print(json.dumps(asdict(p), indent=2))
     if len(diag):
@@ -222,6 +546,37 @@ def report(con, p, diag, n_rows, table):
 # ----------------------------------------------------------------------
 
 def main():
+    """
+    Parse arguments, open the database, and run the requested mode.
+
+    Resolves all path arguments against the project root, creates the
+    output directory, and opens DuckDB read-only for the pure-reporting
+    modes (``--discover``, ``--audit-geo`` without
+    ``--build-geo-platform``, ``--calibrate-only``) so they cannot modify
+    the database.
+
+    Modes, in the order they are checked:
+
+    * ``--discover`` — print the schema and stop.
+    * ``--build-geo-platform`` / ``--audit-geo`` — assign GEO methods,
+      writing ``geo_platform`` unless auditing only. Auditing alone stops
+      here; combined with ``--build-geo-platform`` the run continues.
+    * ``--calibrate-only`` — build axes, calibrate, profile, emit plots
+      and ``chosen_params.json``, then stop before scoring.
+    * default — the full run: axes, parameters, profiling, chunked
+      scoring, plots and report.
+
+    Returns
+    -------
+    None
+        The z-score table, CSV reports, plots and log output are written
+        as side effects.
+
+    Notes
+    -----
+    The connection is closed in a ``finally`` block, so it is released
+    even when a step raises or an early-return mode exits.
+    """
     args = parse_args()
     setup_logging()
 

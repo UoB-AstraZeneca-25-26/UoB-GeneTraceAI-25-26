@@ -1,18 +1,37 @@
 """
 00_data_loading.py
 
-Data Loading Pipeline (converted from 00_data_loading.ipynb)
+Data loading stage of the pipeline (converted from ``00_data_loading.ipynb``).
 
-Loads every raw data file found under BASE's subfolders (not a fixed
-list of 14 -- see discover_raw_files), converts a couple of
-tab-delimited text files to CSV, previews every dataset, builds a
-summary table, and saves everything as Parquet files.
+Walks every subfolder of ``BASE``, discovers each raw data file it finds
+(rather than working from a hard-coded list of 14 — see
+:func:`discover_raw_files`), converts two tab-delimited GEO text files to
+CSV, previews every dataset, builds a missing-value/shape summary table,
+and writes each dataset out as Parquet under ``PARQUET_RAW``.
 
-Each file is read from disk exactly once: load_all_datasets() loads
-and previews it, then save_all_as_parquet() writes out the same
-already-loaded DataFrame rather than re-reading it.
+Design notes
+------------
+* Each file is read from disk exactly once. :func:`load_all_datasets`
+  loads and previews it, then :func:`save_all_as_parquet` writes out the
+  same already-loaded DataFrame rather than re-reading it.
+* Failures are per-file, not fatal. A file that fails to load or save is
+  logged with full context (path, separator, skiprows, index_col, key)
+  and skipped, so one malformed dataset does not stop the rest.
+* Newly added files need no manual configuration: files absent from
+  :data:`KNOWN_FILES` get their separator guessed from their extension
+  and their Parquet key derived from their filename.
 
-Run with:
+Inputs
+------
+Raw ``.csv`` / ``.tsv`` / ``.txt`` / ``.gct`` files under ``BASE``.
+
+Outputs
+-------
+One Parquet file per dataset at ``PARQUET_RAW/<key>.parquet``, plus a
+dated log file under ``LOG_DIR``.
+
+Run with
+--------
     python pipelines/00_data_loading.py
 """
 
@@ -39,10 +58,23 @@ from src.scripts.logging_utils import get_logger, log_file_error, LOG_DIR
 logger = get_logger("00_data_loading")
 
 
-
-
 def configure_pandas_display() -> None:
-    """Set pandas display options used throughout the notebook."""
+    """
+    Set the pandas display options used throughout this stage.
+
+    Widens the console output so that :func:`preview` prints readable
+    tables: up to 20 columns, a 120-character line width, and a
+    40-character cap on individual cell values.
+
+    Returns
+    -------
+    None
+        The options are set globally as a side effect.
+
+    Notes
+    -----
+    This affects display only — no data is altered.
+    """
     pd.set_option("display.max_columns", 20)
     pd.set_option("display.width", 120)
     pd.set_option("display.max_colwidth", 40)
@@ -50,10 +82,33 @@ def configure_pandas_display() -> None:
 
 def convert_text_files_to_csv() -> None:
     """
-    Convert raw tab-delimited GEO text files to CSV.
-    If a .txt source doesn't exist but a .csv version already does,
-    conversion is skipped for it. Any other failure is logged with
-    full file context before being raised.
+    Convert the raw tab-delimited GEO text files to CSV.
+
+    Two GEO files (``3_GEOexpression.txt`` and ``10_GEOInfo.txt``) ship as
+    tab-delimited ``.txt``; both are rewritten as ``.csv`` alongside the
+    source so the rest of the pipeline sees a consistent format.
+
+    Conversion is idempotent-friendly: if the ``.txt`` source is missing
+    but the ``.csv`` output already exists, that pair is skipped and the
+    run continues.
+
+    Returns
+    -------
+    None
+        Files are written to disk as a side effect.
+
+    Raises
+    ------
+    FileNotFoundError
+        If neither the ``.txt`` source nor the ``.csv`` output exists for
+        a configured pair. Logged with file context before being raised.
+    Exception
+        Any read/write failure is logged with the file path, step name,
+        and separator, then re-raised unchanged.
+
+    See Also
+    --------
+    discover_raw_files : Picks up the converted CSVs on the next walk.
     """
     print(f"BASE = {BASE}")
 
@@ -85,8 +140,14 @@ def convert_text_files_to_csv() -> None:
     print("Text files converted to CSV (where needed).")
 
 
-# Curated read settings for the 14 known files (folder, filename, sep, skiprows, index_col, key)
-# Anything NOT in this dict is a newly added file — its settings are auto-detected below.
+#: Curated read settings for the 14 known raw files, keyed by filename.
+#:
+#: Each value is a dict of ``sep``, ``skiprows``, ``index_col`` and ``key``,
+#: where ``key`` becomes the Parquet filename stem. These settings were
+#: established by inspecting each file (e.g. the GCT miRNA matrix carries
+#: two header lines; the DepMap expression matrix has cell lines in the
+#: index). Any file *not* listed here is treated as newly added and has
+#: its settings auto-detected in :func:`discover_raw_files`.
 KNOWN_FILES = {
     "1_4_hpa_rna_celline.tsv":                             dict(sep="\t", skiprows=0, index_col=None, key="hpa_rna"),
     "2_DepMap_OmicsExpressionAllGenesTPMLogp1Profile.csv": dict(sep=",",  skiprows=0, index_col=0,    key="depmap_expr"),
@@ -105,17 +166,38 @@ KNOWN_FILES = {
     "10_GEOInfo.csv":                                       dict(sep=",",  skiprows=0, index_col=None, key="geo_info"),
 }
 
-# Extension -> default separator, used only for files NOT in KNOWN_FILES (i.e. newly added ones)
+#: Fallback separator per file extension.
+#:
+#: Used only for files absent from :data:`KNOWN_FILES` — i.e. newly added
+#: raw files — so they can be ingested without manual configuration.
 EXT_SEP_DEFAULTS = {".csv": ",", ".tsv": "\t", ".txt": "\t", ".gct": "\t"}
-
 
 
 def slugify_filename(filename: str) -> str:
     """
-    Derive a parquet key from a raw filename: strip a leading numeric
-    prefix (e.g. '15_'), drop the extension,and collapse
-    non-alphanumeric runs to underscores.
-    e.g. '15_NewProteomicsPanel.csv' -> 'new_proteomics_panel'
+    Derive a Parquet key from a raw filename.
+
+    Strips a leading numeric prefix (e.g. ``15_``), drops the extension,
+    collapses runs of non-alphanumeric characters to single underscores,
+    trims leading/trailing underscores, and lowercases the result.
+
+    Parameters
+    ----------
+    filename : str
+        Raw filename or path; only the stem is used.
+
+    Returns
+    -------
+    str
+        A lowercase, underscore-separated key safe to use as a Parquet
+        filename stem.
+
+    Examples
+    --------
+    >>> slugify_filename("15_NewProteomicsPanel.csv")
+    'newproteomicspanel'
+    >>> slugify_filename("CCLE_miRNA_20181103.gct")
+    'ccle_mirna_20181103'
     """
     stem = Path(filename).stem
     stem = re.sub(r"^\d+_", "", stem)
@@ -125,14 +207,38 @@ def slugify_filename(filename: str) -> str:
 
 def discover_raw_files(base: Path = BASE) -> list:
     """
-    Walk every subfolder of `base` and return
-    (path, sep, skiprows, index_col, key) for every data file found
-    (.csv, .tsv, .txt, .gct), skipping the parquet output folder.
+    Walk every subfolder of ``base`` and return the read settings for each raw file.
 
-    Known files (the original 14) use their curated read settings.
-    Any file not in KNOWN_FILES is treated as newly added: its
-    separator is guessed from its extension and its key is derived
-    from its filename, so it gets converted without any manual setup.
+    Recurses through ``base``, keeping files with a ``.csv``, ``.tsv``,
+    ``.txt`` or ``.gct`` extension and skipping anything under a
+    ``parquet`` folder (which holds this stage's own output).
+
+    Files listed in :data:`KNOWN_FILES` use their curated read settings.
+    Anything else is treated as newly added: its separator is guessed
+    from its extension via :data:`EXT_SEP_DEFAULTS` and its key is derived
+    by :func:`slugify_filename`, so it is ingested without manual setup.
+
+    Parameters
+    ----------
+    base : Path, optional
+        Root directory to walk. Defaults to ``BASE``.
+
+    Returns
+    -------
+    list of tuple
+        One ``(path, sep, skiprows, index_col, key)`` tuple per discovered
+        file, sorted by path, where:
+
+        * ``path`` (:class:`~pathlib.Path`) — absolute file path;
+        * ``sep`` (str) — field delimiter passed to :func:`pandas.read_csv`;
+        * ``skiprows`` (int) — leading lines to skip (0 for most files);
+        * ``index_col`` (int or None) — column to use as the index;
+        * ``key`` (str) — Parquet filename stem for this dataset.
+
+    Notes
+    -----
+    Newly detected files are announced on stdout so an unexpected addition
+    to the raw data folder is visible in the run output.
     """
     discovered = []
     for path in sorted(base.rglob("*")):
@@ -155,14 +261,32 @@ def discover_raw_files(base: Path = BASE) -> list:
 
 def load_all_datasets() -> dict:
     """
-    Load every discovered raw file (see discover_raw_files) and
-    preview it. Returns {key: (df, index_col)} — index_col is carried
-    alongside each DataFrame so save_all_as_parquet() can write the
-    index back out correctly for files (like depmap_expr) that were
-    read with one, without needing to re-read the file from disk.
+    Load and preview every raw file returned by :func:`discover_raw_files`.
 
-    A failure loading one file is logged with full context and that
-    file is skipped — loading continues for the rest.
+    Each file is read once with its configured separator, skiprows and
+    index column, then printed via :func:`preview`. The ``index_col`` is
+    carried alongside the DataFrame so :func:`save_all_as_parquet` can
+    write the index back out correctly for files that were read with one
+    (e.g. ``depmap_expr``) without re-reading from disk.
+
+    Returns
+    -------
+    dict
+        Mapping of ``key`` (str) to ``(df, index_col)``, where ``df`` is a
+        :class:`pandas.DataFrame` and ``index_col`` is the int or None
+        used when reading it. Files that failed to load are absent.
+
+    Notes
+    -----
+    * Failures are non-fatal: a file that raises during read is logged
+      with full context, reported on stdout as ``[SKIPPED]``, and loading
+      continues with the remaining files.
+    * ``Protein_matrix_averaged_20250211.tsv`` is read with
+      ``header=None`` because it carries no header row.
+    * Retained from the original notebook: the GEO expression file is
+      sometimes comma-separated despite its extension, so if the
+      tab-separated read yields a single column it is re-read with pandas'
+      default separator.
     """
     loaded = {}
     for path, sep, skiprows, index_col, key in discover_raw_files():
@@ -198,7 +322,33 @@ def load_all_datasets() -> dict:
 
 
 def build_summary_table(loaded: dict) -> pd.DataFrame:
-    """Build the missing-value / shape summary table across all loaded datasets."""
+    """
+    Build a missing-value and shape summary across all loaded datasets.
+
+    For each dataset, reports its row and column counts, the percentage of
+    missing cells overall, the column with the most missing values, and
+    what percentage of that column is missing — a quick check on data
+    completeness before any downstream cleaning.
+
+    Parameters
+    ----------
+    loaded : dict
+        Mapping of ``key`` to ``(df, index_col)``, as returned by
+        :func:`load_all_datasets`. The ``index_col`` element is ignored.
+
+    Returns
+    -------
+    pandas.DataFrame
+        One row per dataset with columns ``Dataset``, ``Rows``, ``Cols``,
+        ``Missing %``, ``Worst col`` and ``Worst col %``. Counts and
+        percentages are pre-formatted as display strings.
+
+    Notes
+    -----
+    The table is also printed to stdout. Empty DataFrames are handled
+    without raising: their missing percentage is reported as 0 and the
+    worst column as ``None``.
+    """
     rows = []
     for key, (df, _) in loaded.items():
         missing_pct = df.isnull().sum().sum() / df.size * 100 if df.size else 0
@@ -220,10 +370,32 @@ def build_summary_table(loaded: dict) -> pd.DataFrame:
 
 def save_all_as_parquet(loaded: dict) -> pd.DataFrame:
     """
-    Save already-loaded DataFrames (from load_all_datasets) to
-    parquet at PARQUET_RAW/<key>.parquet. Per-dataset failures are
-    logged with full context and the loop continues — one bad
-    dataset doesn't stop the rest from saving.
+    Write the already-loaded DataFrames out as Parquet files.
+
+    Each dataset is saved to ``PARQUET_RAW/<key>.parquet``, creating the
+    output directory if needed. The index is written only for datasets
+    that were read with an ``index_col``, preserving row labels (e.g. cell
+    line identifiers) without adding a spurious integer column elsewhere.
+
+    Parameters
+    ----------
+    loaded : dict
+        Mapping of ``key`` to ``(df, index_col)``, as returned by
+        :func:`load_all_datasets`.
+
+    Returns
+    -------
+    pandas.DataFrame
+        One row per dataset with columns ``Dataset``, ``Saved as``,
+        ``Shape`` and ``Parquet MB``. Failed saves carry ``—`` in the
+        first three fields and ``ERROR — see log`` in the last.
+
+    Notes
+    -----
+    Per-dataset failures are logged with the output path, dataset key and
+    shape, then skipped — one bad dataset does not stop the rest from
+    saving. A summary count is written to the log, and a warning naming
+    the dated log file is emitted if any dataset failed.
     """
     PARQUET_RAW.mkdir(parents=True, exist_ok=True)
 
@@ -259,6 +431,27 @@ def save_all_as_parquet(loaded: dict) -> pd.DataFrame:
 
 
 def main() -> None:
+    """
+    Run the full data loading stage end to end.
+
+    Sets pandas display options, converts the GEO text files to CSV,
+    loads and previews every discovered raw file, prints the
+    missing-value summary, and writes each dataset out as Parquet.
+
+    Returns
+    -------
+    None
+        Parquet files and log entries are written as side effects; the
+        summary and save tables are printed to stdout.
+
+    Raises
+    ------
+    FileNotFoundError
+        Propagated from :func:`convert_text_files_to_csv` if a configured
+        GEO file is missing in both ``.txt`` and ``.csv`` form. Load and
+        save failures for individual datasets are logged and skipped
+        rather than raised.
+    """
     configure_pandas_display()
     convert_text_files_to_csv()
     loaded = load_all_datasets()
