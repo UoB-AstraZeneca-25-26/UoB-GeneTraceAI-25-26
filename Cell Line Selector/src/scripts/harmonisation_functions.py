@@ -2236,3 +2236,139 @@ def summarize_model_id_attachment(tables_before: dict, tables_after: dict) -> pd
         })
 
     return pd.DataFrame(rows)
+
+
+def summarize_missing_gene_biotypes(tables: dict) -> dict:
+    """Summarize genes missing from the roster by protein-coding status."""
+    if not isinstance(tables, dict):
+        return {}
+
+    roster = tables.get("gene_roster")
+    roster_ids = set()
+    if roster is not None and isinstance(roster, pd.DataFrame) and "gene_id" in roster.columns:
+        for value in roster["gene_id"].dropna().astype(str):
+            norm = canonical_ensg_id(value)
+            if norm is not None:
+                roster_ids.add(norm)
+
+    biotype_lookup = {}
+    mutations = tables.get("mutations")
+    if mutations is not None and isinstance(mutations, pd.DataFrame) and "gene_id" in mutations.columns:
+        biotype_col = next((c for c in ["vepbiotype", "biotype"] if c in mutations.columns), None)
+        if biotype_col is None:
+            biotype_col = next((c for c in mutations.columns if "biotype" in str(c).lower()), None)
+        if biotype_col is not None:
+            for _, row in mutations[["gene_id", biotype_col]].dropna(subset=["gene_id"]).iterrows():
+                norm = canonical_ensg_id(row["gene_id"])
+                if norm is not None:
+                    biotype_lookup[norm] = str(row[biotype_col]).strip().lower()
+
+    def is_protein_coding(gene_id: str) -> bool:
+        biotype = biotype_lookup.get(gene_id, "")
+        if not biotype:
+            return True
+        if "protein_coding" in biotype:
+            return True
+        if any(token in biotype for token in ["lncrna", "non_coding", "pseudo", "processed", "misc_rna", "ncrna"]):
+            return False
+        return True
+
+    summary = {}
+    for table_name in ("depmap_expr", "geo_expr", "hpa_rna"):
+        df = tables.get(table_name)
+        if df is None or not isinstance(df, pd.DataFrame):
+            continue
+
+        missing = []
+        seen = set()
+        if "gene_id" in df.columns:
+            for value in df["gene_id"].dropna().astype(str):
+                norm = canonical_ensg_id(value)
+                if norm is None or norm in roster_ids or norm in seen:
+                    continue
+                seen.add(norm)
+                missing.append(norm)
+        else:
+            for col in df.columns:
+                if col in {"profile_id", "gsm_id"}:
+                    continue
+                norm = canonical_ensg_id(col)
+                if norm is None or norm in roster_ids or norm in seen:
+                    continue
+                seen.add(norm)
+                missing.append(norm)
+
+        protein_coding = [gid for gid in missing if is_protein_coding(gid)]
+        non_protein_coding = [gid for gid in missing if gid not in set(protein_coding)]
+        summary[table_name] = {
+            "n_missing": len(missing),
+            "n_protein_coding": len(protein_coding),
+            "n_non_protein_coding": len(non_protein_coding),
+            "protein_coding_examples": protein_coding,
+        }
+
+    return summary
+
+
+def summarize_missing_model_species(tables: dict) -> dict:
+    """Summarize whether missing model IDs are human, non-human, or unknown."""
+    if not isinstance(tables, dict):
+        return {}
+
+    roster = tables.get("cell_line_roster")
+    roster_ids = set()
+    if roster is not None and isinstance(roster, pd.DataFrame) and "model_id" in roster.columns:
+        roster_ids = {str(v).strip() for v in roster["model_id"].dropna().astype(str) if str(v).strip()}
+
+    species_lookup = {}
+    for table_name in ("cellosaurus", "model_list_20260709", "sample_info"):
+        df = tables.get(table_name)
+        if df is None or not isinstance(df, pd.DataFrame):
+            continue
+
+        model_col = next((c for c in ["model_id", "sample_id"] if c in df.columns), None)
+        species_col = next((c for c in ["species_of_origin", "species"] if c in df.columns), None)
+        if model_col is None or species_col is None:
+            continue
+
+        for _, row in df[[model_col, species_col]].dropna(subset=[model_col]).iterrows():
+            mid = str(row[model_col]).strip()
+            if mid:
+                species_lookup[mid] = row[species_col]
+
+    def classify(value):
+        if value is None or pd.isna(value):
+            return "unknown"
+        text = str(value).strip()
+        if not text:
+            return "unknown"
+        lowered = text.lower()
+        if "human" in lowered or "homo sapiens" in lowered or "h. sapiens" in lowered or "9606" in lowered:
+            return "human"
+        return "non_human"
+
+    summary = {}
+    for name, df in tables.items():
+        if df is None or not isinstance(df, pd.DataFrame):
+            continue
+
+        model_col = next((c for c in ["model_id", "sample_id"] if c in df.columns), None)
+        if model_col is None:
+            continue
+
+        missing = []
+        seen = set()
+        for value in df[model_col].dropna().astype(str):
+            mid = str(value).strip()
+            if not mid or mid in roster_ids or mid in seen:
+                continue
+            seen.add(mid)
+            missing.append(mid)
+
+        stats = {"n_missing": len(missing), "n_human": 0, "n_non_human": 0, "n_unknown": 0}
+        for mid in missing:
+            status = classify(species_lookup.get(mid))
+            stats[f"n_{status}"] += 1
+        summary[name] = stats
+
+    return summary
