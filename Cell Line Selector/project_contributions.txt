@@ -1,0 +1,489 @@
+PROJECT CONTRIBUTIONS
+Cell Line Selector: Multi-Omics Data Cleaning, Harmonisation, Integration and Validation
+
+Prepared from the implemented source code, pipeline scripts, tests, generated outputs and audit files in this project.
+
+======================================================================
+1. OVERALL PROJECT CONTRIBUTION
+======================================================================
+
+I developed an end-to-end data processing and analysis framework for a cell-line selection system based on multiple biological data sources. The project brings together transcriptomic, proteomic, metabolomic, microRNA, mutation, fusion, copy-number, cancer-gene and cell-line metadata into a consistent analytical resource.
+
+My overall contribution was to transform heterogeneous raw biomedical datasets into cleaned, human-cell-line-focused, identifier-harmonised and analysis-ready data products. I also implemented statistical methods for transcriptomic and protein-level integration, created reproducible DuckDB outputs, and developed audits and figures to assess data quality, missingness, scale, coverage and cross-source consistency.
+
+The main contributions are:
+
+- Designing a staged data-processing workflow from raw files to cleaned data, harmonised rosters, DuckDB tables and analytical scores.
+- Developing dataset-specific cleaning routines for heterogeneous biomedical formats.
+- Removing non-human cell-line records using an explicit identifier-based procedure.
+- Harmonising cell-line, gene, UniProt, COSMIC and model identifiers across sources.
+- Restricting expression data to canonical protein-coding genes.
+- Implementing transcriptomic scale detection, detection-floor handling, robust standardisation and cross-source score integration.
+- Implementing two alternative protein-scoring strategies, including platform agreement and isoform handling.
+- Building quality-control audits for identifiers, species, missingness, mappings, numerical summaries and generated scores.
+- Producing publication-oriented figures for distributions, scale harmonisation, missingness, calibration and pipeline structure.
+- Adding caching, chunked computation, logging, Parquet storage and DuckDB access to improve scalability and reproducibility.
+
+======================================================================
+2. RAW DATA DISCOVERY AND DATA LOADING
+======================================================================
+
+I implemented the raw data ingestion stage in pipelines/00_data_loading.py. This stage provides a general mechanism for discovering and loading heterogeneous input files rather than relying only on manually listed files.
+
+My contributions include:
+
+- Recursive discovery of CSV, TSV, TXT and GCT files under the raw-data directory.
+- Curated parsing rules for known data sources and file types.
+- Automatic derivation of dataset keys from input files.
+- Conversion of selected tab-delimited inputs into a consistent tabular representation.
+- Initial previews of loaded datasets, including shape and missing-value summaries.
+- Conversion of loaded raw tables into Parquet files under data/raw data/parquet/.
+- Error handling that allows the loading stage to continue after an individual file failure while recording the failure in the project logs.
+
+I also centralised project paths and raw-data access in src/scripts/data_utils.py. This provides shared paths for raw data, cleaned data, CSV exports, DuckDB, and EDA reports, reducing the risk of different scripts using inconsistent locations.
+
+The raw loading design was important because the project contains both narrow tables and very wide molecular matrices. Parquet provides a compact, column-oriented intermediate format that can be queried efficiently by DuckDB and avoids repeatedly parsing the original raw text files.
+
+======================================================================
+3. DATASET-SPECIFIC CLEANING
+======================================================================
+
+I developed the shared cleaning functionality in src/scripts/cleaning_functions.py and orchestrated it through pipelines/01_data_cleaning.py. The cleaning layer handles the different schemas, identifier formats, orientations and value conventions used by the source datasets.
+
+The implemented cleaning routines cover:
+
+- HPA RNA expression data.
+- HPA descriptions and metadata.
+- DepMap expression data.
+- DepMap profile metadata.
+- GEO expression data.
+- GEO sample metadata.
+- Fusions.
+- Cellosaurus records.
+- Metabolomics.
+- miRNA data.
+- Mutations.
+- Mutational signatures.
+- Sample information.
+- Proteomics.
+- ProCan protein data.
+- Model lists.
+
+Specific technical contributions include:
+
+- Removing Ensembl version suffixes so that identifiers such as ENSG identifiers can be matched consistently across sources.
+- Parsing gene names and Ensembl identifiers from fusion records.
+- Parsing UniProt identifiers and gene symbols from proteomics headers.
+- Transposing wide GEO and miRNA matrices into analysis-friendly forms where required.
+- Coercing transposed measurement values to numeric values.
+- Handling duplicate UniProt headers in proteomics data.
+- Building a proteomics gene map and a ProCan UniProt bridge.
+- Producing both cleaned Parquet and cleaned CSV outputs.
+- Generating shape, missingness and spot-check summaries after cleaning.
+
+In pipelines/01_data_cleaning.py, I deliberately process Cellosaurus first so that its information can be used to construct a non-human blocklist before other datasets are filtered. The pipeline also filters GEO expression samples according to the cleaned GEO metadata and creates the proteomics mapping needed by later harmonisation.
+
+======================================================================
+4. HUMAN CELL-LINE FILTERING
+======================================================================
+
+I designed and implemented an explicit human-origin filtering process rather than relying on cell-line names alone. This work is implemented in clean_cellosaurus() and filter_non_human_rows() in src/scripts/cleaning_functions.py.
+
+The filtering contribution includes:
+
+- Detecting human origin using taxonomic and textual species information.
+- Treating blank or missing species information as non-human for conservative filtering.
+- Retaining mixed human/non-human records where the record indicates human relevance.
+- Building a CVCL-based non-human blocklist.
+- Filtering records using CVCL IDs, Cellosaurus IDs and CVCL identifiers extracted from RRIDs.
+- Avoiding name-only filtering because cell-line names can collide between human and non-human records.
+
+This identifier-led approach reduces the risk of incorrectly removing human cell lines or retaining non-human records because of ambiguous names.
+
+I added independent quality-control scripts to assess this decision:
+
+- audit.py independently rebuilds the non-human blocklist and scans cleaned Parquet or CSV outputs for leaks.
+- The audit classifies datasets as CLEAN, LEAK or NO_ID_COL and can save leaked rows under logs/audit_leaks/.
+- hono_sapeins_check.py examines collisions between human and non-human names and synonyms, identifies short high-risk names and estimates possible downstream impact.
+
+These audits make the biological filtering decision inspectable rather than leaving it as an implicit preprocessing assumption.
+
+======================================================================
+5. CELL-LINE AND GENE IDENTIFIER HARMONISATION
+======================================================================
+
+I implemented the cross-source harmonisation layer in src/scripts/harmonisation_functions.py and orchestrated it through pipelines/02_data_harmonisation.py.
+
+Cell-line harmonisation contributions include:
+
+- Extracting CVCL identifiers from RRIDs.
+- Detecting ACH-style model-ID columns.
+- Normalising cell-line join keys, including forms such as A-375, A 375 and A375.
+- Aggregating multiple identifiers into sorted semicolon-separated lists.
+- Building a one-row-per-model cell_line_roster.
+- Adding Cellosaurus synonyms and CVCL mappings.
+- Expanding CVCL IDs from exact cell-line names where appropriate.
+- Attaching model IDs back to cleaned source tables.
+- Resolving model IDs through names, CVCL IDs, RRIDs, protein matrices and model lists.
+- Recording ambiguous mappings and row-count changes.
+
+Gene harmonisation contributions include:
+
+- Building gene-name aliases from mutations, fusions and HPA data.
+- Constructing a one-row-per-gene gene_roster.
+- Normalising Ensembl identifiers.
+- Filtering expression matrices to roster-approved canonical ENSG identifiers.
+- Restricting expression analyses to protein-coding genes.
+- Backfilling genes that are available only in proteomics data.
+
+External identifier bridge contributions include:
+
+- Bridging UniProt identifiers to gene identifiers.
+- Linking ProCan protein identifiers to the common gene representation.
+- Adding COSMIC copy-number bridges.
+- Adding Cancer Gene Census bridges in both directions.
+- Attaching model identifiers to relevant cleaned tables.
+
+The harmonisation pipeline also produces summaries of model-ID attachment, ambiguous mappings and orphan entries. The inspected outputs include a cell_line_roster of approximately 1,840 rows and a gene_roster of approximately 20,089 rows. The recorded attachment summary reports no row duplication in the summarised outputs.
+
+======================================================================
+6. HARMONISATION VALIDATION AND IDENTIFIER AUDITS
+======================================================================
+
+I developed validation scripts to test whether harmonisation produced coherent outputs across data sources.
+
+harmonisation_validation.py contributes checks for:
+
+- Gene-roster coverage against DepMap, GEO and HPA.
+- Model-ID coverage against source tables.
+- Orphan roster entries.
+- Human and non-human species references.
+- Overall internal consistency across the harmonised data products.
+
+expression_audit.py contributes checks that:
+
+- Compare ENSG columns and gene identifiers in expression tables with gene_roster.
+- Count valid roster identifiers.
+- Identify non-roster identifiers.
+- Provide evidence that expression matrices were filtered against the intended gene universe.
+
+cosmic_cancergene_census_audit.py contributes checks for:
+
+- Null values in the raw COSMIC Cancer Gene Census input.
+- Duplicate relationships.
+- The GENE_SYMBOL to COSMIC_GENE_ID mapping.
+- The reverse COSMIC_GENE_ID to GENE_SYMBOL mapping.
+
+These checks extend the pipeline beyond data transformation by testing whether identifiers and relationships remain interpretable after integration.
+
+======================================================================
+7. DUCKDB DATA PLATFORM
+======================================================================
+
+I implemented a persistent analytical data layer using DuckDB. The shared functionality is in src/scripts/duckdb_utils.py and the loading pipeline is pipelines/03_load_duckdb.py.
+
+My DuckDB contributions include:
+
+- Creating DuckDB connections for the project.
+- Loading cleaned Parquet files and rosters into DuckDB tables.
+- Using CREATE OR REPLACE TABLE to make reruns predictable.
+- Continuing after individual table failures while logging those failures.
+- Listing loaded tables and row counts for verification.
+- Persisting the integrated data resource in db/celllineselector.duckdb.
+- Providing inspect_db.py to write table names, schemas and sample rows to content.txt.
+
+This design is particularly important for wide expression and proteomics tables. It allows column-level queries and aggregations without requiring every table to be fully materialised as a pandas DataFrame.
+
+======================================================================
+8. EXPLORATORY DATA ANALYSIS AND DATA QUALITY PROFILING
+======================================================================
+
+I implemented a scalable EDA framework in src/scripts/eda_functions.py and orchestrated it with pipelines/04_eda.py.
+
+The EDA framework includes:
+
+- Schema inspection and row-count queries.
+- Numeric-column detection from DuckDB types.
+- Chunked aggregation over wide tables.
+- Cached missing-value reports.
+- Cached numeric summaries.
+- Missing-value bar charts.
+- Missingness matrices.
+- Missingness heatmaps.
+- Missingness dendrograms.
+- Little's MCAR testing.
+- Missingness dependency checks.
+- Numeric summary statistics.
+- Scale-profile detection.
+- Distribution grids.
+- Boxplot grids.
+- Scale comparisons.
+- Correlation heatmaps.
+- Gaussian-per-column summaries.
+- Cross-table missingness summaries.
+
+I made the EDA implementation suitable for large and wide tables by:
+
+- Querying statistics through DuckDB aggregates.
+- Processing columns in chunks.
+- Using bounded row-level samples only where plots require actual values.
+- Avoiding full pandas materialisation of very wide matrices.
+- Caching per-table reports to disk.
+- Supporting a --force option to invalidate cached statistics.
+
+The EDA pipeline registers cleaned Parquet files as DuckDB views. This means the analysis reads data from disk on demand and remains practical for datasets such as expression and proteomics matrices.
+
+I also added a dedicated raw-value facet generator in pipelines/05_raw_value_distributions.py. This produces small histograms for raw measurement distributions across datasets, excludes obvious identifier and coordinate fields, bounds the number of sampled values, and limits column batches for extremely wide tables.
+
+The project now contains generated EDA outputs for raw-value distributions, fitted Gaussian summaries and cross-table missingness.
+
+======================================================================
+9. PUBLICATION-STYLE FIGURE DEVELOPMENT
+======================================================================
+
+I refined several figures for use in an academic dissertation or A4 report. The figure work included layout, typography, labels, captions, panel selection, legends, spacing and output resolution.
+
+For the fitted Gaussian per-column figure, I contributed:
+
+- Selection of six requested datasets: DepMap expression, GEO expression, HPA RNA, proteomics, metabolomics and miRNA.
+- A descriptive title explaining that the figure shows the distribution and scale of numeric variables across datasets.
+- Centered title placement.
+- Larger title, panel-heading, axis-label and tick-label fonts.
+- Times New Roman styling.
+- An A4-oriented canvas.
+- Consistent panel formatting.
+- Regeneration of the PNG output in reports/eda/_summary_gaussian_per_column.png.
+
+For the cross-table missingness figure, I contributed:
+
+- Selection of the 14 tables shown in the requested reference image.
+- A small-multiple layout with four columns of table facets.
+- A centered title describing the distribution of column missingness across selected tables.
+- Times New Roman styling and larger A4-report typography.
+- Missingness categories represented using a shared legend.
+- Removal of distracting numeric annotations from the bars.
+- Adjustment of the legend position and bottom margin to prevent overlap with the bottom-row axis values.
+- Regeneration of reports/eda/_summary_missingness_by_table.png.
+
+For the transcriptomic scale-harmonisation figure, I contributed:
+
+- Enlargement of the canvas for report readability.
+- Times New Roman font configuration.
+- Larger title, panel titles, axis labels, tick labels, legends and annotations.
+- A wider, shorter layout suited to a landscape report page.
+- Removal of method names from the x-axis while retaining source names.
+- Removal of parentheses around the source labels.
+- Regeneration of both PNG and PDF outputs.
+
+The current Figure 2 outputs are:
+
+- figs/fig2_scale_harmonisation.png
+- figs/fig2_scale_harmonisation.pdf
+
+======================================================================
+10. TRANSCRIPTOMIC STATISTICAL INTEGRATION
+======================================================================
+
+The canonical transcriptomic implementation is in src/scripts/transcriptomics.py and is orchestrated by pipelines/05_transcriptomics_stats_layer.py. I implemented or assembled a statistical layer that combines transcriptomic measurements from HPA, DepMap and GEO while accounting for differences in measurement scale, detection and processing method.
+
+The transcriptomic contributions include:
+
+- Parsing GEO SOFT records from geo_meta/GSM*.txt.
+- Extracting platform, processing, series, title, source and sample metadata.
+- Classifying processing methods such as GC-RMA, RMA, MAS5, PLIER, dChip, VSN and RNA-seq.
+- Building GEO method axes from platform ID and processing family.
+- Combining HPA, DepMap and GEO measurements.
+- Resolving profile IDs and GSM IDs to common model IDs.
+- Restricting genes to canonical ENSG identifiers in gene_roster.
+- Empirically detecting whether a measurement is linear or log-like.
+- Applying log2 transformation to linear measurements.
+- Collapsing replicates by cell line and method using medians.
+- Estimating detection floors.
+- Calculating lineage-specific detection fractions.
+- Computing robust median/MAD z-scores.
+- Using rank inverse-normal scores for censored regimes.
+- Withholding below-detection and no-data values as missing rather than treating them as ordinary measurements.
+- Shrinking lineage-specific scales toward global scales.
+- Combining source-level evidence using Stouffer-style methods.
+- Combining cross-source evidence using equal-weight Stouffer aggregation.
+- Writing large outputs to DuckDB in chunks.
+- Verifying generated outputs and recording diagnostic summaries.
+
+I also implemented seeded calibration over floor_q, n0, upper_cut and lower_cut. The calibration evaluates held-out cross-source Spearman concordance and supports one-standard-error parameter selection.
+
+The selected parameters recorded in results/transcriptomics/chosen_params.json are:
+
+- floor_q = 0.2
+- n0 = 100
+- upper_cut = 0.6
+- lower_cut = 0.2
+
+The generated calibration grid contains 480 parameter combinations. Existing outputs include grid-search results, chosen parameters, diagnostics, coverage plots, floor plots, status-by-lineage plots and n0-sweep plots.
+
+======================================================================
+11. TRANSCRIPTOMIC FIGURES AND PROVENANCE
+======================================================================
+
+I developed transcriptomic figure generation in transcript_figs.py. The script produces Figures 2 to 4 using the canonical transcriptomics implementation rather than reimplementing the estimators inside the plotting script.
+
+The contribution includes:
+
+- Seeded probe-gene selection.
+- Method-distribution visualisation on native, log-transformed and robust-standardised scales.
+- Detection-regime allocation figures.
+- Calibration sensitivity and biological validation figures.
+- A pre-declared biological example rather than selecting an example solely from its outcome.
+- Numerical audit records in figs/numerical_audit.csv.
+- Provenance notes that record where figure values and reported statistics came from.
+
+I also implemented pipeline_fig.py to produce a diagram of the transcriptomic processing pipeline. The diagram records actual sources, statuses, scale sources and output fields.
+
+transcriptomics_z_audit.py provides an independent audit of the generated transcriptomics_z table, including schema, dimensions, gene and model counts, z-score summaries, source coverage and status counts.
+
+======================================================================
+12. PROTEIN SCORING METHOD 1
+======================================================================
+
+I implemented a first protein-scoring approach in pipelines/06_protein_score M1.py and supporting code in Protein M1/platform_tier.py and Protein M1/protein_scorer.py.
+
+The Method 1 contribution includes:
+
+- Building UniProt and gene-symbol to ENSG mappings from gene_roster.
+- Converting protein matrices to long format.
+- Computing lineage-conditioned robust z-scores.
+- Calculating ProCan and CCLE per-protein Spearman correlations.
+- Requiring a minimum of 30 shared cell lines for correlation assessment.
+- Assigning proteins to consistent, cautious or conflicting tiers.
+- Removing CCLE values for conflicting proteins.
+- Combining retained source scores with coverage-weighted Stouffer aggregation.
+- Writing a protein_z DuckDB table.
+
+The standalone platform-tier implementation and the older protein_scorer.py provide alternative or legacy routes for deciding whether both platforms or ProCan alone contribute to a protein score.
+
+======================================================================
+13. PROTEIN SCORING METHOD 2
+======================================================================
+
+I implemented a second protein-scoring approach in pipelines/06_protein_score M2.py. This method extends the first approach by handling isoforms and platform disagreement more explicitly.
+
+The Method 2 contribution includes:
+
+- Handling multiple protein IDs that map to one gene.
+- Computing pairwise isoform Spearman agreement.
+- Using the maximum isoform value when isoforms are concordant.
+- Using the mean when isoforms are discordant or cannot be assessed.
+- Treating ProCan and CCLE symmetrically.
+- Deriving isoform and platform-agreement thresholds from null and matched distributions.
+- Using power-based minimum-overlap thresholds.
+- Converting platform disagreement into a confidence multiplier rather than simply discarding one platform.
+- Writing protein z-scores and isoform-quality-control data to DuckDB.
+
+I also added audit_protein_z.py to report the schema, dimensions, z-score summaries, source coverage and lineage counts of a generated protein z-score table.
+
+The source code demonstrates that both methods were implemented. The inspected workspace did not contain generated protein-score artifacts in the visible results or figures directories, so successful end-to-end execution of every protein stage should be described as implemented rather than independently verified from an output artifact.
+
+======================================================================
+14. REPRODUCIBILITY, CACHING AND LOGGING
+======================================================================
+
+I contributed project infrastructure to make data processing repeatable and inspectable.
+
+The reproducibility contributions include:
+
+- setup_env.sh for creating a virtual environment and installing declared requirements.
+- requirements.txt for the core pandas, DuckDB and PyArrow dependencies.
+- Shared project-relative path handling.
+- Seeded sampling and calibration in the transcriptomic workflows.
+- Cached missing-value and numeric-summary CSV files.
+- A --force option to recompute cached EDA statistics.
+- Parquet intermediate outputs.
+- Persistent DuckDB storage.
+- Structured logging through src/scripts/logging_utils.py.
+
+The logging system records:
+
+- Pipeline steps.
+- Source and output paths.
+- Exception types and messages.
+- Tracebacks.
+- Dated log files.
+
+The project contains dated pipeline logs as well as mapping summaries, ambiguous-model logs and mismatch reports. This makes it possible to trace data-processing decisions and investigate failures without relying only on terminal output.
+
+A reproducibility limitation remains: the declared requirements file lists pandas, duckdb and pyarrow, while several implemented scripts also use NumPy, SciPy, Matplotlib, scikit-learn, UMAP and GEO-related packages. These additional dependencies should be declared explicitly before distributing the project to a fresh environment.
+
+======================================================================
+15. TESTING CONTRIBUTION
+======================================================================
+
+I contributed focused tests in test_transcriptomics_gene_filter.py. These tests cover:
+
+- ENSG filtering.
+- Ensembl version normalisation.
+- Protein-coding expression filtering.
+- Missing-gene-biotype summaries.
+- Missing-model-species summaries.
+
+The tests provide targeted checks for the gene-filtering and harmonisation assumptions used by transcriptomic processing.
+
+The inspected workspace also contains a tests directory, although no additional Python test files were identified there. The current test module appears to import two helper functions that were not present in the inspected harmonisation symbol index, so the test suite should be checked for collection compatibility before being presented as a fully passing test suite.
+
+======================================================================
+16. DATA PRODUCTS AND GENERATED OUTPUTS
+======================================================================
+
+The implemented project produces or supports the following data products:
+
+- Raw Parquet datasets.
+- Cleaned Parquet datasets.
+- Cleaned CSV datasets.
+- cell_line_roster.
+- gene_roster.
+- Proteomics gene maps.
+- Model-ID attachment summaries.
+- Ambiguous mapping logs.
+- DuckDB tables containing cleaned and integrated data.
+- Transcriptomic calibration grids.
+- Transcriptomic chosen parameters.
+- Transcriptomic diagnostics.
+- Transcriptomics z-score outputs.
+- Protein z-score outputs when the protein stages are executed.
+- Missingness reports and numerical summaries.
+- Publication figures in PNG and PDF formats.
+- Numerical audit files and pipeline logs.
+
+The inspected cleaned-data directories contain 22 Parquet files and 22 CSV files. The project also contains a persisted DuckDB database and multiple generated transcriptomic and EDA outputs.
+
+======================================================================
+17. RESEARCH AND ENGINEERING VALUE OF THE CONTRIBUTION
+======================================================================
+
+The main research value of my contribution is the creation of a common analytical framework for comparing and integrating data generated by different technologies, platforms and processing methods. The system does not treat all numeric values as directly comparable. It first addresses identifier compatibility, species filtering, measurement scale, detection limits, missingness and source agreement.
+
+The main engineering value is scalability and traceability. Wide molecular matrices are handled through Parquet, DuckDB, chunked aggregation and bounded sampling. Data-processing decisions are recorded through logs, audit tables, numerical summaries and provenance notes. The staged design also allows individual components such as cleaning, harmonisation, transcriptomic integration, protein scoring or EDA to be rerun and inspected separately.
+
+The work therefore contributes both:
+
+- A cleaned and harmonised multi-omics data resource for cell-line analysis.
+- A reusable computational framework for quality control, scale harmonisation and evidence integration.
+
+======================================================================
+18. LIMITATIONS AND ITEMS TO VERIFY
+======================================================================
+
+For accuracy, the following points should be checked before making final claims in a dissertation:
+
+- The project contains both current and stale transcriptomics implementations. The canonical statistical implementation is in src/scripts/transcriptomics.py and pipelines/05_transcriptomics_stats_layer.py; stale files should be clearly labelled or excluded from the final workflow.
+- Protein Method 1 and Method 2 are both implemented, but the inspected workspace did not contain visible generated protein-score artifacts proving successful execution of every stage.
+- The current requirements file does not declare all imported scientific and plotting packages.
+- The focused test file may be stale because two imported helper functions were not found in the current harmonisation implementation.
+- The numerical audit records an extreme z_lineage maximum of approximately 9.4e9. This should be investigated as a possible numerical edge case or defect before reporting the z-score results as final.
+- Git status includes changes outside the audited subdirectory, so historical authorship attribution should not be inferred solely from the surrounding repository state.
+
+These are not omissions from the implemented contribution; they are verification points that improve the precision and defensibility of the final report.
+
+======================================================================
+19. SHORT CONTRIBUTION STATEMENT
+======================================================================
+
+I developed an end-to-end multi-omics data cleaning, harmonisation and integration framework for the Cell Line Selector project. I implemented raw-data discovery and conversion, dataset-specific cleaning, human cell-line filtering, cell-line and gene identifier harmonisation, external identifier bridges, DuckDB data loading and scalable exploratory data analysis. I developed transcriptomic statistical integration methods that address heterogeneous measurement scales, replicate structure, detection limits, lineage effects, missingness and cross-source agreement. I also implemented two protein-scoring strategies with platform and isoform quality control. Finally, I created independent audits, validation routines, reproducible logs, cached summaries and publication-quality figures to assess data quality, model coverage, distributions, missingness, calibration and harmonisation. Together, these contributions converted heterogeneous biomedical source data into an auditable and analysis-ready resource for cell-line selection.
