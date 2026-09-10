@@ -1,0 +1,8 @@
+hpa_name,model_id,cvcl_id,deprecation_status,resolution_method
+mda-mb-157,ach-000621,cvcl_0618,disputed,hpa_desc_tier1
+nci-h292,ach-001075,cvcl_0455,disputed,hpa_desc_tier1
+nci-h3255,ach-000109,cvcl_6831,disputed,hpa_desc_tier1
+rh30,ach-000833,cvcl_0041,disputed,exact_tier2
+sc-1,ach-002392,cvcl_1888,disputed,hpa_desc_tier1
+sr,ach-000338,cvcl_1711,disputed,hpa_desc_tier1
+uo-31,ach-000428,cvcl_1911,disputed,hpa_desc_tier1

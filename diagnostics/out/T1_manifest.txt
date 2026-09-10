@@ -1,0 +1,161 @@
+========================================================================
+T1 — ENVIRONMENT AND PROVENANCE MANIFEST
+========================================================================
+
+[ENV] Python: 3.14.3 (tags/v3.14.3:323c59a, Feb  3 2026, 16:04:56) [MSC v.1944 64 bit (AMD64)]
+[ENV] pandas  2.3.3
+[ENV] numpy   2.4.3
+[ENV] scipy   1.17.1
+[ENV] duckdb  1.5.4
+
+========================================================================
+FILE MANIFEST
+========================================================================
+[PROVENANCE] Chronos Achilles HDF5
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\data\DepMap_Chronos\GeneFitnessEffect_Chronos_Achilles.hdf5
+    sha256 = 0ba9d026a191f8ff8eb5ad6766b15ab04f1b88293eb6cbb3fc53989d585b6a56
+    size   = 110,989,643 bytes
+    mtime  = 2026-08-05 20:30:23
+
+[PROVENANCE] Chronos Score HDF5
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\data\DepMap_Chronos\GeneFitnessEffect_Chronos_Score.hdf5
+    sha256 = 1b7e76fcd01090608e945a54a4400d4c0ef98f383f79cd507d3631fdc0d217d0
+    size   = 44,645,324 bytes
+    mtime  = 2026-08-05 20:30:24
+
+[PROVENANCE] chronos_long.parquet
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\validation\prepared\chronos_long.parquet
+    sha256 = 25751bdb14ef01e78049fa408e2c176eef2a0aa9ef9e96efabc328fc10305842
+    size   = 137,020,941 bytes
+    mtime  = 2026-07-20 18:32:57
+
+[PROVENANCE] DEMETER2 Achilles CSV
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\data\DEMETER2\D2_Achilles_gene_dep_scores.csv
+    sha256 = 479466c7287b11207132ae41985ca97ddcd297dd3d94074aef7a41f6861430b5
+    size   = 140,008,254 bytes
+    mtime  = 2026-08-10 01:14:22
+
+[PROVENANCE] DEMETER2 DRIVE CSV
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\data\DEMETER2\D2_DRIVE_gene_dep_scores.csv
+    sha256 = 3f863c296188be1aa8a491ef5489b135a9bfd65266f05d0690225d20fc38254b
+    size   = 58,652,780 bytes
+    mtime  = 2026-08-10 01:14:23
+
+[PROVENANCE] DuckDB warehouse
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\src\pipeline\outputs\celllineselector.db
+    sha256 = 9f459e34397c8fa01836deec434a5d0d32819e4691fda587b156857f1ae8aea2
+    size   = 2,065,969,152 bytes
+    mtime  = 2026-08-11 11:36:44
+
+[PROVENANCE] core_score.parquet
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\outputs\core_score.parquet
+    sha256 = c29d97c040aedaba8b0c4651ceff667cd0e5c270920e46747a07d0b9a0add140
+    size   = 114,537,466 bytes
+    mtime  = 2026-08-14 00:19:36
+
+[PROVENANCE] protein_platform_tier
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\outputs\protein_platform_tier.parquet
+    sha256 = 11a104af4ad83f8d14dc265e86eef363a82c0484a770bea7b8b5a06dc0a91e58
+    size   = 101,716 bytes
+    mtime  = 2026-08-13 11:55:01
+
+[PROVENANCE] fusions_scores
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\outputs\fusions_scores.parquet
+    sha256 = 3be3a7a66fe74fcd82dc4092078e311afc5a07467c74dc3949831d190e26fcd3
+    size   = 1,199,416 bytes
+    mtime  = 2026-08-14 00:17:26
+
+[PROVENANCE] mutations_scores
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\outputs\mutations_scores.parquet
+    sha256 = c7ee4a55b17ac026a97a43da5c63123341e8c2e33ad7acbd888f959edd822869
+    size   = 2,521,123 bytes
+    mtime  = 2026-08-13 12:00:02
+
+[PROVENANCE] GDSC/GDSC2_fitted_dose_response_27Oct23.xlsx
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\data\GDSC\GDSC2_fitted_dose_response_27Oct23.xlsx
+    sha256 = 0e99120a14a003dcbd3c27c020f1cfd35e38ee091067a2406f66c0d4dbc1c899
+    size   = 22,112,537 bytes
+    mtime  = 2026-07-20 17:09:14
+
+[PROVENANCE] GDSC/model_list_20260709.csv
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\data\GDSC\model_list_20260709.csv
+    sha256 = 1d6ed150896d794ba556314a7b6bdb183084f774754e3374b975fbb929b7d61f
+    size   = 957,353 bytes
+    mtime  = 2026-07-20 17:15:58
+
+[PROVENANCE] GDSC/Project_score_combined_Sanger_v2_Broad_21Q2_fitness_scores_bayesian_factors_20250624.tsv
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\data\GDSC\Project_score_combined_Sanger_v2_Broad_21Q2_fitness_scores_bayesian_factors_20250624.tsv
+    sha256 = dc90bfa0726b674b16f77ae7ff30332ffb535da15265b76ad5ae96bc351d0a46
+    size   = 158,556,848 bytes
+    mtime  = 2026-07-20 18:23:27
+
+[PROVENANCE] GDSC/Project_score_combined_Sanger_v2_Broad_21Q2_fitness_scores_binary_matrix_20250624.tsv
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\data\GDSC\Project_score_combined_Sanger_v2_Broad_21Q2_fitness_scores_binary_matrix_20250624.tsv
+    sha256 = d86ae6131bebd7dee3298be16f5207b8e087121df866ab7bb488f491192e1631
+    size   = 39,670,204 bytes
+    mtime  = 2026-07-20 18:23:28
+
+[PROVENANCE] GDSC/Project_score_combined_Sanger_v2_Broad_21Q2_fitness_scores_fold_change_values_20250624.tsv
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\data\GDSC\Project_score_combined_Sanger_v2_Broad_21Q2_fitness_scores_fold_change_values_20250624.tsv
+    sha256 = 9b13d00f44820c6e983fff19e137fa6aca21c4527a29dbfc0b54611137841179
+    size   = 162,586,819 bytes
+    mtime  = 2026-07-20 18:23:30
+
+[PROVENANCE] GDSC/Project_score_combined_Sanger_v2_Broad_21Q2_fitness_scores_scaled_bayesian_factors_20250624.tsv
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\data\GDSC\Project_score_combined_Sanger_v2_Broad_21Q2_fitness_scores_scaled_bayesian_factors_20250624.tsv
+    sha256 = c035a18f0ceb3deb41cd5b05e2b2c14a789ebc76ea45fcc1edb74f7dce379617
+    size   = 172,014,202 bytes
+    mtime  = 2026-07-20 18:23:31
+
+[PROVENANCE] GDSC/Project_Score_piority_scores_Sanger_v2_Broad_21Q2_20240111.csv
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\data\GDSC\Project_Score_piority_scores_Sanger_v2_Broad_21Q2_20240111.csv
+    sha256 = d3b523255c6ab2664b518c686c1a2cbda12208e17f669284c97cc8445d2cef9f
+    size   = 30,386 bytes
+    mtime  = 2026-07-20 17:20:13
+
+[PROVENANCE] GDSC/screened_compounds_rel_8.5.csv
+    path   = C:\Disertation\UoB-GeneTraceAI-25-26\data\GDSC\screened_compounds_rel_8.5.csv
+    sha256 = d3cbb8b595980b36bf92d54af1da1dd995d2e2ce624c7cc70aacf2a754dce782
+    size   = 46,414 bytes
+    mtime  = 2026-07-20 17:18:34
+
+========================================================================
+DUCKDB WAREHOUSE — TABLES
+========================================================================
+Tables (32):
+  cell_line_connection: 2,127 rows | model_id:VARCHAR, in_roster:BOOLEAN, rrids:VARCHAR[], profile_ids:VARCHAR[], ccle_ids:VARCHAR[], cell_line_names:VARCHAR
+  cell_line_connection_enriched: 2,145 rows | model_id:VARCHAR, in_roster:BOOLEAN, rrids:VARCHAR[], profile_ids:VARCHAR[], ccle_ids:VARCHAR[], cell_line_names:VARCHAR
+  cellosaurus: 152,235 rows | cellosaurus_cell_line_name:VARCHAR, cellosaurus_accession:VARCHAR, secondary accession number(s):VARCHAR, synonyms:VARCH
+  cosmic_cgc: 768 rows | cgc_symbol:VARCHAR, name:VARCHAR, cosmic_gene_id:VARCHAR, chromosome:VARCHAR, genome_start:DOUBLE, genome_stop:DOUBLE, c
+  cosmic_cna: 168,411 rows | cosmic_gene_id:VARCHAR, cosmic_gene_symbol:VARCHAR, cosmic_sample_id:VARCHAR, cosmic_sample_name:VARCHAR, total_cn:BIGIN
+  coverage_matrix: 2,127 rows | model_id:VARCHAR, depmap_expr:BOOLEAN, geo_expr:BOOLEAN, hpa_rna:BOOLEAN, mutations:BOOLEAN, fusions:BOOLEAN, proteomics
+  coverage_matrix_enriched: 2,145 rows | model_id:VARCHAR, depmap_expr:BOOLEAN, geo_expr:BOOLEAN, hpa_rna:BOOLEAN, mutations:BOOLEAN, fusions:BOOLEAN, proteomics
+  depmap_expr: 1,495 rows | profileid:VARCHAR, ensg00000000003:DOUBLE, ensg00000000005:DOUBLE, ensg00000000419:DOUBLE, ensg00000000457:DOUBLE, ensg0
+  depmap_profiles: 3,830 rows | profileid:VARCHAR, modelcondition:VARCHAR, model_id:VARCHAR, datatype:VARCHAR, weskit:VARCHAR
+  fusions: 80,048 rows | fusion_index:BIGINT, sequencingid:VARCHAR, model_id:VARCHAR, isdefaultentryformodel:VARCHAR, modelconditionid:VARCHAR, i
+  gdsc_models: 2,266 rows | sanger_model_id:VARCHAR, gdsc_model_name:VARCHAR, broad_ach:VARCHAR, ccle_name:VARCHAR, rrid:VARCHAR, cosmic_id:VARCHAR,
+  gene: 20,163 rows | gene_id:VARCHAR, gene_names:VARCHAR[], n_gene_names:BIGINT, name_conflict:BOOLEAN, hugo_symbol:VARCHAR, hugo_symbol_all:
+  gene_enriched: 20,163 rows | gene_id:VARCHAR, gene_names:VARCHAR[], n_gene_names:BIGINT, name_conflict:BOOLEAN, hugo_symbol:VARCHAR, hugo_symbol_all:
+  geo_expr: 3,269 rows | sample:VARCHAR, ensg00000000003:DOUBLE, ensg00000000005:DOUBLE, ensg00000000419:DOUBLE, ensg00000000457:DOUBLE, ensg0000
+  geo_info: 3,267 rows | geo_accession:VARCHAR, cel_file_names:VARCHAR, title:VARCHAR, status:VARCHAR, submission_date:VARCHAR, last_update_date:
+  hgnc: 19,273 rows | hgnc_id:VARCHAR, hgnc_symbol:VARCHAR, name:VARCHAR, locus_group:VARCHAR, locus_type:VARCHAR, status:VARCHAR, alias_symbo
+  hgnc_symbols: 64,306 rows | gene_id:VARCHAR, sym:VARCHAR, symbol_kind:VARCHAR
+  hpa_desc: 1,207 rows | cell line:VARCHAR, disease:VARCHAR, disease subtype:VARCHAR, cellosaurus id:VARCHAR, patient:VARCHAR, primary/metastasis
+  hpa_rna: 24,335,534 rows | gene:VARCHAR, gene name:VARCHAR, cell line:VARCHAR, tpm:DOUBLE, ptpm:DOUBLE, ntpm:DOUBLE, model_id:VARCHAR, is_ambiguous
+  metabolomics: 928 rows | ccle_id:VARCHAR, model_id:VARCHAR, 2-aminoadipate:DOUBLE, 3-phosphoglycerate:DOUBLE, alpha-glycerophosphate:DOUBLE, 4-py
+  mirna: 954 rows | ccle_name:VARCHAR, nmir00001.1:DOUBLE, nmir00002.1:DOUBLE, nmir00003.1:DOUBLE, nmir00004.1:DOUBLE, nmir00005.1:DOUBLE, n
+  mutations: 1,054,887 rows | chrom:VARCHAR, pos:BIGINT, ref:VARCHAR, alt:VARCHAR, af:DOUBLE, dp:BIGINT, refcount:BIGINT, altcount:BIGINT, gt:VARCHAR,
+  procan_protein_map: 8,453 rows | uniprot_id:VARCHAR, gene_symbol:VARCHAR
+  procan_proteomics: 952 rows | gdsc_model_name:VARCHAR, sanger_model_id:VARCHAR, a0a075b6k4:FLOAT, a0a075b6n1:FLOAT, a0a075b7b8:FLOAT, a0a075b7d8:FLOAT
+  protein_map: 12,558 rows | uniprot_id:VARCHAR, gene_symbol:VARCHAR, original_header:VARCHAR
+  proteomics: 375 rows | model_id:VARCHAR, a0av96:DOUBLE, a0avf1:DOUBLE, a0avg3:DOUBLE, a0avi4:DOUBLE, a0avk6:DOUBLE, a0avt1:DOUBLE, a0jlt2:DOUBL
+  sample_info: 1,840 rows | model_id:VARCHAR, cell_line_name:VARCHAR, stripped_cell_line_name:VARCHAR, ccle_name:VARCHAR, alias:VARCHAR, cosmicid:DO
+  signatures: 3,021 rows | signature_index:BIGINT, sequencingid:VARCHAR, model_id:VARCHAR, modelconditionid:VARCHAR, isdefaultentryformodel:VARCHAR
+  v_cell_line: 2,145 rows | model_id:VARCHAR, canonical_name:VARCHAR, cell_line_name:VARCHAR, stripped_name:VARCHAR, ccle_name:VARCHAR, lineage:VARC
+  v_core_score: 36,145,239 rows | model_id:VARCHAR, ensg_id:VARCHAR, core_score:DOUBLE, n_layers:BIGINT, stratum_rank:DOUBLE, model_id_lc:VARCHAR, gene_id
+  v_gene: 20,163 rows | gene_id:VARCHAR, hugo_symbol:VARCHAR, gene_full_name:VARCHAR, gene_names:VARCHAR[], hugo_symbol_all:VARCHAR, hgnc_id:VAR
+  v_score_annotated: 36,145,239 rows | model_id:VARCHAR, ensg_id:VARCHAR, core_score:DOUBLE, n_layers:BIGINT, stratum_rank:DOUBLE, hugo_symbol:VARCHAR, gene_ro
+
+========================================================================
+PASS — all expected files present
+========================================================================

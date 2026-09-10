@@ -1,0 +1,11 @@
+T_rna_bimodal — Bimodality evidence from rna_z
+
+Global SD(rna_z)         = 1.4504
+Global MAD-implied SD    = 0.6716
+SD/MAD ratio             = 2.1596
+Global excess kurtosis   = 48.5821
+Global bimodality coeff  = 0.4067
+
+Per-gene BC > 0.555      = 5,124 / 16,060 (31.9%)
+Per-gene SD/MAD > 1.2    = 8,952 (55.7%)
+Per-gene excess kurt > 1 = 14,767 (91.9%)

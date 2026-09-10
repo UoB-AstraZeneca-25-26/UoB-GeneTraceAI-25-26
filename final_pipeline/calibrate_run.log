@@ -1,0 +1,1377 @@
+=== axes
+10:46:00 INFO    05_transcriptomics | === axes
+10:46:01 WARNING transcriptomics | 1 GEO samples without a geo_meta record -> own method, flagged not dropped
+10:46:01 WARNING transcriptomics | method GPL570|plier: only 9 cell lines -- narrow panel; its lineage strata will fall back toward the method-global scale
+10:46:01 WARNING transcriptomics | method GPL570|unknown: only 9 cell lines -- narrow panel; its lineage strata will fall back toward the method-global scale
+10:46:01 WARNING transcriptomics | method UNKNOWN|unknown: only 1 cell lines -- narrow panel; its lineage strata will fall back toward the method-global scale
+10:46:01 INFO    transcriptomics |   axis hpa_rna_seq                    src=hpa_rna  raw=  1105 models= 1105 units=tpm
+10:46:01 INFO    transcriptomics |   axis depmap_rna_seq                 src=depmap   raw=  1495 models= 1479 units=log2tpm1
+10:46:01 INFO    transcriptomics |   axis geo_GPL570|gcrma               src=geo      raw=   225 models=  116 units=log
+10:46:01 INFO    transcriptomics |   axis geo_GPL570|mas5                src=geo      raw=   101 models=   64 units=linear
+10:46:01 INFO    transcriptomics |   axis geo_GPL570|plier               src=geo      raw=     9 models=    9 units=log
+10:46:01 INFO    transcriptomics |   axis geo_GPL570|rma                 src=geo      raw=   421 models=  159 units=log
+10:46:01 INFO    transcriptomics |   axis geo_GPL570|unknown             src=geo      raw=    17 models=    9 units=unknown
+10:46:01 INFO    transcriptomics |   axis geo_UNKNOWN|unknown            src=geo      raw=     1 models=    1 units=unknown
+10:46:01 WARNING transcriptomics | depmap_expr: 4 non-ENSG columns skipped, e.g. ['profile_id', 'model_id', 'n_model_id', 'is_ambiguous'] -- widen _ENSG if these are genes
+10:46:01 WARNING transcriptomics | geo_expr: 4 non-ENSG columns skipped, e.g. ['gsm_id', 'model_id', 'n_model_id', 'is_ambiguous'] -- widen _ENSG if these are genes
+10:46:01 WARNING transcriptomics | geo_expr: 4 non-ENSG columns skipped, e.g. ['gsm_id', 'model_id', 'n_model_id', 'is_ambiguous'] -- widen _ENSG if these are genes
+10:46:01 WARNING transcriptomics | geo_expr: 4 non-ENSG columns skipped, e.g. ['gsm_id', 'model_id', 'n_model_id', 'is_ambiguous'] -- widen _ENSG if these are genes
+10:46:02 WARNING transcriptomics | geo_expr: 4 non-ENSG columns skipped, e.g. ['gsm_id', 'model_id', 'n_model_id', 'is_ambiguous'] -- widen _ENSG if these are genes
+10:46:02 WARNING transcriptomics | geo_expr: 4 non-ENSG columns skipped, e.g. ['gsm_id', 'model_id', 'n_model_id', 'is_ambiguous'] -- widen _ENSG if these are genes
+10:46:02 WARNING transcriptomics | geo_expr: 4 non-ENSG columns skipped, e.g. ['gsm_id', 'model_id', 'n_model_id', 'is_ambiguous'] -- widen _ENSG if these are genes
+20163 genes on the union axis
+10:46:02 INFO    05_transcriptomics | 20163 genes on the union axis
+1575 cell lines; top lineages:
+lineage
+lung                      234
+blood                     111
+lymphocyte                 95
+central_nervous_system     92
+skin                       88
+colorectal                 79
+breast                     73
+unknown                    71
+ovary                      70
+soft_tissue                63
+upper_aerodigestive        62
+pancreas                   55
+10:46:02 INFO    05_transcriptomics | 1575 cell lines; top lineages:
+lineage
+lung                      234
+blood                     111
+lymphocyte                 95
+central_nervous_system     92
+skin                       88
+colorectal                 79
+breast                     73
+unknown                    71
+ovary                      70
+soft_tissue                63
+upper_aerodigestive        62
+pancreas                   55
+=== sensitivity analysis
+10:46:02 INFO    05_transcriptomics | === sensitivity analysis
+10:46:02 INFO    transcriptomics | calibrating on 1200 genes; holdouts=['depmap', 'hpa_rna']
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+10:46:03 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+10:46:30 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+10:48:12 INFO    transcriptomics | grid: 480 combinations
+10:49:27 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+10:49:27 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+10:49:27 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+10:49:27 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+10:49:28 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+10:49:28 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+10:49:28 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+10:49:28 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+10:49:28 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+10:49:28 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+10:49:28 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+10:52:35 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+10:52:36 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+10:52:36 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+10:52:36 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+10:52:36 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+10:52:36 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+10:52:36 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+10:52:36 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+10:52:36 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+10:52:36 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+10:52:36 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+10:56:33 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+10:56:33 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+10:56:33 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+10:56:33 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+10:56:33 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+10:56:33 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+10:56:33 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+10:56:33 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+10:56:33 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+10:56:34 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+10:56:34 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+11:00:42 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:00:43 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:00:43 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+11:00:43 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:00:43 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+11:00:43 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+11:00:43 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:00:43 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+11:00:43 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:00:43 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+11:00:43 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+11:07:14 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:07:14 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:07:15 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+11:07:15 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:07:15 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+11:07:15 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+11:07:15 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:07:15 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+11:07:15 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:07:15 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+11:07:15 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+11:14:29 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:14:29 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:14:29 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+11:14:29 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:14:29 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+11:14:29 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+11:14:29 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:14:29 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+11:14:29 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:14:30 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+11:14:30 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+11:20:27 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:20:27 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:20:28 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+11:20:28 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:20:28 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+11:20:28 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+11:20:28 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:20:28 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+11:20:28 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:20:28 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+11:20:28 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+11:26:14 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:26:14 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:26:15 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+11:26:15 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:26:15 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+11:26:15 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+11:26:15 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:26:15 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+11:26:15 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:26:15 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+11:26:15 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+11:31:36 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:31:37 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:31:37 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+11:31:37 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:31:37 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+11:31:37 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+11:31:37 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:31:37 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+11:31:37 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:31:38 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+11:31:38 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+11:37:28 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:37:28 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:37:29 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+11:37:29 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:37:29 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+11:37:29 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+11:37:29 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:37:29 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+11:37:29 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:37:29 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+11:37:29 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+11:43:39 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:43:39 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:43:39 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+11:43:39 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:43:39 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+11:43:39 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+11:43:39 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:43:40 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+11:43:40 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:43:40 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+11:43:40 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+11:49:52 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:49:52 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:49:53 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+11:49:53 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:49:53 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+11:49:53 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+11:49:53 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:49:53 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+11:49:53 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:49:53 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+11:49:53 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+11:56:19 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:56:19 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:56:19 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+11:56:19 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:56:19 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+11:56:20 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+11:56:20 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:56:20 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+11:56:20 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+11:56:20 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+11:56:20 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+12:02:35 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:02:35 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:02:35 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+12:02:35 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:02:35 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+12:02:35 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+12:02:35 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:02:35 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+12:02:35 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:02:35 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+12:02:35 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+12:07:48 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:07:48 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:07:48 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+12:07:48 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:07:48 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+12:07:48 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+12:07:48 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:07:49 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+12:07:49 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:07:49 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+12:07:49 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+12:12:55 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:12:55 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:12:55 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+12:12:55 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:12:55 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+12:12:55 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+12:12:55 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:12:56 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+12:12:56 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:12:56 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+12:12:56 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+12:18:16 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:18:16 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:18:16 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+12:18:16 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:18:16 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+12:18:16 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+12:18:16 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:18:16 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+12:18:16 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:18:16 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+12:18:16 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+12:23:34 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:23:34 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:23:34 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+12:23:34 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:23:34 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+12:23:34 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+12:23:34 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:23:34 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+12:23:34 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:23:34 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+12:23:34 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+12:28:47 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:28:47 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:28:47 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+12:28:47 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:28:47 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+12:28:47 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+12:28:47 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:28:47 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+12:28:47 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:28:47 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+12:28:47 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+12:33:40 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:33:40 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:33:40 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+12:33:40 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:33:40 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+12:33:40 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+12:33:40 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:33:41 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+12:33:41 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:33:41 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+12:33:41 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+12:37:12 INFO    transcriptomics |   grid 20/480
+12:38:27 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:38:27 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:38:27 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+12:38:27 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:38:27 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+12:38:27 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+12:38:27 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:38:27 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+12:38:27 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:38:27 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+12:38:27 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+12:43:13 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:43:13 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:43:13 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+12:43:13 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:43:13 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+12:43:13 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+12:43:13 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:43:13 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+12:43:13 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:43:13 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+12:43:13 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+12:48:09 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:48:09 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:48:09 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+12:48:09 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:48:09 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+12:48:09 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+12:48:09 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:48:09 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+12:48:09 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:48:09 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+12:48:09 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+12:53:15 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:53:15 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:53:15 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+12:53:15 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:53:15 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+12:53:15 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+12:53:15 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:53:15 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+12:53:15 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:53:15 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+12:53:15 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+12:58:52 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:58:52 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:58:52 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+12:58:52 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:58:52 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+12:58:52 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+12:58:52 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:58:52 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+12:58:52 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+12:58:52 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+12:58:52 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+13:05:15 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:05:16 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:05:16 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+13:05:16 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:05:16 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+13:05:16 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+13:05:16 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:05:16 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+13:05:16 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:05:16 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+13:05:16 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+13:15:07 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:15:07 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:15:07 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+13:15:07 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:15:07 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+13:15:08 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+13:15:08 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:15:08 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+13:15:08 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:15:08 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+13:15:08 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+13:23:28 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:23:28 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:23:28 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+13:23:28 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:23:28 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+13:23:28 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+13:23:28 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:23:28 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+13:23:28 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:23:28 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+13:23:28 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+13:33:06 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:33:06 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:33:06 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+13:33:06 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:33:06 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+13:33:07 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+13:33:07 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:33:07 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+13:33:07 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:33:07 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+13:33:07 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+13:41:30 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:41:30 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:41:30 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+13:41:30 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:41:30 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+13:41:30 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+13:41:30 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:41:30 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+13:41:30 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:41:30 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+13:41:30 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:739: RuntimeWarning: Mean of empty slice
+  extra[f"{src}__det"] = np.nanmean(
+13:52:40 INFO    transcriptomics |   hpa_rna_seq                    units=tpm       scale=linear  floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:52:40 INFO    transcriptomics |   depmap_rna_seq                 units=log2tpm1  scale=log     floor=1.000 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:52:40 WARNING transcriptomics | geo_GPL570|gcrma: SOFT metadata says log, data looks linear (min=4.99 p99=6620.7) -> using data
+13:52:40 INFO    transcriptomics |   geo_GPL570|gcrma               units=log       scale=linear  floor=3.614 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:52:40 INFO    transcriptomics |   geo_GPL570|mas5                units=linear    scale=linear  floor=3.762 (log2)
+13:52:40 WARNING transcriptomics | geo_GPL570|plier: SOFT metadata says log, data looks linear (min=7.70 p99=6754.6) -> using data
+13:52:40 INFO    transcriptomics |   geo_GPL570|plier               units=log       scale=linear  floor=3.793 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:52:40 WARNING transcriptomics | geo_GPL570|rma: SOFT metadata says log, data looks linear (min=2.97 p99=5417.9) -> using data
+13:52:40 INFO    transcriptomics |   geo_GPL570|rma                 units=log       scale=linear  floor=3.260 (log2)
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\01_Transcriptomics\transcriptomics.py:521: RuntimeWarning: All-NaN slice encountered
+  out[k] = blk[0] if e - s == 1 else np.nanmedian(blk, axis=0)
+13:52:40 INFO    transcriptomics |   geo_GPL570|unknown             units=unknown   scale=linear  floor=3.551 (log2)
+13:52:41 INFO    transcriptomics |   geo_UNKNOWN|unknown            units=unknown   scale=linear  floor=3.640 (log2)

@@ -1,0 +1,32 @@
+3,267 distinct GSM accessions in geo_expr
+  200 / 3,267  (20 from local cache)
+  400 / 3,267  (20 from local cache)
+  600 / 3,267  (20 from local cache)
+  800 / 3,267  (20 from local cache)
+  1,000 / 3,267  (20 from local cache)
+  1,200 / 3,267  (20 from local cache)
+  1,400 / 3,267  (20 from local cache)
+  1,600 / 3,267  (20 from local cache)
+  1,800 / 3,267  (20 from local cache)
+  2,000 / 3,267  (20 from local cache)
+  2,200 / 3,267  (20 from local cache)
+  2,400 / 3,267  (20 from local cache)
+  2,600 / 3,267  (20 from local cache)
+  2,800 / 3,267  (20 from local cache)
+  3,000 / 3,267  (20 from local cache)
+  3,200 / 3,267  (20 from local cache)
+
+3,267 GSMs (20 loaded locally)
+
+platform
+GPL570      2698
+GPL14877     177
+
+method
+RMA      1924
+other     587
+gcRMA     553
+MAS5      203
+FAILED to fetch: 392
+
+harvest summary -> geo_meta_harvest_summary.csv

@@ -7,6 +7,7 @@ import os
 import pandas as pd
 
 BASE          = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'data'))
+REF           = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'reference'))
 PARQUET_RAW   = os.path.join(BASE, "parquet/raw_data")
 PARQUET_CLEAN = os.path.join(BASE, "parquet/data_clean")
 
@@ -86,4 +87,14 @@ def save_dataframes_to_csv(tables: dict, out_dir: str) -> None:
     for name, df in tables.items():
         path = os.path.join(out_dir, f"{name}.csv")
         df.to_csv(path, index=False)
+        print(f"Saved {name} -> {path}")
+
+def save_dataframes_to_parquet(tables: dict, out_dir: str) -> None:
+    """Save a dict of DataFrames to CSV files in out_dir."""
+    os.makedirs(out_dir, exist_ok=True)
+    print(out_dir)
+    for name, df in tables.items():
+        path = os.path.join(out_dir, f"{name}.parquet")
+        print(path)
+        df.to_parquet(path, index=False)
         print(f"Saved {name} -> {path}")
