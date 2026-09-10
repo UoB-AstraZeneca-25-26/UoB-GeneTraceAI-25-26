@@ -10,10 +10,18 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://9368clqa34.execute-api.eu-north-1.amazonaws.com',
+        // Local override for local-to-local testing (uncommitted -- see api.ts's
+        // USE_MOCK for the matching override): points at `uvicorn
+        // final_pipeline.api.app:app` on :8000 instead of the deployed Lambda.
+        // Local routes have no /prod stage prefix, so strip that too.
+        // Revert to the deployed target below before committing.
+        target: 'http://localhost:8000',
         changeOrigin: true,
-        secure: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/prod/, ''),
+        // target: 'https://9368clqa34.execute-api.eu-north-1.amazonaws.com',
+        // secure: true,
+        // rewrite: (path) => path.replace(/^\/api/, ''),
       },
       '/agent-api': {
         target: 'https://mhyvpwmjma3gqy44dk4wskkxje0gqfud.lambda-url.eu-west-2.on.aws',

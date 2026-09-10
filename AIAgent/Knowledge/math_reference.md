@@ -200,24 +200,69 @@ list.
 
 | Field | Rule |
 |-------|------|
-| `confidence_tier` | Categorical: **HIGH, MEDIUM, CONTEXT, LOW** (no "UNKNOWN" tier exists) |
+| `confidence_tier` | Categorical: **HIGH, MEDIUM, CONTEXT, LOW, NO_EVIDENCE** |
 
 A 2×2 matrix of (top-20%-within-gene percentile) × (has a driver
 alteration), with the percentile threshold flipped for LOF-classified
-genes so "top" means low-expression for those:
+genes so "top" means low-expression for those, plus a fifth tier for
+rows with no expression measurement at all:
 
 ```
-HIGH    — top 20% (direction-aware) AND has driver alteration
-MEDIUM  — top 20% AND no driver alteration
-CONTEXT — not top 20% AND has driver alteration
-LOW     — not top 20% AND no driver alteration
+HIGH        — top 20% (direction-aware) AND has driver alteration
+MEDIUM      — top 20% AND no driver alteration
+CONTEXT     — not top 20% AND has driver alteration
+LOW         — not top 20% AND no driver alteration
+NO_EVIDENCE — core_score is NaN (no interpretable expression evidence)
 ```
+
+**NO_EVIDENCE** is assigned last, overriding the 2×2 assignment, for any
+row where `core_score` is NaN. This occurs for driver-alteration orphan
+rows that driver_routing.py inserts with `core_score=NaN, n_layers=0` —
+lines where a known driver alteration exists but no expression or
+proteomics measurement was available. Confirmed count in the live output:
+333,417 rows (all n_layers=0, all has_driver_alteration=True). These are
+not low-scored lines — they have *no* score — and must not be reported as
+CONTEXT or LOW. Promoted 2026-08-31.
 
 **Not a probability.** No calibration curve `P(correct | tier)` exists.
 The ordering is auditable and explicit, not numerically precise.
 
 *Provenance:* `final_pipeline/Scoring/confidence_tiers.py`
-(`TOP_SCORE_PERCENTILE = 0.80`).
+(`TOP_SCORE_PERCENTILE = 0.80`, NO_EVIDENCE override block).
+
+---
+
+## Phantom row exclusion (promoted 2026-08-31)
+
+Rows where a cell line has **no real RNA or protein measurement** for a
+gene are dropped before `core_score.parquet` is written (`.stack().dropna()`
+fix). These were previously surviving as phantom rows with `core_score=NaN`
+and incorrect `n_layers` stamps. The live output now contains only rows
+with a real measurement — 17,370,349 rows. The 333,417 NO_EVIDENCE rows
+above come from driver_routing.py's *intentional* orphan-recovery step
+(a separate path), not from phantom row survival.
+
+If asked about a line with no score shown: it may be absent because it
+genuinely has no expression measurement for that gene (phantom exclusion),
+or it may score below the ranking API's floor parameter.
+
+---
+
+## Y-chromosome sex guard (live in ranking.py, deployed 2026-09-05)
+
+Y-linked genes (chromosomal_location starts with "Y") are structurally
+absent in female and unknown-sex cell lines — the gene simply doesn't
+exist to be expressed. The ranking API nulls the score for those lines
+before computing joint_score, so they are excluded from results rather
+than penalised as low-scoring. This affects genes like RPS4Y1, DDX3Y,
+UTY, KDM5D, USP9Y, ZFY, and the rest of the Y-linked panel.
+
+When explaining a ranking for a Y-linked gene: if female or
+unknown-sex lines are absent from the results, this guard is the reason —
+not low expression. The Y-guard does NOT affect autosomally encoded genes
+or X-linked genes.
+
+*Provenance:* `final_pipeline/api/ranking.py` (`_y_set`, `_apply_sex_guard_wide`).
 
 ---
 

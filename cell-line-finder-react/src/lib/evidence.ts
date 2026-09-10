@@ -32,6 +32,22 @@ export const TRACK_BY_KEY = Object.fromEntries(TRACKS.map((t) => [t.key, t])) as
 
 export const pct = (x: number) => Math.round((x || 0) * 100);
 
+/* The datasets each measured layer can draw evidence from. The detail endpoint
+   reports which of these actually contributed for a given line; the UI shows the
+   full set and marks the ones present, so absence is visible, not hidden. */
+export const EXPRESSION_SOURCES = ['DepMap', 'HPA', 'GEO'] as const;
+export const PROTEOMICS_SOURCES = ['ProCan', 'CCLE'] as const;
+
+/* A within-gene percentile (0..1) turned into a plain band. This is a level
+   relative to other cell lines for the same gene — not an absolute amount and
+   not a probability. */
+export function levelBand(score: number): { label: 'Low' | 'Moderate' | 'High'; tone: TierTone } {
+  const p = pct(score);
+  if (p <= 33) return { label: 'Low', tone: 'low' };
+  if (p <= 66) return { label: 'Moderate', tone: 'medium' };
+  return { label: 'High', tone: 'high' };
+}
+
 /* The tier is an ordinal band from the pipeline. It is NOT derived from the score
    here — deriving a band from the number would re-introduce exactly the
    calibrated-confidence claim the scoring layer refuses to make. */
@@ -45,6 +61,8 @@ export function confTier(tier: ScoreTier | string): TierPresentation {
       return { label: 'Low', tone: 'low' };
     case 'CONTEXT':
       return { label: 'Contextual', tone: 'context' };
+    case 'NO_EVIDENCE':
+      return { label: 'No evidence', tone: 'unknown' };
     default:
       return { label: tier || 'Unvalidated', tone: 'unknown' };
   }
@@ -106,7 +124,13 @@ export function deriveVerdict(results: RankedCellLine[]): Verdict | null {
   }
 
   const metric = (r: RankedCellLine) =>
-    r.mode === 'selectivity' ? r.selectivity : r.mode === 'multi' ? r.jointScore : r.score;
+    r.mode === 'selectivity'
+      ? r.selectivity
+      : r.mode === 'jointSelectivity'
+      ? r.combinedScore
+      : r.mode === 'multi'
+      ? r.jointScore
+      : r.score;
   const vals = results.map(metric).sort((a, b) => b - a);
   const top = vals[0];
   const median = vals[Math.floor(vals.length / 2)];
@@ -117,7 +141,8 @@ export function deriveVerdict(results: RankedCellLine[]): Verdict | null {
   // the top. Flag it when partial-coverage lines are the majority — a high rank
   // there does NOT mean "high across all your targets".
   const multi = results.filter(
-    (r): r is Extract<RankedCellLine, { mode: 'multi' }> => r.mode === 'multi'
+    (r): r is Extract<RankedCellLine, { mode: 'multi' | 'jointSelectivity' }> =>
+      r.mode === 'multi' || r.mode === 'jointSelectivity'
   );
   if (multi.length > 0) {
     const partial = multi.filter((r) => r.genes.some((g) => r.geneScores[g] === null));

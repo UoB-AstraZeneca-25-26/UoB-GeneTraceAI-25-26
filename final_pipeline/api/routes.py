@@ -267,12 +267,24 @@ async def genes_exclude_many_by_lineage_endpoint(
 async def gene_detail_endpoint(
     gene: str = Query(..., description="Gene symbol or ENSG ID"),
     model_id: str = Query(..., description="Cell line ACH ID, e.g. ACH-000088"),
+    other_genes: str = Query(
+        default="", description="Comma-separated OTHER target genes from the "
+        "original multi-gene query (multi/jointSelectivity), if any -- narrows "
+        "rna_alternatives to lines with real evidence for every target gene, "
+        "not just this one."),
+    exclude_genes: str = Query(
+        default="", description="Comma-separated exclusion genes from the "
+        "original query (selectivity/jointSelectivity), if any -- narrows "
+        "rna_alternatives to lines with real evidence for every exclusion "
+        "gene too."),
 ) -> DetailResponse:
     _guard()
+    other_gene_list = [g.strip() for g in other_genes.split(",") if g.strip()]
+    exclude_gene_list = [g.strip() for g in exclude_genes.split(",") if g.strip()]
     try:
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
-            None, lambda: _detail(gene, model_id)
+            None, lambda: _detail(gene, model_id, other_gene_list, exclude_gene_list)
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))

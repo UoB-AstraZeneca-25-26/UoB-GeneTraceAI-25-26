@@ -31,6 +31,25 @@ langchain-classic==1.0.8
 langchain-core==1.5.3
 langchain-protocol==0.0.18
 langchain-text-splitters==1.1.2
+# AgentDevelopment/llm.py imports langchain_aws.ChatBedrock directly -- the
+# actual Bedrock LLM binding this whole service calls through. Missing here
+# for the same reason boto3/botocore were: never explicitly pinned, only
+# ever present by transitive luck. Version left unpinned on first install
+# to resolve one compatible with langchain-core==1.5.3 above; see the
+# comment above boto3 for how this class of gap was found (systematic
+# import-vs-lockfile audit after the botocore crash, not by chance).
+langchain-aws==1.6.2
+
+# --- AWS SDK -------------------------------------------------------------
+# routes.py imports botocore.exceptions.ClientError directly (to catch
+# Bedrock throttling/access errors) but nothing here ever pinned boto3/
+# botocore -- it was only ever present by transitive luck from some other
+# package's dependency graph. That luck ran out on a --no-cache rebuild
+# (a different set of transitive resolutions), and the Lambda crash-looped
+# on import with "ModuleNotFoundError: No module named 'botocore'" for
+# every request until this was added. boto3 pulls in a matching botocore
+# automatically; version matches what the main ranking API already pins.
+boto3==1.42.97
 
 # --- HTTP --------------------------------------------------------------
 httpx==0.28.1

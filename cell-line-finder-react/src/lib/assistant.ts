@@ -20,7 +20,14 @@ export function buildAssistantContext(
       rank: r.rank,
       cellLine: r.cellLine,
       modelId: r.modelId,
-      score: r.mode === 'selectivity' ? r.selectivity : r.mode === 'multi' ? r.jointScore : r.score,
+      score:
+        r.mode === 'selectivity'
+          ? r.selectivity
+          : r.mode === 'jointSelectivity'
+          ? r.combinedScore
+          : r.mode === 'multi'
+          ? r.jointScore
+          : r.score,
       tier: null,
     })),
   };

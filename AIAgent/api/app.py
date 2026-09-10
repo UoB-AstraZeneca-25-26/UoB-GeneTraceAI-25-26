@@ -8,6 +8,7 @@ replica can serve any request.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -52,10 +53,18 @@ async def lifespan(app: FastAPI):
     # Prewarm: establish the Bedrock connection now instead of on the first real
     # request. Best-effort — an upstream blip at startup must not crash the
     # container (the health check must stay reachable regardless).
+    #
+    # The try/except alone only guards against ainvoke() raising; it does
+    # nothing if ainvoke() hangs instead of erroring. That gap turned fatal
+    # after a lockfile fix pulled in a newer langchain-aws -- prewarm hung
+    # long enough that Lambda's own 60s invoke timeout killed the whole
+    # request (including /health) before the except block ever ran. Wrapping
+    # in wait_for() keeps the original "best-effort, non-fatal" intent for
+    # BOTH failure modes, not just the one try/except already covered.
     try:
         from BusinessFlow import llm as _llm
 
-        await _llm.ainvoke("ping")
+        await asyncio.wait_for(_llm.ainvoke("ping"), timeout=8.0)
     except Exception as exc:  # noqa: BLE001
         logger.warning("LLM prewarm failed (continuing): %s", exc)
 

@@ -4,9 +4,11 @@ import { QueryBuilder } from './components/views/QueryBuilder';
 import { ResultsTable } from './components/views/ResultsTable';
 import { ProfileView } from './components/views/ProfileView';
 import { AboutPage } from './components/views/AboutPage';
+import { GuidePage } from './components/views/GuidePage';
+import { ReferencePage } from './components/views/ReferencePage';
 // Assistant chatbot page removed from routing/navigation — kept for possible reuse.
 // import { AssistantPanel } from './components/views/AssistantPanel';
-import { fetchRanking } from './lib/api';
+import { CellLineDetailApiResponse, fetchRanking } from './lib/api';
 import { lookupGeneSuggestion } from './lib/assistant';
 import { InspectTarget, QueryParams, RankedCellLine, ResultMeta, ViewType } from './types';
 
@@ -24,6 +26,13 @@ export default function App() {
   const [hasSearched, setHasSearched] = useState<boolean>(false);
   const [inspectTarget, setInspectTarget] = useState<InspectTarget | null>(null);
 
+  // Back-navigation history for the profile view, populated only when a
+  // profile is reached by clicking an RNA-similar alternative from another
+  // profile (target.viaAlternative). A fresh inspect from ResultsTable clears
+  // it -- 'back' from that normal path stays a hardcoded jump to 'results',
+  // same as before this history existed.
+  const [profileHistory, setProfileHistory] = useState<InspectTarget[]>([]);
+
   // Live query state
   const [results, setResults] = useState<RankedCellLine[]>([]);
   const [meta, setMeta] = useState<ResultMeta | null>(null);
@@ -31,6 +40,13 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
+
+  // Cache of /gene/detail responses keyed by "gene::modelId", shared between
+  // ResultsTable's EvidenceMatrix and ProfileView so revisiting a line already
+  // inspected in this session (or switching between the two views) doesn't
+  // re-hit the API -- avoids redundant Lambda cold-starts and gives page
+  // continuity when the user drills into the same line twice.
+  const detailCacheRef = useRef<Map<string, CellLineDetailApiResponse>>(new Map());
 
   const runQuery = async (params: QueryParams) => {
     const target = params.targets[0];
@@ -79,11 +95,37 @@ export default function App() {
     setQueryParams(newParams);
     setHasSearched(true);
     setCurrentView('results');
+    setProfileHistory([]);
     void runQuery(newParams);
   };
 
   const handleInspect = (t: InspectTarget) => {
+    // Reached via an RNA-alternative click from within a profile -- push the
+    // profile we're leaving so "back" can return to it, instead of always
+    // hard-jumping to 'results'. A normal inspect from ResultsTable (no
+    // viaAlternative flag) starts a fresh chain: clear any stale history so
+    // a later alternative-click in this new chain doesn't pop into a profile
+    // left over from a previous line.
+    if (t.viaAlternative && inspectTarget) {
+      setProfileHistory((prev) => [...prev, inspectTarget]);
+    } else {
+      setProfileHistory([]);
+    }
     setInspectTarget(t);
+    setCurrentView('profile');
+  };
+
+  // 'Back' from a profile: pop the alternative-chain history if there is one,
+  // otherwise fall back to 'results' -- preserves the original Path A
+  // behavior exactly when no alternative was ever involved.
+  const handleProfileBack = () => {
+    if (profileHistory.length === 0) {
+      setCurrentView('results');
+      return;
+    }
+    const previous = profileHistory[profileHistory.length - 1];
+    setProfileHistory(profileHistory.slice(0, -1));
+    setInspectTarget(previous);
     setCurrentView('profile');
   };
 
@@ -96,14 +138,16 @@ export default function App() {
     setLoading(false);
     setHasSearched(false);
     setInspectTarget(null);
+    setProfileHistory([]);
     setCurrentView('query');
+    detailCacheRef.current.clear();
   };
 
   // topK isn't a server param; slice for display.
   const visibleResults = results.slice(0, queryParams.topK);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-900">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#fdfbfc] text-slate-900">
       <Sidebar
         currentView={currentView}
         setView={setCurrentView}
@@ -114,8 +158,10 @@ export default function App() {
       <main className="flex-1 overflow-y-auto p-8">
         {currentView === 'query' && (
           <QueryBuilder
-            initialParams={queryParams}
+            value={queryParams}
+            onChange={setQueryParams}
             onSubmit={handleSearchSubmit}
+            onOpenReference={() => setCurrentView('reference')}
           />
         )}
 
@@ -128,18 +174,26 @@ export default function App() {
             error={error}
             onRetry={() => void runQuery(queryParams)}
             onInspect={handleInspect}
+            detailCache={detailCacheRef.current}
           />
         )}
 
         {currentView === 'profile' && inspectTarget && (
           <ProfileView
             target={inspectTarget}
-            onBack={() => setCurrentView('results')}
+            onBack={handleProfileBack}
             onInspect={handleInspect}
+            detailCache={detailCacheRef.current}
           />
         )}
 
         {currentView === 'about' && <AboutPage />}
+
+        {currentView === 'guide' && (
+          <GuidePage onStart={() => setCurrentView('query')} />
+        )}
+
+        {currentView === 'reference' && <ReferencePage />}
       </main>
     </div>
   );

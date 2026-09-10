@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+  }
+  h1, h2, h3 {
+    letter-spacing: -0.015em;
+  }
+  ::selection {
+    background-color: #830051;
+    color: #fff;
+  }
+}
+
+.data-num {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+
 @keyframes shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }

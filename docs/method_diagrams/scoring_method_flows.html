@@ -1,0 +1,356 @@
+<title>Cell-Line Scoring Methods</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0d11;
+    --panel:#0d1116;
+    --box-bg:#121820;
+    --box-border:#2a333d;
+    --line:#3c4753;
+    --text:#dbe2e9;
+    --text-dim:#8f9aa6;
+    --text-faint:#5b6672;
+    --rna:#72d9be;
+    --protein:#e8ab68;
+    --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans:'IBM Plex Sans', -apple-system, Segoe UI, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{background:var(--bg);}
+  body{
+    margin:0;
+    font-family:var(--sans);
+    color:var(--text);
+    background:var(--bg);
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:1000px;margin:0 auto;padding:56px 24px 96px;}
+
+  header.masthead{margin-bottom:64px;}
+  header.masthead .eyebrow{
+    font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--text-faint);margin:0 0 10px;
+  }
+  header.masthead h1{
+    font-family:var(--sans);font-weight:600;font-size:clamp(28px,4vw,38px);
+    margin:0 0 14px;letter-spacing:-.01em;text-wrap:balance;
+  }
+  header.masthead p{
+    font-family:var(--sans);font-size:15px;line-height:1.65;color:var(--text-dim);
+    max-width:640px;margin:0;
+  }
+
+  section.method{margin-bottom:88px;}
+  section.method:last-of-type{margin-bottom:48px;}
+
+  .section-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;}
+  .section-head .tag{
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    padding:3px 8px;border:1px solid currentColor;border-radius:2px;
+  }
+  #rna .section-head .tag{color:var(--rna);}
+  #protein .section-head .tag{color:var(--protein);}
+  .section-head h2{font-family:var(--sans);font-weight:600;font-size:22px;margin:0;}
+  .section-intro{
+    font-family:var(--sans);font-size:14.5px;line-height:1.7;color:var(--text-dim);
+    max-width:640px;margin:0 0 40px;
+  }
+
+  /* ---- flow diagram ---- */
+  .flow{display:flex;flex-direction:column;align-items:center;}
+
+  .stem{width:2px;height:26px;background:var(--line);}
+
+  .box{
+    width:480px;background:var(--box-bg);border:1px solid var(--box-border);
+    border-radius:3px;padding:16px 20px;
+  }
+  .box.io{border-top-width:2px;}
+  #rna .box.io{border-top-color:var(--rna);}
+  #protein .box.io{border-top-color:var(--protein);}
+  .box h3{
+    font-family:var(--mono);font-size:12.5px;letter-spacing:.03em;text-transform:uppercase;
+    margin:0 0 8px;font-weight:600;
+  }
+  #rna .box h3{color:var(--rna);}
+  #protein .box h3{color:var(--protein);}
+  .box p{font-family:var(--sans);font-size:13.5px;line-height:1.6;color:var(--text);margin:0;}
+
+  .note{
+    font-family:var(--mono);font-size:11.5px;line-height:1.6;color:var(--text-faint);
+    max-width:520px;text-align:center;padding:10px 0 2px;
+  }
+
+  .branch-wrap{position:relative;}
+  .bar{position:absolute;height:2px;background:var(--line);}
+  .cols{display:flex;justify-content:space-between;}
+  .mini-stem-row{display:flex;justify-content:space-between;}
+  .mini-stem{width:2px;height:22px;background:var(--line);margin:0 auto;}
+  .branch-col{display:flex;flex-direction:column;}
+  .branch-col .box{width:100%;height:100%;}
+
+  .branch3{width:888px;}
+  .branch3 .cols > *{width:280px;}
+  .branch3 .bar{left:140px;right:140px;}
+
+  .branch2{width:640px;}
+  .branch2 .cols > *{width:300px;}
+  .branch2 .bar{left:150px;right:150px;}
+
+  /* ---- reference / traceability list ---- */
+  .refs{margin-top:48px;border-top:1px solid var(--box-border);padding-top:22px;}
+  .refs .refs-label{
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--text-faint);margin:0 0 14px;
+  }
+  .refs dl{margin:0;display:grid;grid-template-columns:auto 1fr;column-gap:20px;row-gap:9px;}
+  .refs dt{
+    font-family:var(--sans);font-size:13px;color:var(--text-dim);white-space:nowrap;
+    padding-right:4px;
+  }
+  .refs dd{
+    font-family:var(--mono);font-size:12.5px;color:var(--text);margin:0;
+    overflow-wrap:anywhere;
+  }
+  .refs dd span.file{color:var(--text-faint);}
+
+  .scroller{overflow-x:auto;padding-bottom:4px;}
+
+  @media (max-width:560px){
+    .page{padding:40px 16px 72px;}
+    .box{width:100%;max-width:420px;}
+  }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <p class="eyebrow">Method reference</p>
+    <h1>Cell-Line Scoring Methods</h1>
+    <p>How raw expression and protein-abundance measurements are turned into a single, comparable z-score per gene and cell line. Each diagram traces one scorer end to end; the source list below it maps every step back to the function that implements it.</p>
+  </header>
+
+  <section class="method" id="rna">
+    <div class="section-head">
+      <span class="tag">RNA</span>
+      <h2>Transcript Expression Score</h2>
+    </div>
+    <p class="section-intro">Combines three RNA sources — DepMap, HPA, and GEO microarray data spanning many platforms and processing pipelines — into one lineage-conditioned z-score per gene, per cell line.</p>
+
+    <div class="scroller">
+    <div class="flow" style="min-width:920px;">
+
+      <div class="box io">
+        <h3>Raw expression, per source</h3>
+        <p>DepMap RNA-seq (log2 TPM+1) and HPA RNA-seq (TPM) each form one method. GEO microarray samples are split into one method per platform and processing pipeline (RMA, MAS5, gcRMA, …) — different processing pipelines are not on a comparable scale.</p>
+      </div>
+      <div class="stem"></div>
+
+      <div class="box">
+        <h3>Collapse replicate samples</h3>
+        <p>Multiple samples for the same cell line are reduced to one value by taking the median, so a heavily replicated cell line cannot dominate its lineage's statistics.</p>
+      </div>
+      <div class="stem"></div>
+
+      <div class="box">
+        <h3>Scale &amp; detection floor, per method</h3>
+        <p>Each method's scale (log or linear) is confirmed from its own value distribution, not assumed from metadata. RNA-seq sources use a fixed detection floor at the standard ≥1 TPM convention; microarray methods get an empirical floor from their own values. All values are placed on a common log2 scale.</p>
+      </div>
+      <div class="stem"></div>
+
+      <div class="box">
+        <h3>Detection fraction, per gene within each lineage</h3>
+        <p>For each gene, the share of a lineage's cell lines with a value at or above the detection floor decides how that gene is scored in that lineage.</p>
+      </div>
+      <div class="stem"></div>
+
+      <div class="branch-wrap branch3">
+        <div class="bar" style="top:0;"></div>
+        <div class="mini-stem-row cols" style="height:22px;">
+          <div class="mini-stem"></div><div class="mini-stem"></div><div class="mini-stem"></div>
+        </div>
+        <div class="cols">
+          <div class="branch-col">
+            <div class="box">
+              <h3>Well detected</h3>
+              <p>Robust z-score (median / MAD) within the lineage. The lineage's own median centres the score where enough cell lines were scored, otherwise the method-wide median is used. The scale is shrunk toward the method-wide scale — more so for smaller lineages.</p>
+            </div>
+          </div>
+          <div class="branch-col">
+            <div class="box">
+              <h3>Partially detected</h3>
+              <p>Rank-based inverse-normal transform of the within-lineage ranks. Cell lines tied at the detection floor share a common rank, so a censored value reads as a lower bound rather than a precise estimate.</p>
+            </div>
+          </div>
+          <div class="branch-col">
+            <div class="box">
+              <h3>Below detection</h3>
+              <p>The gene is left unscored for that lineage — excluded from the analysis, never recorded as a zero.</p>
+            </div>
+          </div>
+        </div>
+        <div class="mini-stem-row cols" style="height:22px;">
+          <div class="mini-stem"></div><div class="mini-stem"></div><div class="mini-stem"></div>
+        </div>
+        <div class="bar" style="bottom:0;"></div>
+      </div>
+      <p class="note">Lineages with too few scored cell lines are excluded outright for that gene, regardless of detection fraction.</p>
+      <div class="stem"></div>
+
+      <div class="box">
+        <h3>Method-level z-score</h3>
+        <p>One z-score per gene, per cell line, from whichever regime applied to that gene's lineage.</p>
+      </div>
+      <div class="stem"></div>
+
+      <div class="box">
+        <h3>Combine GEO's methods</h3>
+        <p>GEO's platform × processing methods are combined by a weighted average, each method weighted by its sample size.</p>
+      </div>
+      <div class="stem"></div>
+
+      <div class="box">
+        <h3>Combine the three sources</h3>
+        <p>DepMap, HPA, and combined GEO are combined at equal weight — one source, one vote — regardless of how many individual methods feed into GEO.</p>
+      </div>
+      <div class="stem"></div>
+
+      <div class="box io">
+        <h3>RNA z-score</h3>
+        <p>Final RNA expression z-score, per gene, per cell line.</p>
+      </div>
+
+    </div>
+    </div>
+
+    <div class="refs">
+      <p class="refs-label">Source — final_pipeline/01_Transcriptomics/transcriptomics.py</p>
+      <dl>
+        <dt>Sources &amp; method axes</dt><dd><span class="file">transcriptomics.py</span> — build_method_axes() (L277–350); module docstring (L7–17)</dd>
+        <dt>Replicate collapse</dt><dd><span class="file">transcriptomics.py</span> — collapse_replicates() (L504–522)</dd>
+        <dt>Scale &amp; floor</dt><dd><span class="file">transcriptomics.py</span> — detect_scale_from_values(), profile_method() (L529–577); to_log2() (L580–583)</dd>
+        <dt>Detection fraction &amp; branching</dt><dd><span class="file">transcriptomics.py</span> — method_z() (L604–699)</dd>
+        <dt>Shrinkage estimation</dt><dd><span class="file">transcriptomics.py</span> — method_z() (L653–661, L673–693)</dd>
+        <dt>GEO sub-method combination</dt><dd><span class="file">transcriptomics.py</span> — combine_sources(), stouffer() (L702–714, L746–771)</dd>
+        <dt>Cross-source combination</dt><dd><span class="file">transcriptomics.py</span> — combine_sources() (L768–771)</dd>
+        <dt>Output assembly</dt><dd><span class="file">transcriptomics.py</span> — chunk_to_frame(), column z_lineage (L875–922)</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section class="method" id="protein">
+    <div class="section-head">
+      <span class="tag">Protein</span>
+      <h2>Protein Abundance Score</h2>
+    </div>
+    <p class="section-intro">Combines two independent proteomics platforms — ProCAN and CCLE — into one z-score per gene, per cell line, weighting each platform by coverage and by how well the two platforms agree.</p>
+
+    <div class="scroller">
+    <div class="flow" style="min-width:680px;">
+
+      <div class="box io">
+        <h3>Two independent abundance platforms</h3>
+        <p>ProCAN and CCLE proteomics each measure protein abundance per cell line. Neither platform is treated as the reference; both are carried through on equal footing.</p>
+      </div>
+      <div class="stem"></div>
+
+      <div class="box">
+        <h3>Derive agreement thresholds from the data</h3>
+        <p>The correlation needed to call two protein measurements concordant, and the correlation needed to call two platforms in agreement, are not fixed in advance. Each is set by comparing real, matched correlations against a null built from deliberately mismatched proteins and genes, using standard significance and power conventions.</p>
+      </div>
+      <div class="stem"></div>
+
+      <div class="branch-wrap branch2">
+        <div class="bar" style="top:0;"></div>
+        <div class="mini-stem-row cols" style="height:22px;">
+          <div class="mini-stem"></div><div class="mini-stem"></div>
+        </div>
+        <div class="cols">
+          <div class="branch-col">
+            <div class="box">
+              <h3>ProCAN — isoform handling</h3>
+              <p>Where a gene has more than one measured protein form, forms that correlate with each other above the derived threshold are combined by the maximum abundance across forms; forms that disagree, or can't be compared, are combined by the mean.</p>
+            </div>
+          </div>
+          <div class="branch-col">
+            <div class="box">
+              <h3>CCLE — isoform handling</h3>
+              <p>Where a gene has more than one measured protein form, forms that correlate with each other above the derived threshold are combined by the maximum abundance across forms; forms that disagree, or can't be compared, are combined by the mean.</p>
+            </div>
+          </div>
+        </div>
+        <div class="mini-stem-row cols" style="height:22px;">
+          <div class="mini-stem"></div><div class="mini-stem"></div>
+        </div>
+        <div class="bar" style="bottom:0;"></div>
+      </div>
+      <div class="stem"></div>
+
+      <div class="box">
+        <h3>Platform-agreement assessment, per gene</h3>
+        <p>ProCAN and CCLE abundance are correlated for each gene, across the cell lines both platforms measured, and compared against the thresholds derived above. This sets a confidence score for the gene, from fully trusted to fully down-weighted. A gene without enough shared cell lines to test defaults to full confidence.</p>
+      </div>
+      <div class="stem"></div>
+
+      <div class="box">
+        <h3>Per-gene z-score, within each platform</h3>
+        <p>A robust (median / MAD) z-score is computed per gene, within each lineage, separately for ProCAN and for CCLE.</p>
+      </div>
+      <div class="stem"></div>
+
+      <div class="box">
+        <h3>Combine platforms</h3>
+        <p>ProCAN and CCLE z-scores are combined by a weighted average. Each platform's weight for a gene reflects how many cell lines that gene was measured in on that platform — broader coverage carries more weight.</p>
+      </div>
+      <div class="stem"></div>
+
+      <div class="branch-wrap branch2">
+        <div class="bar" style="top:0;"></div>
+        <div class="mini-stem-row cols" style="height:22px;">
+          <div class="mini-stem"></div><div class="mini-stem"></div>
+        </div>
+        <div class="cols">
+          <div class="branch-col">
+            <div class="box">
+              <h3>Both platforms measured this cell line</h3>
+              <p>The combined score is scaled by the gene's platform-agreement confidence.</p>
+            </div>
+          </div>
+          <div class="branch-col">
+            <div class="box">
+              <h3>Only one platform measured this cell line</h3>
+              <p>The score passes through unweighted — there is no second platform to disagree with.</p>
+            </div>
+          </div>
+        </div>
+        <div class="mini-stem-row cols" style="height:22px;">
+          <div class="mini-stem"></div><div class="mini-stem"></div>
+        </div>
+        <div class="bar" style="bottom:0;"></div>
+      </div>
+      <div class="stem"></div>
+
+      <div class="box io">
+        <h3>Protein z-score</h3>
+        <p>Final protein abundance z-score, per gene, per cell line.</p>
+      </div>
+
+    </div>
+    </div>
+
+    <div class="refs">
+      <p class="refs-label">Source — final_pipeline/02_Proteinomics/06_protein_score_M2.py</p>
+      <dl>
+        <dt>Sources</dt><dd><span class="file">06_protein_score_M2.py</span> — PROCAN_SOURCE / CCLE_SOURCE (L46–47), load_sources() (L194–206)</dd>
+        <dt>Threshold derivation</dt><dd><span class="file">06_protein_score_M2.py</span> — derive_thresholds(), _sample_null_protein_rho(), _power_min_n() (L386–468)</dd>
+        <dt>Isoform handling</dt><dd><span class="file">06_protein_score_M2.py</span> — collapse_isoforms(), _min_pairwise_spearman(), _pairwise_rho() (L213–279)</dd>
+        <dt>Platform agreement &amp; confidence</dt><dd><span class="file">06_protein_score_M2.py</span> — gene_agreement(), confidence_from_rho() (L341–368)</dd>
+        <dt>Per-platform z-score</dt><dd><span class="file">06_protein_score_M2.py</span> — zscore_platform(), robust_z_matrix() (L295–334)</dd>
+        <dt>Combine platforms</dt><dd><span class="file">06_protein_score_M2.py</span> — compute_from_sources(), step 4 (L521–535)</dd>
+        <dt>Confidence application</dt><dd><span class="file">06_protein_score_M2.py</span> — compute_from_sources(), step 5, n_sources ≥ 2 scope rule (L537–546)</dd>
+        <dt>Output</dt><dd><span class="file">06_protein_score_M2.py</span> — compute_from_sources() return, write_protein_z() (L553–593)</dd>
+      </dl>
+    </div>
+  </section>
+</div>

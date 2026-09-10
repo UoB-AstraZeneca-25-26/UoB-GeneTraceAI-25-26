@@ -1,0 +1,57 @@
+C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\Scoring\core_score.py:166: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  rho_raw, _ = stats.pearsonr(grp["prot_z"].fillna(0), grp["rna_z"].fillna(0))
+
+======================================================================
+GeneTraceAI — Full Pipeline
+======================================================================
+  [  ] Stage 0: 00_harmonisation       Check warehouse exists
+  [  ] Stage 1: 01_Transcriptomics     RNA z-scores (transcriptomics.py, full genome)  ~2h
+  [  ] Stage 2: 02_Proteinomics        Protein tier + z-scores (M2)              ~15-20 min
+  [  ] Stage 3: 03_Altercations        Mutations + Fusions + CNA scoring
+  [  ] Stage 4: Scoring                core_score + driver routing + tiers
+  [  ] Stage 5: Ranking                Evidence ledger (all pairs)
+  [  ] Stage 6: Validation             Held-out evaluation (hit@20)
+  [  ] Stage 7: Testing                Diagnostic tests on outputs
+
+
+======================================================================
+Stage 4: Scoring
+======================================================================
+======================================================================
+Scoring — core_score (RNA + Protein orthogonal combination)
+======================================================================
+RNA  rows: 18,696,103  |  genes: 16,992
+Prot rows: 9,906,642  |  genes: 12,180
+  rna_std_z SD by k_src (post-standardise, target 1.00): {1: 0.9995793754840004, 2: 0.9993790655600416, 3: 0.9984748039890904}
+  prot_resid_z SD (post-standardise): mean=1.0000  (target 1.00)
+n_layers=1 fallback (protein-free lines): 742 lines, 8,797,152 pairs
+RNA-only genes added: 5,136
+
+Done in 93s
+core_score: 26,558,496 rows  ->  C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\outputs\core_score.parquet
+  genes: 16,992  |  lines: 1,563
+  core_score mean: 0.493
+======================================================================
+Scoring — driver-gated routing
+======================================================================
+core_score: 26,558,496  mutations: 632,919  fusions: 144,221  cna: 122,691
+  Recovered 138,336 alteration-driver pairs absent from core_score (mut: 124,600  fus: 13,268  cna: 618)
+
+has_driver_alteration: 667,132 / 26,696,832 pairs (2.5%)
+Written: C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\outputs\flags_with_driver.parquet
+======================================================================
+Scoring — confidence tiers
+======================================================================
+Predictions: 26,696,832 rows  ->  C:\Disertation\UoB-GeneTraceAI-25-26\final_pipeline\outputs\predictions_with_confidence.parquet
+  LOW        22,620,042  (84.7%)
+  MEDIUM     3,409,658  (12.8%)
+  CONTEXT     592,573  (2.2%)
+  HIGH         74,559  (0.3%)
+
+Stage 4 complete (754s)
+
+======================================================================
+Pipeline complete. Total time: 754s
+Outputs in: final_pipeline/outputs/
+======================================================================
+

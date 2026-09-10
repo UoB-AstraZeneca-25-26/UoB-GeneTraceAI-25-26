@@ -1,0 +1,7 @@
+platform_id,proc_family,scale_hint,n_gsm
+GPL570,rma,log,1523
+GPL570,gcrma,log,951
+GPL570,mas5,linear,470
+GPL14877,gcrma,log,178
+GPL570,unknown,unknown,81
+GPL570,plier,log,63

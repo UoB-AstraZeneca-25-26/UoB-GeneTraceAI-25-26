@@ -60,56 +60,55 @@ Each object has:
   - "key": short label (3-5 words, used as the chart node title)
   - "value": explanation (20-25 words, shown on click)
   - "formula": the mathematical formula for this step (optional, short)
-  - "status": one of "active" | "skipped" | "inverted"
+  - "status": one of "active" | "skipped"
     Use "active" for steps that applied normally.
-    Use "skipped" if the step did not apply (e.g. TSG inversion for an
-    oncogene -- the tool output has "is_tsg": false).
-    Use "inverted" for TSG inversion when the gene IS a tumour suppressor
-    (the tool output has "is_tsg": true).
+    Use "skipped" for steps that did not apply or are not part of the live
+    scoring path (Step 5 is ALWAYS "skipped" — see critical rules below).
 
-Example output format:
+Example output format (reflects the CURRENT live pipeline — do not describe
+an older version):
 {
   "steps": [
     {
-      "key": "Raw measurements",
-      "value": "Two independent assays: expression as log2(TPM+1) and proteomics as log2 protein-to-reference ratio, measured across the cell line panel.",
-      "formula": "log2(TPM + 1), log2(ratio)",
+      "key": "Per-source robust z-score",
+      "value": "RNA (3 sources) and protein (2 platforms) each standardised with median/MAD. Missing sources shrink the z toward zero rather than dropping the pair.",
+      "formula": "z = (x - median) / (MAD * 1.4826)",
       "status": "active"
     },
     {
-      "key": "PIT normalisation",
-      "value": "Each raw value converted to a percentile rank within this gene across all ~950 cell lines, making expression and proteomics directly comparable.",
-      "formula": "F(x) = rank(x) / (n + 1)",
+      "key": "Arm-level combination",
+      "value": "RNA percentile-ranked within lineage then normal-quantile transformed. Protein residualised against RNA to remove shared variance before z-scoring.",
+      "formula": "prot_resid = prot_z - beta_g * rna_z",
       "status": "active"
     },
     {
-      "key": "Correlation penalty",
-      "value": "Spearman correlation between expression and proteomics layers quantifies redundancy. Higher correlation means less independent evidence per layer.",
-      "formula": "n_eff = 2 / (1 + |rho_EP|)",
+      "key": "Fixed cross-modality weights",
+      "value": "RNA and protein weighted by Kish effective sample size from within-modality source agreement. Weights are constants, not a live RNA-vs-protein correlation.",
+      "formula": "W_RNA = sqrt(1.431), W_PROT = sqrt(1.45)",
       "status": "active"
     },
     {
-      "key": "Core score",
-      "value": "Weighted sum of PIT ranks using correlation-penalised weights. For two exchangeable layers, optimal weights are equal: 0.5 each.",
-      "formula": "core = w_E * E + w_P * P",
+      "key": "Stouffer core score",
+      "value": "Weighted Stouffer Z combination of RNA and protein arms, normalised to N(0,1) then mapped to [0,1] via the standard normal CDF.",
+      "formula": "core_score = Phi(core_z)",
       "status": "active"
     },
     {
-      "key": "TSG inversion",
-      "value": "For tumour suppressors, low abundance signals loss of function. Score inverted so higher always means more relevant, regardless of gene class.",
-      "formula": "score_TSG = 1 - core_score",
+      "key": "Gene-role direction",
+      "value": "This pipeline does NOT invert core_score for tumour suppressors. Gene role only shifts the percentile threshold used for the offline confidence tier.",
+      "formula": "no inversion applied",
       "status": "skipped"
     },
     {
-      "key": "Driver gating",
-      "value": "Cell lines carrying a known driver alteration (mutation, fusion, or CNA matching the gene's role) are promoted above all non-driver lines.",
-      "formula": "sort = driver * 1e6 + score",
+      "key": "Driver alteration flag",
+      "value": "Mutation, fusion, or CNA matching gene role marks a line as driver-altered. Informational only in the live API — does not reorder the ranking.",
+      "formula": "driver = mut OR fusion OR CNA_match",
       "status": "active"
     },
     {
       "key": "Confidence tier",
-      "value": "Categorical assessment based on data completeness and evidence configuration. Not a calibrated probability, but an auditable evidence ordering.",
-      "formula": "HIGH | MEDIUM | CONTEXT | LOW",
+      "value": "2x2 of top-20%-percentile x driver-alteration. NO_EVIDENCE assigned when core_score is NaN (no expression measurement exists for this pair).",
+      "formula": "HIGH | MEDIUM | CONTEXT | LOW | NO_EVIDENCE",
       "status": "active"
     }
   ]
@@ -118,15 +117,17 @@ Example output format:
 CRITICAL RULES for this output:
 - Return ONLY the JSON object. No markdown, no backticks, no preamble.
 - Always include all 7 steps, in the order shown above.
-- Set "status" to "skipped" for TSG inversion if the gene is an oncogene.
-- Set "status" to "inverted" for TSG inversion if the gene IS a TSG.
+- Step 5 (gene-role direction) MUST always have status "skipped". Never
+  "active", never "inverted". The current pipeline does NOT invert
+  core_score for TSGs. Do not write any formula containing "1 - core_score".
+  This applies to every gene, oncogene or TSG, without exception.
+- Step 6 (driver alteration) MUST have status "active" but its value must
+  say the flag is informational — it does NOT reorder rankings in the live API.
 - Keep each "value" to 20-25 words. Not shorter, not longer.
 - Keep each "key" to 3-5 words.
 - If the gene name is known (from the ensg_id), mention it by name in the
-  relevant steps (e.g. "BRAF is an oncogene, so no inversion").
-- No illustrative numbers. "PIT converts each value to a percentile rank"
-  is correct; "an expression of 0.73 means higher than 73% of lines" is not,
-  unless 0.73 came from the tool output.
+  relevant steps (e.g. "BRAF: oncogene, no TSG threshold flip").
+- No illustrative numbers unless they came from the tool output.
 - The 150-word limit above does not apply here; the 7-step JSON replaces it.
 """
 

@@ -54,6 +54,31 @@ def _resolve_data_path(local_path: Path, s3_key: str) -> Path:
     return cached
 
 
+def _resolve_rna_neighbours_path() -> Path | None:
+    """Same as _resolve_data_path, but for the one genuinely OPTIONAL file:
+    RNA-similarity neighbours power a nice-to-have UI panel, not core scoring,
+    and load_ranking_data() already degrades gracefully (empty
+    rna_alternatives) when this path doesn't exist. _resolve_data_path()
+    itself has no such fallback -- a failed S3 download (object not yet
+    uploaded, permissions, transient failure, ...) raises straight out of it,
+    and since this whole chain runs during the FastAPI lifespan, that
+    exception takes down EVERY endpoint's cold start, not just this feature.
+    Learned the hard way: rna_neighbours.parquet was deployed in code before
+    it existed in the production data bucket, and every request 500'd until
+    the object was uploaded. Catching here contains a missing/failed fetch of
+    this one optional file to "the panel is empty," instead of "the API is
+    down," without changing behaviour for the four required files above --
+    those SHOULD crash loudly if actually missing, since the app cannot serve
+    correct data at all without them."""
+    try:
+        return _resolve_data_path(
+            _env_path("RNA_NEIGHBOURS_PATH", _PIPELINE.parent / "cell_similarity" / "outputs" / "rna_neighbours.parquet"),
+            "rna_neighbours.parquet")
+    except Exception as exc:
+        logger.warning("RNA neighbours path resolution failed (non-fatal, feature degrades): %s", exc)
+        return None
+
+
 def ensure_loaded() -> None:
     """Idempotent data load. Safe to call from either the HTTP lifespan or the
     Bedrock handler — loads once, no-ops thereafter. Every data file is
@@ -75,6 +100,7 @@ def ensure_loaded() -> None:
         sample_info_path=_resolve_data_path(
             _env_path("SAMPLE_INFO_PATH", _PIPELINE / "reference" / "sample_info.parquet"),
             "sample_info.parquet"),
+        rna_neighbours_path=_resolve_rna_neighbours_path(),
     )
     # The four per-line omics parquets are read lazily, on demand, straight off
     # disk by _omics_levels()/_omics_levels_by_source() (base = _pred_path.parent)
@@ -96,12 +122,15 @@ _lineage_map: dict[str, str] = {}  # lower(model_id) -> lineage
 _meta_map: dict[str, dict] = {}  # lower(model_id) -> full sample_info row (lineage, subtype, disease, sex, age, ...)
 _pred_path: Path | None = None  # kept so /gene/detail can pull the full row on demand
 _y_set: set[str] = set()  # ENSG IDs on the Y chromosome (chromosomal_location starts "Y")
+_rna_neighbours: dict[str, list[tuple[str, float]]] = {}  # lower(model_id) -> [(neighbour, similarity), ...] sorted by rank
+RNA_ALTERNATIVES_TOP_N = 5  # how many similar lines /gene/detail surfaces
 
 
 def load_ranking_data(predictions_path: Path, gene_lookup_path: Path,
-                      cell_lookup_path: Path, sample_info_path: Path) -> None:
+                      cell_lookup_path: Path, sample_info_path: Path,
+                      rna_neighbours_path: Path | None = None) -> None:
     global _pred, _sym_index, _ensg_index, _gene_lkp, _cell_lkp, _cell_name
-    global _lineage_map, _meta_map, _pred_path, _y_set
+    global _lineage_map, _meta_map, _pred_path, _y_set, _rna_neighbours
 
     if not predictions_path.exists():
         logger.warning("predictions not found at %s — /v1/rank will 503", predictions_path)
@@ -168,6 +197,22 @@ def load_ranking_data(predictions_path: Path, gene_lookup_path: Path,
     for mid, rrid in rrid_map.items():
         _meta_map.setdefault(mid, {})["rrid"] = rrid
 
+    # RNA-similarity neighbours (transcriptomic k-NN, precomputed by
+    # cell_similarity/) -- powers /gene/detail's "RNA-similar alternatives"
+    # panel. Optional: the UI section this feeds simply stays empty if the
+    # file is absent, same graceful-degradation as sample_info above.
+    if rna_neighbours_path is not None and rna_neighbours_path.exists():
+        try:
+            nbr = pd.read_parquet(rna_neighbours_path, columns=["model_id", "neighbour", "rank", "similarity"])
+            nbr["model_id"] = nbr["model_id"].str.lower()
+            nbr["neighbour"] = nbr["neighbour"].str.lower()
+            nbr = nbr.sort_values(["model_id", "rank"])
+            for mid, grp in nbr.groupby("model_id", sort=False):
+                _rna_neighbours[mid] = list(zip(grp["neighbour"], grp["similarity"].astype(float)))
+            logger.info("RNA-similarity neighbours loaded: %d lines", len(_rna_neighbours))
+        except Exception as exc:
+            logger.warning("RNA neighbours load failed: %s", exc)
+
 
 def is_ready() -> bool:
     return _pred is not None and _gene_lkp is not None
@@ -214,6 +259,27 @@ def _resolve(query: str) -> tuple[str, str]:
     if q in _ensg_index:
         return _ensg_index[q]
     raise ValueError(f"Gene not found: {query!r}")
+
+
+def _resolve_unique(queries: list[str]) -> list[tuple[str, str]]:
+    """_resolve() every query, then drop later duplicates by canonical symbol
+    (first occurrence wins). Two different query strings can resolve to the
+    SAME gene -- typed twice, or one as a symbol ("BRAF") and one as its own
+    Ensembl ID ("ENSG00000157764") -- and every multi-gene endpoint below
+    builds a wide DataFrame with one column per resolved symbol; two columns
+    that end up with the identical name crash the wide-merge/selection step
+    with a pandas KeyError surfaced to the client as a raw 500. Deduping here,
+    once, before any of that column-building happens, closes that off for
+    every caller instead of guarding each merge site separately."""
+    seen: set[str] = set()
+    out: list[tuple[str, str]] = []
+    for q in queries:
+        ensg, sym = _resolve(q)
+        if sym in seen:
+            continue
+        seen.add(sym)
+        out.append((ensg, sym))
+    return out
 
 
 def _lineage_model_ids(terms: list[str]) -> set[str] | None:
@@ -302,7 +368,7 @@ def _apply_sex_guard_wide(wide: pd.DataFrame, y_set: set[str],
 
 def rank(gene_syms: list[str], lineages: list[str],
          floor: float, top_n: int) -> dict:
-    resolved = [_resolve(s) for s in gene_syms]
+    resolved = _resolve_unique(gene_syms)
     syms = [s for _, s in resolved]
 
     lineage_ids = _lineage_model_ids(lineages)
@@ -379,7 +445,7 @@ def exclude_many(gene_a: str, gene_bs: list[str], lineages: list[str], top_n: in
     score_a * Π(1 - score_bi) — a joint gene must pass, and every excluded
     gene independently pulls the ranking down."""
     ensg_a, sym_a = _resolve(gene_a)
-    resolved_b = [_resolve(g) for g in gene_bs]
+    resolved_b = _resolve_unique(gene_bs)
     syms_b = [s for _, s in resolved_b]
 
     lineage_ids = _lineage_model_ids(lineages)
@@ -582,7 +648,7 @@ def rank_by_lineage(gene: str, top_lineages: int = 10, per_lineage: int = 5) -> 
 def rank_by_lineage_multi(genes: list[str], top_lineages: int = 10, per_lineage: int = 5) -> dict:
     """Multi-gene lineage ranking: metric is the joint score (min across
     genes, same weakest-link rule as rank()'s N-gene path)."""
-    resolved = [_resolve(g) for g in genes]
+    resolved = _resolve_unique(genes)
     syms = [s for _, s in resolved]
 
     wide = None
@@ -670,7 +736,7 @@ def exclude_many_by_lineage(gene_a: str, gene_bs: list[str], top_lineages: int =
     """Multi-exclusion selectivity lineage ranking: metric is selectivity
     (score_a * Pi(1 - score_bi)), same formula as exclude_many()."""
     ensg_a, sym_a = _resolve(gene_a)
-    resolved_b = [_resolve(g) for g in gene_bs]
+    resolved_b = _resolve_unique(gene_bs)
     syms_b = [s for _, s in resolved_b]
 
     merged = _gene_series(ensg_a, None).rename("score_a").reset_index()
@@ -719,9 +785,9 @@ def rank_exclude_many(gene_as: list[str], gene_bs: list[str], lineages: list[str
     Pi(1 - score_bi) for every excluded gene, same multiplicative penalty as
     exclude_many(). Requires 2+ target genes -- for one target use
     exclude()/exclude_many() instead."""
-    resolved_a = [_resolve(s) for s in gene_as]
+    resolved_a = _resolve_unique(gene_as)
     syms_a = [s for _, s in resolved_a]
-    resolved_b = [_resolve(s) for s in gene_bs]
+    resolved_b = _resolve_unique(gene_bs)
     syms_b = [s for _, s in resolved_b]
 
     lineage_ids = _lineage_model_ids(lineages)
@@ -780,9 +846,9 @@ def rank_exclude_many_by_lineage(gene_as: list[str], gene_bs: list[str],
     """Lineage-grouped counterpart of rank_exclude_many(): metric is
     combined_score, same formula, no floor gate (matches every other
     *_by_lineage function -- sizing comes from _group_by_lineage alone)."""
-    resolved_a = [_resolve(s) for s in gene_as]
+    resolved_a = _resolve_unique(gene_as)
     syms_a = [s for _, s in resolved_a]
-    resolved_b = [_resolve(s) for s in gene_bs]
+    resolved_b = _resolve_unique(gene_bs)
     syms_b = [s for _, s in resolved_b]
 
     wide = None
@@ -960,8 +1026,66 @@ def _omics_levels_by_source(ensg: str, mid: str) -> dict:
     return out
 
 
-def detail(gene: str, model_id: str) -> dict:
-    """Rich per-line detail matching the UI's CellLineDetailApiResponse shape."""
+def _rna_alternatives(mid: str, scores_by_gene: dict[str, pd.Series],
+                      exclude_scores_by_gene: dict[str, pd.Series] | None = None) -> list[dict]:
+    """Top RNA-similar lines for `mid` that also have real (non-NaN) evidence
+    for EVERY gene the original query actually needed -- not just the one gene
+    currently on screen. `scores_by_gene` covers every TARGET gene (the gene
+    being viewed plus any other targets from a multi/jointSelectivity query);
+    `exclude_scores_by_gene` covers exclusion genes from a
+    selectivity/jointSelectivity query, if any.
+
+    A neighbour missing evidence for any target gene would be a dead-end click
+    ("no prediction for ...") for the "click to inspect the same gene in that
+    line" affordance the UI promises, so such neighbours are filtered out here
+    rather than left for the frontend to discover after a failed fetch. The
+    same reasoning extends to target genes beyond the one on screen: showing
+    an "alternative" that can't actually stand in for the full multi-gene
+    query it was suggested from would be misleading.
+
+    DESIGN DECISION NEEDING SIGN-OFF (Fiona/Daniel): exclusion-gene validity
+    here means only "has a real score" (non-NaN), NOT "scores low enough to
+    still satisfy the selectivity criterion." A neighbour could have a real
+    but HIGH exclusion-gene score and still pass this filter. Requiring an
+    actual low-score threshold for exclusion genes was NOT implemented --
+    doing so would duplicate the selectivity floor logic from rank()/exclude()
+    without an agreed threshold to reuse, so this stops at "has data" pending
+    that decision."""
+    def _missing(s: pd.Series, neighbour: str) -> bool:
+        score = s.get(neighbour)
+        return score is None or pd.isna(score)
+
+    candidates = _rna_neighbours.get(mid, [])
+    out: list[dict] = []
+    for neighbour, similarity in candidates:
+        if any(_missing(s, neighbour) for s in scores_by_gene.values()):
+            continue
+        if exclude_scores_by_gene and any(_missing(s, neighbour) for s in exclude_scores_by_gene.values()):
+            continue
+        meta = _meta_map.get(neighbour, {})
+        out.append({
+            "model_id": neighbour.upper(),
+            "name": _cell_name.get(neighbour) or neighbour.upper(),
+            "similarity": round(float(similarity), 6),
+            "lineage": meta.get("lineage"),
+            "primary_disease": meta.get("primary_disease"),
+        })
+        if len(out) >= RNA_ALTERNATIVES_TOP_N:
+            break
+    return out
+
+
+def detail(gene: str, model_id: str, other_genes: list[str] | None = None,
+          exclude_genes: list[str] | None = None) -> dict:
+    """Rich per-line detail matching the UI's CellLineDetailApiResponse shape.
+
+    other_genes / exclude_genes: the REST of the original multi-gene query's
+    target/exclusion genes (if any) -- passed through only to scope
+    rna_alternatives correctly (see _rna_alternatives). They don't affect any
+    other field in this response, which stays single-gene (`gene`/`ensg`)
+    exactly as before. A gene symbol here that fails to resolve is silently
+    skipped rather than raising -- it's supplementary context for narrowing
+    alternatives, not something this endpoint is itself being asked to score."""
     ensg, sym = _resolve(gene)
     mid = model_id.strip().lower()
 
@@ -972,6 +1096,22 @@ def detail(gene: str, model_id: str) -> dict:
     score = s.get(mid)
     if score is None or pd.isna(score):
         raise ValueError(f"No prediction for {gene!r} + {model_id!r}")
+
+    scores_by_gene: dict[str, pd.Series] = {sym: s}
+    for g in (other_genes or []):
+        try:
+            g_ensg, g_sym = _resolve(g)
+        except ValueError:
+            continue
+        scores_by_gene[g_sym] = _gene_series(g_ensg, None)
+
+    exclude_scores_by_gene: dict[str, pd.Series] = {}
+    for g in (exclude_genes or []):
+        try:
+            g_ensg, g_sym = _resolve(g)
+        except ValueError:
+            continue
+        exclude_scores_by_gene[g_sym] = _gene_series(g_ensg, None)
 
     rank_pos = int((s.dropna() > score).sum()) + 1
     total = int(s.notna().sum())
@@ -1007,5 +1147,5 @@ def detail(gene: str, model_id: str) -> dict:
         "expression_by_source": omics_by_source["expression_by_source"],
         "proteomics_by_source": omics_by_source["proteomics_by_source"],
         "metadata": _full_metadata(mid),
-        "rna_alternatives": [],
+        "rna_alternatives": _rna_alternatives(mid, scores_by_gene, exclude_scores_by_gene or None),
     }
