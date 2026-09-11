@@ -1,4 +1,4 @@
-# GeneTraceAI — Multi-Omics Cell-Line Selection and Evidence-Guided Ranking
+# GTAI CellLineSelector — Multi-Omics Cell-Line Selection and Evidence-Guided Ranking
 
 **UoB-GeneTraceAI-25-26** · University of Bristol · 2025–2026
 
