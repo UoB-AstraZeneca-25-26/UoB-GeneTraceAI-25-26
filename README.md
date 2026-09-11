@@ -8,7 +8,7 @@ GeneTraceAI is a research system for selecting and ranking cell lines based on i
 
 ## Architecture
 
-![GTAI CellLineSelector system architecture](architecture/system_architecture.png)
+![GTAI CellLineSelector system architecture](architecture/docs/system_architecture.png)
 
 Scoring and ranking logic lives entirely in the backend pipeline — never in the frontend or the LLM. The LLM explains results grounded in pre-computed evidence; it does not generate rankings itself.
 
