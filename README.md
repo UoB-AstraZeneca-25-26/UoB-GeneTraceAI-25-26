@@ -1,61 +1,110 @@
-# GeneTraceAI
+# GeneTraceAI — Multi-Omics Cell-Line Selection and Evidence-Guided Ranking
 
-## Folder structure
+**UoB-GeneTraceAI-25-26** · University of Bristol · 2025–2026
+
+GeneTraceAI is a research system for selecting and ranking cell lines based on integrated multi-omics evidence — transcriptomic, proteomic, genomic alteration, and similarity data — rather than a single similarity metric. Recommendations are designed to be reproducible, auditable, and explainable.
+
+> **Core question:** Which available cell line provides the strongest, most defensible biological model for a research question, given the available molecular evidence?
+
+## Architecture
 
 ```
-UoB-GeneTraceAI-25-26/
-│
-├── architecture/               — the production pipeline 
-│   ├── 00_harmonisation/          Stage 0: builds the DuckDB warehouse (celllineselector.db)
-│   ├── 01_Transcriptomics/        Stage 1: RNA scoring
-│   ├── 02_Proteinomics/           Stage 2: protein scoring
-│   ├── 03_Altercations/           Stage 3: CNA / fusion / mutation scoring
-│   ├── Scoring/                   core_score, confidence tiers, driver routing
-│   ├── Ranking/                   ranking CLI and evidence-ledger logic
-│   ├── api/                       FastAPI app served in production (app.py, routes.py, ranking.py, bedrock.py)
-│   ├── utils/                     shared helpers (common.py, robust_z_matrix, etc.)
-│   ├── reference/                 lookup exports used by the live API
-│   ├── results/                   pipeline run outputs
-│   ├── cell_similarity/           RNA-similarity clustering (k-NN neighbours used by /gene/detail)
-│   ├── expression_fusion/         expression + fusion combination work
-│   ├── docs/                      method specs, scoring/ranking declarations, math reference, diagrams
-│   ├── config.py, run_all.py, Dockerfile, requirements.txt
-│   └── harvest_geo_meta.py, audit_warehouse.py, apply_transcriptomics_renames.py
-│
-├── Testing and validation/     — everything that checks the pipeline's output,
-│   ├── Testing/                   run_tests.py
-│   ├── Validation/                eval.py (stage-4 held-out evaluation)
-│   ├── gate_audit/                six-audit re-examination of the depletion gate
-│   ├── diagnostics/                ~50 standalone diagnostic/audit scripts (T*, V*, W*, X* series)
-│   └── Confidence intervals/      Monte Carlo confidence-interval + rank-stability scoring
-│
-├── AIAgent/                    — the LLM agent service
-│   ├── api/                       FastAPI app, routes, settings, security
-│   ├── AgentDevelopment/          LLM provider wiring, function calling, gene index
-│   ├── Tests/                     unit + lambda tests
-│   ├── Schema/                    prompt schemas
-│   ├── Knowledge/                 math_reference.md (source-of-truth citations for agent answers)
-│   ├── lambda_handler.py          AWS Lambda entrypoint (Mangum wrapping the FastAPI app)
-│   ├── Dockerfile, requirement_agents.txt, requirements.lock.txt
-│   └── CLEANUP_AUDIT.md, agent_api.md, agent_details.md, plan.md
-│
-├── UI/                          — the web frontend
-│   └── cell-line-finder-react/    React/Vite single-page app (presentation only; all scoring/
-│                                   ranking/evidence lives in architecture/api — see
-│                                   BACKEND_INTEGRATION.md)
-│
-├── EDA/                        — exploratory data analysis
-│   ├── BasicEDA.ipynb
-│   └── Initial Data Audit and Mapping/   data audit/mapping notebooks + resolution logs
-│
-├── Cell Line Selector/          — Triveni's original harmonisation/transcriptomics/proteomics work
-│   ├── pipelines/                  numbered pipeline stages (00-06)
-│   ├── src/scripts/                cleaning, harmonisation, transcriptomics, proteomics modules
-│   ├── figs/                       pipeline diagrams
-│   └── test_transcriptomics_gene_filter.py, transcriptomics_stale.py, transcriptomics_z_audit.py
-│
-├── reference/                   — canonical lookup tables (gene_lookup, cell_line_lookup, resolution logs)
-├── research-evidence/           — reference.bib
-│
-└── README.md, pyrightconfig.json, missing_protein_coding_585_buckets.csv, merge_probe.txt
+React UI  →  FastAPI API  →  Production Pipeline (architecture/)  →  DuckDB Warehouse
+                                        ↓
+                                 LLM Research Assistant (AIAgent/)
 ```
+
+Scoring and ranking logic lives entirely in the backend pipeline — never in the frontend or the LLM. The LLM explains results grounded in pre-computed evidence; it does not generate rankings itself.
+
+**Pipeline stages:** Harmonisation → Transcriptomics → Proteomics → Genomic Alterations → Scoring → Ranking → Evidence Ledger
+
+## Repository Structure
+
+| Path | Purpose |
+|---|---|
+| `architecture/` | Production pipeline: harmonisation, scoring, ranking, API |
+| `Testing and validation/` | Tests, held-out evaluation, diagnostics, confidence intervals |
+| `AIAgent/` | LLM research assistant (FastAPI + function calling) |
+| `UI/cell-line-finder-react/` | React/Vite researcher interface |
+| `EDA/`, `Cell Line Selector/` | Exploratory / original research work (legacy, not production) |
+| `reference/` | Canonical gene and cell-line lookup tables |
+| `research-evidence/` | Bibliography (`reference.bib`) |
+
+**Note:** `architecture/` is the current production pipeline. `Cell Line Selector/` and `EDA/` are earlier research/exploratory work — use them for historical context only.
+
+## Installation
+
+```bash
+git clone <repository-url>
+cd UoB-GeneTraceAI-25-26
+
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r architecture/requirements.txt
+pip install -r AIAgent/requirement_agents.txt
+
+cd UI/cell-line-finder-react && npm install && cd ../..
+```
+
+## Running the System
+
+```bash
+# 1. Build the warehouse (Stage 0 — see architecture/00_harmonisation/)
+cd architecture
+
+# 2. Run the production pipeline
+python run_all.py
+
+# 3. Start the API
+uvicorn architecture.api.app:app --reload   # docs at /docs
+
+# 4. Start the LLM agent
+uvicorn AIAgent.api.app:app --reload
+
+# 5. Start the frontend
+cd UI/cell-line-finder-react && npm run dev
+```
+
+> Verify exact module paths/ports against `architecture/config.py` and the frontend's `BACKEND_INTEGRATION.md` — these may differ from the generic commands above.
+
+## Testing & Validation
+
+```bash
+python "Testing and validation/Testing/run_tests.py"          # unit tests
+python "Testing and validation/Validation/eval.py"            # held-out evaluation
+```
+
+Diagnostics (~50 scripts investigating rankings, data quality, edge cases) live in `Testing and validation/diagnostics/`. Monte Carlo confidence-interval and rank-stability analysis is in `Testing and validation/Confidence intervals/`.
+
+## Docker
+
+```bash
+docker build -f architecture/Dockerfile -t genetraceai .
+docker build -f AIAgent/Dockerfile -t genetraceai-agent .
+```
+
+## Documentation
+
+- Methodology & scoring: `architecture/docs/`
+- Agent details: `AIAgent/agent_api.md`, `AIAgent/agent_details.md`
+- Frontend↔backend integration: `UI/cell-line-finder-react/BACKEND_INTEGRATION.md`
+- Math/methods reference (used by the LLM agent): `AIAgent/Knowledge/math_reference.md`
+
+## Troubleshooting
+
+- **API can't find the database** → confirm `celllineselector.db` exists and check `architecture/config.py`.
+- **Rankings differ between runs** → check data/config versions, random seeds, recent scoring changes; use `Testing and validation/Confidence intervals/` to assess stability.
+- **Frontend can't reach API** → check the API is running, base URL, and CORS config.
+- **Agent not responding** → check LLM credentials, env vars, and agent logs.
+
+## Contributors
+
+- [Name] — [role]
+
+
+
+---
+
+### Suggested next additions
+- `docs/screenshots/` with UI screenshots (dashboard, ranking, evidence, agent) and a short demo GIF
+- A configuration/env-vars table (DB paths, API URLs, LLM credentials)
+- A data-sources table (dataset, modality, source, licence, pipeline entry point)
