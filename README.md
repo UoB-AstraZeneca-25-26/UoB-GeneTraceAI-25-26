@@ -98,7 +98,10 @@ docker build -f AIAgent/Dockerfile -t genetraceai-agent .
 
 ## Contributors
 
-- [Name] — [role]
+- Chaithali SK
+- Musa Khumalo
+- Thiruvel AP
+- Triveni D
 
 
 
