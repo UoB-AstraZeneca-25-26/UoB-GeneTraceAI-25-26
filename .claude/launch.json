@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cell-line-finder-react",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "UI/cell-line-finder-react", "run", "dev", "--", "--host"],
+      "port": 5173
+    }
+  ]
+}

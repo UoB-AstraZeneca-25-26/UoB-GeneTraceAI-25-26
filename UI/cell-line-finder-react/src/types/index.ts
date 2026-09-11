@@ -242,3 +242,15 @@ export type GeneAliasInfo = {
   full_name?: string;
   synonyms?: string[];
 };
+
+// A "did you mean <symbol>?" suggestion surfaced when the scoring API rejects
+// a typed gene as unrecognized but the agent's alias lookup resolves it to a
+// real symbol. `originalQuery` is what the user actually typed/submitted, so
+// the retry can find and replace that exact entry in targets/exclusions.
+// Named distinctly from lib/assistant.ts's GeneSuggestion (that one's the raw
+// agent-lookup result; this one's the accept-and-retry state built from it).
+export type GeneMatchSuggestion = {
+  originalQuery: string;
+  symbol: string;
+  fullName: string | null;
+};

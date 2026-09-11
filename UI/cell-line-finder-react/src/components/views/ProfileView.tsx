@@ -6,7 +6,6 @@ import {
   pct,
   levelBand,
   TIER_PILL_CLASS,
-  TIER_BAR_CLASS,
   EXPRESSION_SOURCES,
   PROTEOMICS_SOURCES,
 } from '../../lib/evidence';
@@ -144,16 +143,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
       <div>
         {BackButton}
         {target.viaAlternative && (
-          <div
-            className={`flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg border mb-3 ${TIER_PILL_CLASS.context}`}
-          >
+          <div className="flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg border mb-3 bg-accent-light text-accent-dark border-accent/30">
             <GitBranch className="w-3.5 h-3.5 shrink-0" />
             <span>Viewing an RNA-similar alternative — not part of the original ranked results.</span>
           </div>
         )}
-        <div
-          className={target.viaAlternative ? `border-l-4 pl-4 -ml-4 ${TIER_BAR_CLASS.context.replace('bg-', 'border-')}` : ''}
-        >
+        <div className={target.viaAlternative ? 'border-l-4 pl-4 -ml-4 border-accent' : ''}>
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-3xl font-extrabold font-mono text-slate-900 tracking-tight">{detail.modelId}</h2>
@@ -281,10 +276,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
       {/* RNA-similar alternatives */}
       {detail.alternatives.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-6 py-4 border-b border-slate-100 bg-accent-light/40">
             <h3 className="text-sm font-bold text-slate-800">RNA-similar alternatives</h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Backup models with the closest transcriptomic profile. Click to inspect the same gene in that line.
+            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+              If this line isn't available in your lab, these are other cell lines whose overall RNA expression
+              pattern looks the most like it — a stand-in based on how alike the two lines are biologically overall,
+              not a re-score of this specific gene. Higher % match = closer transcriptomic twin. Click one to see
+              this same gene's evidence in that line instead.
             </p>
           </div>
           <ul className="divide-y divide-slate-100">
@@ -304,7 +302,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
                         viaAlternative: true,
                       })
                     }
-                    className="w-full flex items-center justify-between gap-4 px-6 py-3.5 hover:bg-slate-50 transition text-left"
+                    className="w-full flex items-center justify-between gap-4 px-6 py-3.5 hover:bg-accent-light/40 transition text-left"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
@@ -315,10 +313,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ target, onBack, onInsp
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="text-right">
-                        <span className="block text-xs font-semibold text-mulberry-700">{simLabel}</span>
+                        <span className="block text-xs font-semibold text-accent">{simLabel}</span>
                         <span className="block text-[11px] text-slate-400 font-mono">{p}% RNA match</span>
                       </div>
-                      <span className="inline-flex items-center text-xs font-semibold text-mulberry-600">
+                      <span className="inline-flex items-center text-xs font-semibold text-accent">
                         Inspect <ChevronRight className="w-4 h-4 ml-0.5" />
                       </span>
                     </div>

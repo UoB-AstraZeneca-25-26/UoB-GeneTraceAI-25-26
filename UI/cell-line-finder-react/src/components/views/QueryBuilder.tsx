@@ -12,14 +12,9 @@ interface QueryBuilderProps {
   onOpenReference?: () => void;
 }
 
-// The Recommendations slider's own range. The middle tick label below the
-// track must be this range's actual midpoint, not a hardcoded guess -- for
-// [3, 30] that midpoint is 16.5 (rounds to 17), not 15. A label that doesn't
-// match where it visually sits is exactly what reads as "the slider is
-// inaccurate" even though the input's own value is fine.
+// The Recommendations slider's own range.
 const TOPK_MIN = 3;
 const TOPK_MAX = 30;
-const TOPK_MID = Math.round((TOPK_MIN + TOPK_MAX) / 2);
 
 // Fully controlled by `value`/`onChange` (App-level state) rather than local
 // useState seeded once from a prop. This view is conditionally rendered by
@@ -228,7 +223,6 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({ value, onChange, onS
               />
               <div className="flex justify-between text-[11px] text-slate-400 mt-1 font-mono">
                 <span>{TOPK_MIN}</span>
-                <span>{TOPK_MID}</span>
                 <span>{TOPK_MAX}</span>
               </div>
             </div>

@@ -34,22 +34,40 @@ export const EvidenceMatrix: React.FC<EvidenceMatrixProps> = ({ genes, lines, on
     setError(null);
     const ctrl = new AbortController();
     let cancelled = false;
+    let settledCount = 0;
+    let fulfilledCount = 0;
     const pairs = genes.flatMap((g) => lines.map((l) => ({ g, id: l.modelId })));
-    Promise.allSettled(
-      pairs.map((p) =>
-        fetchCellLineDetail(p.g, p.id, ctrl.signal, detailCache).then(
-          (r) => [key(p.g, p.id), toCellLineDetail(r)] as const
-        )
-      )
-    ).then((settled) => {
-      if (cancelled) return;
-      const map: Record<string, CellLineDetail> = {};
-      settled.forEach((s) => {
-        if (s.status === 'fulfilled') map[s.value[0]] = s.value[1];
-      });
-      if (Object.keys(map).length === 0) setError('Could not load evidence for these lines.');
-      setDetails(map);
+
+    // Requests already run in parallel (that part was fine) -- the problem
+    // was waiting for Promise.allSettled to resolve ALL of them before a
+    // single setDetails call revealed any of them, so the whole grid sat on
+    // its loading spinner for as long as the SLOWEST cell, even though most
+    // cells' data had arrived long before. Each request now updates state
+    // for its own cell as soon as it lands, so rows populate incrementally
+    // instead of all-at-once at the end.
+    pairs.forEach((p) => {
+      fetchCellLineDetail(p.g, p.id, ctrl.signal, detailCache)
+        .then((r) => {
+          if (cancelled) return;
+          fulfilledCount += 1;
+          const value = toCellLineDetail(r);
+          setDetails((prev) => ({ ...prev, [key(p.g, p.id)]: value }));
+        })
+        .catch(() => {
+          // A single pair failing (404, transient error, etc.) shouldn't
+          // block the rest of the grid -- that cell just stays a spinner
+          // forever if it never resolves, same visible behaviour as before,
+          // while every other cell that DID succeed is still shown.
+        })
+        .finally(() => {
+          if (cancelled) return;
+          settledCount += 1;
+          if (settledCount === pairs.length && fulfilledCount === 0) {
+            setError('Could not load evidence for these lines.');
+          }
+        });
     });
+
     return () => {
       cancelled = true;
       ctrl.abort();

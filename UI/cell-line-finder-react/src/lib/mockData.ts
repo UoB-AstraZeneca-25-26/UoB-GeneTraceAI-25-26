@@ -10,8 +10,7 @@ export const ALL_GENES = [
   "MET",
   "ERBB2",
   "PTEN",
-  "MYC",
-  "BCR::ABL1"
+  "MYC"
 ];
 
 /** Demo gene reference (symbol ↔ full name ↔ Ensembl gene id). Powers the
@@ -117,9 +116,7 @@ export function generateMockData(): CellLineData[] {
       let tpm = Math.floor(Math.random() * 140) + 10;
       
       // Known biological patterns for realism
-      if (gene === "BCR::ABL1") {
-        tpm = name === "K562" ? 220 : 0;
-      } else if (gene === "EGFR" && (name === "HCC827" || name === "A549")) {
+      if (gene === "EGFR" && (name === "HCC827" || name === "A549")) {
         tpm = Math.floor(Math.random() * 40) + 160;
       }
 

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, AlertTriangle } from 'lucide-react';
-import { AGENT_API_URL } from '../../config';
+import { X } from 'lucide-react';
 import { MethodologyStep } from '../../types';
 
 interface MethodologySidebarProps {
@@ -12,59 +11,91 @@ interface MethodologySidebarProps {
   cellLineName: string;
 }
 
+// Static walkthrough of the general core_score method (architecture/Scoring/
+// core_score.py, confidence_tiers.py, driver_routing.py) -- NOT a per-(gene,
+// line) live computation. This used to call the agent for a bespoke
+// explanation of this exact pair's score, but that endpoint wasn't
+// returning real values, so this is the actual scoring pipeline's logic in
+// plain terms instead: the same seven steps for every pair, not this pair's
+// specific numbers.
+const METHODOLOGY_STEPS: MethodologyStep[] = [
+  {
+    key: 'RNA standardization',
+    formula: 'rna_std_z = (rna_z − median) / SD, per (gene, n_sources)',
+    value:
+      'RNA evidence is combined across up to 3 sources (DepMap, HPA, GEO), then standardized within each ' +
+      '(gene, number-of-sources) group rather than globally per gene — the spread of RNA measurements genuinely ' +
+      'differs depending on how many sources agree on a line, and treating that as one pool would over- or ' +
+      'under-state confidence. Genes with too few lines in a group borrow strength from that gene\'s overall ' +
+      'spread instead of using a noisy small-sample estimate. Capped at ±5 standard deviations either way.',
+  },
+  {
+    key: 'Protein residualization',
+    formula: 'prot_resid = prot_z − β·rna_z,  β = ρ × (SD_protein / SD_rna)',
+    value:
+      'Protein and RNA levels for the same gene are correlated, so protein evidence is first adjusted to remove ' +
+      'the part that RNA already explains — what\'s left (the "residual") is the protein signal that\'s genuinely ' +
+      'independent, not double-counting the same underlying biology. The correlation used per gene is blended ' +
+      'toward a panel-wide typical value when a gene has few shared lines to estimate it from, so one noisy gene ' +
+      'doesn\'t get an extreme, unreliable adjustment.',
+  },
+  {
+    key: 'Weighted combination',
+    formula: 'core_z = (W_RNA·rna_std_z + W_PROT·prot_resid_z) / √(W_RNA² + W_PROT²)',
+    value:
+      'The two standardized, independent signals are combined into one z-score. Each arm\'s weight reflects how ' +
+      'much independent evidence it actually carries — RNA draws on up to 3 sources, protein on up to 2 — so an ' +
+      'arm backed by more corroborating measurements counts for more, not an arbitrary 50/50 split. A line with ' +
+      'only one arm available (no protein data, or a gene with no protein platform coverage) still gets scored, ' +
+      'just from RNA alone, scaled consistently with how the two-arm case weights RNA.',
+  },
+  {
+    key: 'Score mapping',
+    formula: 'core_score = Φ(core_z)',
+    value:
+      'The combined z-score is mapped through the normal cumulative distribution function onto a 0-1 scale — ' +
+      'this is what makes scores comparable across genes with very different raw z-score ranges. It\'s a ' +
+      'relabelling, not a re-weighting: it doesn\'t change which lines rank higher than others, only the scale ' +
+      'the ranking is displayed on.',
+  },
+  {
+    key: 'Stratum ranking',
+    formula: 'stratum_rank = rank(core_score) within (gene, lineage)',
+    value:
+      'Lines are ranked against other lines of the same tissue/lineage for this gene, not against the whole ' +
+      'panel — a line that looks unremarkable pooled across all tissues can still be the clear best choice ' +
+      'within its own lineage, which is usually the more useful comparison for picking a model.',
+  },
+  {
+    key: 'Driver-alteration evidence',
+    formula: 'has_driver_alteration = mutation_driver OR fusion_driver OR CNA_alteration',
+    value:
+      'Independently of the expression score above, each (gene, line) pair is checked for a known driver-class ' +
+      'mutation, gene fusion, or copy-number alteration. This is genomic evidence, not expression evidence — a ' +
+      'line can have a driver alteration with a modest expression score, or a high expression score with no ' +
+      'detected alteration; the confidence tier below is what reconciles the two.',
+  },
+  {
+    key: 'Confidence tier',
+    formula: 'HIGH / MEDIUM / CONTEXT / LOW / NO_EVIDENCE',
+    value:
+      'HIGH = top-20% expression score AND a driver alteration is present. MEDIUM = top-20% score without an ' +
+      'alteration. CONTEXT = an alteration is present but the expression score isn\'t in the top 20%. LOW = ' +
+      'neither. For loss-of-function-relevant genes, "top" is direction-aware — a truncating mutation or ' +
+      'deletion is expected to show LOW expression, not high, so the ranking direction flips for that gene\'s ' +
+      'tier assignment. NO_EVIDENCE means there was no interpretable expression measurement at all for this ' +
+      'pair, distinct from a real measurement that simply scored low.',
+  },
+];
+
 export const MethodologySidebar: React.FC<MethodologySidebarProps> = ({
   isOpen,
   onClose,
   geneName,
-  ensgId,
   modelId,
   cellLineName,
 }) => {
-  const [steps, setSteps] = useState<MethodologyStep[] | null>(null);
-  const [fallbackAnswer, setFallbackAnswer] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
-  const [attempt, setAttempt] = useState(0);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    let cancelled = false;
-
-    setLoading(true);
-    setError(null);
-    setSteps(null);
-    setFallbackAnswer(null);
-    setExpanded(null);
-
-    fetch(`${AGENT_API_URL}/v1/agent/query`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: `Explain the score for ${ensgId} in ${modelId}` }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (cancelled) return;
-        if (data?.methodology?.steps) {
-          setSteps(data.methodology.steps);
-        } else if (data?.answer) {
-          setFallbackAnswer(data.answer);
-        } else {
-          setError('Agent unavailable. Try again later.');
-        }
-      })
-      .catch((err) => {
-        console.error('Agent call failed:', err);
-        if (!cancelled) setError('Agent unavailable. Try again later.');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, ensgId, modelId, attempt]);
 
   useEffect(() => {
     if (isOpen) document.body.style.overflow = 'hidden';
@@ -97,53 +128,25 @@ export const MethodologySidebar: React.FC<MethodologySidebarProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
-        <p className="text-xs text-slate-500 font-mono mb-6">
+        <p className="text-xs text-slate-500 font-mono mb-1">
           {geneName} · {cellLineName} ({modelId})
         </p>
+        <p className="text-xs text-slate-400 mb-6">
+          General walkthrough of how every score is built — not this specific pair's own numbers.
+        </p>
 
-        {loading && (
-          <div className="space-y-2">
-            {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="h-16 rounded-lg bg-gradient-to-r from-slate-100 via-slate-200 to-slate-100 animate-shimmer"
-                style={{ animationDelay: `${i * 0.1}s` }}
-              />
-            ))}
-          </div>
-        )}
-
-        {!loading && error && (
-          <div className="py-10 text-center text-slate-500">
-            <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-amber-500" />
-            <p className="text-sm">{error}</p>
-            <button
-              onClick={() => setAttempt((a) => a + 1)}
-              className="mt-3 px-4 py-1.5 border border-slate-300 rounded-lg text-xs bg-white hover:bg-slate-50 transition"
-            >
-              Retry
-            </button>
-          </div>
-        )}
-
-        {!loading && !error && steps && (
-          <div>
-            {steps.map((step, i) => (
-              <StepNode
-                key={`${step.key}-${i}`}
-                step={step}
-                index={i}
-                total={steps.length}
-                isExpanded={expanded === i}
-                onToggle={() => setExpanded(expanded === i ? null : i)}
-              />
-            ))}
-          </div>
-        )}
-
-        {!loading && !error && !steps && fallbackAnswer && (
-          <div className="text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{fallbackAnswer}</div>
-        )}
+        <div>
+          {METHODOLOGY_STEPS.map((step, i) => (
+            <StepNode
+              key={`${step.key}-${i}`}
+              step={step}
+              index={i}
+              total={METHODOLOGY_STEPS.length}
+              isExpanded={expanded === i}
+              onToggle={() => setExpanded(expanded === i ? null : i)}
+            />
+          ))}
+        </div>
       </aside>
     </>
   );

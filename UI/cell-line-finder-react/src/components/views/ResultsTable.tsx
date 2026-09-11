@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GeneAliasInfo, InspectTarget, QueryParams, RankedCellLine, ResultMeta } from '../../types';
+import { GeneAliasInfo, GeneMatchSuggestion, InspectTarget, QueryParams, RankedCellLine, ResultMeta } from '../../types';
 import { CellLineDetailApiResponse } from '../../lib/api';
 import { EvidenceMatrix } from '../common/EvidenceMatrix';
 import { LineagePanel } from '../common/LineagePanel';
@@ -13,6 +13,8 @@ interface ResultsTableProps {
   meta: ResultMeta | null;
   loading: boolean;
   error: string | null;
+  suggestion: GeneMatchSuggestion | null;
+  onAcceptSuggestion: () => void;
   onRetry: () => void;
   onInspect: (t: InspectTarget) => void;
   detailCache?: Map<string, CellLineDetailApiResponse>;
@@ -24,6 +26,8 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   meta,
   loading,
   error,
+  suggestion,
+  onAcceptSuggestion,
   onRetry,
   onInspect,
   detailCache,
@@ -119,12 +123,23 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
         </div>
         <h2 className="text-xl font-bold text-slate-800">Couldn't load results</h2>
         <p className="text-sm text-slate-500 max-w-md mx-auto">{error}</p>
-        <button
-          onClick={onRetry}
-          className="mt-2 bg-slate-900 hover:bg-slate-800 text-white font-medium px-4 py-2 rounded-lg text-sm transition"
-        >
-          Retry
-        </button>
+        {suggestion && (
+          <button
+            onClick={onAcceptSuggestion}
+            className="inline-flex items-center gap-1.5 mx-auto px-4 py-2 rounded-lg border border-accent/30 bg-accent-light text-accent-dark text-sm font-semibold hover:bg-accent/10 transition"
+          >
+            Did you mean <span className="font-mono">{suggestion.symbol}</span>
+            {suggestion.fullName && <span className="font-normal">({suggestion.fullName})</span>}? Search this instead
+          </button>
+        )}
+        <div>
+          <button
+            onClick={onRetry}
+            className="mt-2 bg-slate-900 hover:bg-slate-800 text-white font-medium px-4 py-2 rounded-lg text-sm transition"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }

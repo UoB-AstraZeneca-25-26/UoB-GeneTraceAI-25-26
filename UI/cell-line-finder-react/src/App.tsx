@@ -10,7 +10,7 @@ import { ReferencePage } from './components/views/ReferencePage';
 // import { AssistantPanel } from './components/views/AssistantPanel';
 import { CellLineDetailApiResponse, fetchRanking } from './lib/api';
 import { lookupGeneSuggestion } from './lib/assistant';
-import { InspectTarget, QueryParams, RankedCellLine, ResultMeta, ViewType } from './types';
+import { GeneMatchSuggestion, InspectTarget, QueryParams, RankedCellLine, ResultMeta, ViewType } from './types';
 
 // Matches the scoring API's 422 body, e.g. {"detail":"Gene not found: 'p53'"}
 const GENE_NOT_FOUND = /Gene not found: '([^']+)'/;
@@ -18,8 +18,8 @@ const GENE_NOT_FOUND = /Gene not found: '([^']+)'/;
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewType>('query');
   const [queryParams, setQueryParams] = useState<QueryParams>({
-    targets: ['BRAF'],
-    exclusions: ['KRAS'],
+    targets: [],
+    exclusions: [],
     lineage: 'Any',
     topK: 5
   });
@@ -38,6 +38,7 @@ export default function App() {
   const [meta, setMeta] = useState<ResultMeta | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [suggestion, setSuggestion] = useState<GeneMatchSuggestion | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
 
@@ -61,6 +62,7 @@ export default function App() {
 
     setLoading(true);
     setError(null);
+    setSuggestion(null);
     try {
       // 2+ targets -> joint ranking; 1 target + exclusion(s) -> selectivity; else single.
       const { results: ranked, meta: m } = await fetchRanking(params.targets, params.exclusions, controller.signal);
@@ -73,14 +75,17 @@ export default function App() {
       if (notFound) {
         // Ask the agent whether the typed name is a known alias/synonym before
         // giving up — "Gene not found" alone isn't actionable for the user.
-        const suggestion = await lookupGeneSuggestion(notFound[1]);
-        setError(
-          suggestion.found && suggestion.symbol
-            ? `Is this the gene you're trying to look for — ${suggestion.symbol}${
-                suggestion.fullName ? ` (${suggestion.fullName})` : ''
-              }?`
-            : 'This gene is not present in the gene pool.'
-        );
+        const found = await lookupGeneSuggestion(notFound[1]);
+        if (found.found && found.symbol) {
+          // Kept as a structured suggestion (not baked into the error string)
+          // so the UI can offer a one-click "search this instead" that swaps
+          // the exact typed text for the resolved symbol and re-runs —
+          // see handleAcceptSuggestion.
+          setSuggestion({ originalQuery: notFound[1], symbol: found.symbol, fullName: found.fullName });
+          setError(`"${notFound[1]}" isn't a recognized gene symbol.`);
+        } else {
+          setError('This gene is not present in the gene pool.');
+        }
       } else {
         setError(message);
       }
@@ -89,6 +94,22 @@ export default function App() {
     } finally {
       if (abortRef.current === controller) setLoading(false);
     }
+  };
+
+  // Swaps the exact text the user typed (suggestion.originalQuery) for the
+  // agent-resolved symbol wherever it appears — target or exclusion — then
+  // re-runs immediately. Case-insensitive match since GeneSearch/manual entry
+  // both uppercase on commit, but the failed API call's error text may not.
+  const handleAcceptSuggestion = () => {
+    if (!suggestion) return;
+    const isMatch = (g: string) => g.trim().toUpperCase() === suggestion.originalQuery.trim().toUpperCase();
+    const nextParams: QueryParams = {
+      ...queryParams,
+      targets: queryParams.targets.map((g) => (isMatch(g) ? suggestion.symbol : g)),
+      exclusions: queryParams.exclusions.map((g) => (isMatch(g) ? suggestion.symbol : g)),
+    };
+    setQueryParams(nextParams);
+    void runQuery(nextParams);
   };
 
   const handleSearchSubmit = (newParams: QueryParams) => {
@@ -131,10 +152,11 @@ export default function App() {
 
   const handleReset = () => {
     abortRef.current?.abort();
-    setQueryParams({ targets: ['BRAF'], exclusions: [], lineage: 'Any', topK: 5 });
+    setQueryParams({ targets: [], exclusions: [], lineage: 'Any', topK: 5 });
     setResults([]);
     setMeta(null);
     setError(null);
+    setSuggestion(null);
     setLoading(false);
     setHasSearched(false);
     setInspectTarget(null);
@@ -172,6 +194,8 @@ export default function App() {
             meta={meta}
             loading={loading}
             error={error}
+            suggestion={suggestion}
+            onAcceptSuggestion={handleAcceptSuggestion}
             onRetry={() => void runQuery(queryParams)}
             onInspect={handleInspect}
             detailCache={detailCacheRef.current}
