@@ -50,7 +50,7 @@ Thumbs.db
 architecture/geo_meta/
 
 # ── Claude Code ──────────────────────────────────────────────────
-.claude/settings.local.json
+.claude/
 # ── What IS tracked ─────────────────────────────────────────────
 # src/           → all notebooks and scripts
 # outputs/clean_data_report.xlsx  → quality report (small)
