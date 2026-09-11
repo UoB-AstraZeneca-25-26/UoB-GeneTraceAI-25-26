@@ -39,14 +39,50 @@ from scipy import stats
 # helpers shared by several checks
 # ═════════════════════════════════════════════════════════════════════════════
 def _sample_genes(CORE_SCORE, n=30, seed=0):
+    """Draw a reproducible random sample of gene IDs from the core-score table.
+
+    Parameters
+    ----------
+    CORE_SCORE : pathlib.Path
+        Path to the pipeline's core-score parquet (must contain an "ensg_id" column).
+    n : int, optional
+        Number of genes to sample (default 30).
+    seed : int, optional
+        RNG seed for a reproducible draw (default 0).
+
+    Returns
+    -------
+    list[str]
+        Upper-cased Ensembl gene IDs, sampled without replacement.
+    """
     core = pd.read_parquet(CORE_SCORE)
     core["ensg_id"] = core["ensg_id"].str.upper()
     return list(np.random.default_rng(seed).choice(core["ensg_id"].unique(), n, replace=False))
 
 
 def _base_anchor(con, gene, run_gene_ci_ctx):
-    """Build (base, anchor) exactly as run_gene_ci does, using the notebook names
-    passed in run_gene_ci_ctx = dict(_gene_leaves=..., build_anchor=..., CORE_SCORE=...)."""
+    """Build the (base, anchor) pair for a gene, exactly as run_gene_ci does internally.
+
+    Reads the gene's leaves and noise, loads the panel-wide globals from
+    ci_globals.json, builds the anchor, attaches lineage, and assembles the per-line
+    `base` frame — the shared setup that the checks below drive their own simulations
+    from, without repeating run_gene_ci's Monte-Carlo step.
+
+    Parameters
+    ----------
+    con : database connection
+        Open warehouse connection.
+    gene : str
+        Gene symbol or Ensembl ID.
+    run_gene_ci_ctx : dict
+        Notebook names needed to reproduce the wiring, with keys "_gene_leaves",
+        "build_anchor" and "CORE_SCORE".
+
+    Returns
+    -------
+    tuple[pandas.DataFrame, dict]
+        (base, anchor), ready for the Monte-Carlo routines.
+    """
     import json
     import common as C
     _gene_leaves = run_gene_ci_ctx["_gene_leaves"]
@@ -67,6 +103,34 @@ def _base_anchor(con, gene, run_gene_ci_ctx):
 # ═════════════════════════════════════════════════════════════════════════════
 def centre_draw_identity(con, run_gene_ci, _resolve_gid, CORE_SCORE,
                          genes=("EGFR", "TP53", "MYC"), N=300):
+    """Check 1 — the noise-free recompute reproduces the stored core_score.
+
+    For each gene, runs the CI machinery and compares the centre (unperturbed) score
+    against the pipeline's persisted core_score line-by-line, printing the maximum
+    absolute deviation. A clean result is max|Δ| of order 1e-8, confirming the
+    notebook's recompute path matches core_score.py exactly. This is the single most
+    important check: everything downstream assumes the reconstruction is faithful.
+
+    Parameters
+    ----------
+    con : database connection
+        Open warehouse connection.
+    run_gene_ci : callable
+        The notebook's run_gene_ci(con, gene, N=...) entry point.
+    _resolve_gid : callable
+        The notebook's symbol→gene_id resolver.
+    CORE_SCORE : pathlib.Path
+        Path to the core-score parquet holding the reference scores.
+    genes : tuple[str, ...], optional
+        Genes to check (default EGFR, TP53, MYC).
+    N : int, optional
+        Monte-Carlo draws per gene; only the centre is used here (default 300).
+
+    Returns
+    -------
+    None
+        Results are printed, one line per gene.
+    """
     core = pd.read_parquet(CORE_SCORE); core["ensg_id"] = core.ensg_id.str.upper()
     for gsym in genes:
         res, _, _ = run_gene_ci(con, gsym, N=N)
@@ -84,6 +148,37 @@ def centre_draw_identity(con, run_gene_ci, _resolve_gid, CORE_SCORE,
 # 2. Order-consistency — disjoint-CI pairs keep their order across draws
 # ═════════════════════════════════════════════════════════════════════════════
 def order_consistency(con, genes, run_gene_ci, N=1000, k=10, level=0.95, topn=30):
+    """Check 2 — disjoint-CI pairs keep their order across Monte-Carlo draws.
+
+    Among the top-`topn` lines per gene, finds every pair whose 95% intervals do not
+    overlap and measures how often the higher-scoring line also outscores the other
+    within the raw per-draw scores. A pair "holds" if its order is preserved in at
+    least `level` of draws; the pooled fraction across genes is printed. If separated
+    intervals reliably imply a stable ranking, the intervals mean what they claim.
+
+    Parameters
+    ----------
+    con : database connection
+        Open warehouse connection.
+    genes : iterable of str
+        Genes to evaluate.
+    run_gene_ci : callable
+        The notebook's run_gene_ci entry point (returns table, score matrix, ids).
+    N : int, optional
+        Monte-Carlo draws per gene (default 1000).
+    k : int, optional
+        Top-k passed through to run_gene_ci (default 10).
+    level : float, optional
+        Order-preservation threshold a pair must clear to count as stable (default 0.95).
+    topn : int, optional
+        Number of top lines per gene to form pairs from (default 30).
+
+    Returns
+    -------
+    pandas.DataFrame
+        One row per gene with "n_pairs" (disjoint-CI pairs) and "frac" (share stable
+        at >= level).
+    """
     rows = []
     for gid in genes:
         res, scores, ids = run_gene_ci(con, gid, N=N, k=k)
@@ -111,6 +206,30 @@ def order_consistency(con, genes, run_gene_ci, N=1000, k=10, level=0.95, topn=30
 # 3. Self-consistency — draw median vs stored centre, by score bin
 # ═════════════════════════════════════════════════════════════════════════════
 def self_consistency(con, genes, run_gene_ci, N=1000):
+    """Check 3 — the Monte-Carlo median tracks the stored centre, by score bin.
+
+    Pools every line across `genes` and compares the per-line draw median to the
+    stored centre score, bucketed into score bins. Small, roughly unbiased gaps show
+    the perturbation does not systematically shift scores away from the point
+    estimate (e.g. through the non-linearity of the normal-CDF transform near 0/1).
+
+    Parameters
+    ----------
+    con : database connection
+        Open warehouse connection.
+    genes : iterable of str
+        Genes to pool over.
+    run_gene_ci : callable
+        The notebook's run_gene_ci entry point.
+    N : int, optional
+        Monte-Carlo draws per gene (default 1000).
+
+    Returns
+    -------
+    pandas.DataFrame
+        Per-line "core_score", "gap" (median − centre) and the assigned score "bin".
+        A by-bin summary and the overall mean |gap| are printed.
+    """
     pool = []
     for gid in genes:
         res, scores, ids = run_gene_ci(con, gid, N=N)
@@ -129,6 +248,35 @@ def self_consistency(con, genes, run_gene_ci, N=1000):
 # 4. Convergence — estimates stable as N grows
 # ═════════════════════════════════════════════════════════════════════════════
 def convergence(con, gene, run_gene_ci, N_grid=(100, 300, 1000, 3000, 10000), k=10, seed=42, plot=True):
+    """Check 4 — win-rate and CI width stabilise as the draw count N grows.
+
+    Re-runs a single gene over an increasing grid of draw counts, tracking the top-1
+    win-rate and CI width of its top-5 lines. Optionally plots both against N (log
+    scale) and prints the mean absolute win-rate change from N=1e3 to 1e4, which
+    should be small (order ~1 pp) once the Monte-Carlo estimates have converged.
+
+    Parameters
+    ----------
+    con : database connection
+        Open warehouse connection.
+    gene : str
+        Gene symbol or Ensembl ID.
+    run_gene_ci : callable
+        The notebook's run_gene_ci entry point.
+    N_grid : tuple[int, ...], optional
+        Draw counts to sweep (default 100, 300, 1000, 3000, 10000).
+    k : int, optional
+        Top-k passed through to run_gene_ci (default 10).
+    seed : int, optional
+        RNG seed, held fixed across the grid (default 42).
+    plot : bool, optional
+        Whether to draw the win-rate/width-vs-N figure (default True).
+
+    Returns
+    -------
+    pandas.DataFrame
+        Long-format "N", "model_id", "top1_winrate", "ci_width" for the tracked lines.
+    """
     rows = []
     for N in N_grid:
         res, _, _ = run_gene_ci(con, gene, N=N, k=k, seed=seed)
@@ -157,12 +305,48 @@ def convergence(con, gene, run_gene_ci, N_grid=(100, 300, 1000, 3000, 10000), k=
 # ═════════════════════════════════════════════════════════════════════════════
 def knob_sweep(con, genes, run_gene_ci, knob_names=("RNA_BASE_FLOOR", "PROT_BASE", "RNA_TAU_PRIOR"),
                N=400, k=10, ns=None):
-    """ns: the namespace holding the knobs (usually the notebook globals()).
-    Pass ns=globals() from the notebook so the knobs can be perturbed and restored."""
+    """Check 5 — win-rate ranking is stable under ±50% moves of each noise knob.
+
+    For each gene and each named knob, perturbs the knob to 0.5× and 1.5× its value,
+    re-runs the CI, and correlates (Spearman) the resulting top-1 win-rate ranking
+    against the unperturbed one; the knob is restored after each move. High mean
+    Spearman means the deliberately conservative knob settings are not what drives
+    the ranking, so the exact values are not load-bearing.
+
+    Parameters
+    ----------
+    con : database connection
+        Open warehouse connection.
+    genes : iterable of str
+        Genes to evaluate.
+    run_gene_ci : callable
+        The notebook's run_gene_ci entry point.
+    knob_names : tuple[str, ...], optional
+        Noise knobs to sweep (default RNA_BASE_FLOOR, PROT_BASE, RNA_TAU_PRIOR).
+    N : int, optional
+        Monte-Carlo draws per run (default 400).
+    k : int, optional
+        Top-k passed through to run_gene_ci (default 10).
+    ns : dict
+        The namespace holding the knobs, usually the notebook's globals(); required
+        so the knobs can be perturbed in place and restored.
+
+    Returns
+    -------
+    pandas.DataFrame
+        One row per (gene, knob, factor) with the Spearman correlation to baseline;
+        by-knob means and the overall mean are printed.
+
+    Raises
+    ------
+    ValueError
+        If `ns` is not provided.
+    """
     if ns is None:
         raise ValueError("pass ns=globals() so the noise knobs can be perturbed/restored")
     base_vals = {kk: ns[kk] for kk in knob_names}
     def _wr(gid):
+        """Top-1 win-rate per line for one gene, under the current knob values."""
         r, _, _ = run_gene_ci(con, gid, N=N, k=k)
         return r.set_index("model_id")["top1_winrate"]
     out = []
@@ -188,7 +372,33 @@ def knob_sweep(con, genes, run_gene_ci, knob_names=("RNA_BASE_FLOOR", "PROT_BASE
 # 6. Variance decomposition — RNA vs protein share of score variance
 # ═════════════════════════════════════════════════════════════════════════════
 def variance_decomposition(con, gene, ctx, N=2000, seed=42):
-    """ctx = dict(_gene_leaves=..., build_anchor=..., core_score_chain=..., CORE_SCORE=...)."""
+    """Check 6 — split score variance into RNA and protein contributions.
+
+    For one gene, runs the Monte-Carlo perturbation three ways — RNA-only,
+    protein-only and both — and, on two-layer lines, reports the first-order variance
+    shares normalised to sum to 100%. Quantifies how much of a line's score
+    uncertainty each evidence layer contributes (typically protein-dominated).
+
+    Parameters
+    ----------
+    con : database connection
+        Open warehouse connection.
+    gene : str
+        Gene symbol or Ensembl ID.
+    ctx : dict
+        Notebook names, with keys "_gene_leaves", "build_anchor", "core_score_chain"
+        and "CORE_SCORE".
+    N : int, optional
+        Monte-Carlo draws per variance estimate (default 2000).
+    seed : int, optional
+        RNG seed (default 42).
+
+    Returns
+    -------
+    dict
+        "v_rna", "v_prot", "v_both" (per-line score variance under each perturbation
+        scheme) and "has_p" (two-layer mask). The normalised shares are printed.
+    """
     import json
     _gene_leaves = ctx["_gene_leaves"]; build_anchor = ctx["build_anchor"]
     core_score_chain = ctx["core_score_chain"]; CORE_SCORE = ctx["CORE_SCORE"]
@@ -204,6 +414,7 @@ def variance_decomposition(con, gene, ctx, N=2000, seed=42):
     rng = np.random.default_rng(seed)
 
     def var_under(pr_rna, pr_prot):
+        """Per-line score variance with RNA and/or protein perturbation switched on."""
         S = np.empty((N, n))
         for i in range(N):
             rz_ = rna_mu + (rng.normal(0, 1, n) * rna_sd if pr_rna else 0)
@@ -227,6 +438,32 @@ def variance_decomposition(con, gene, ctx, N=2000, seed=42):
 # 7. Regime-3 flip — fraction of two-layer lines that flip regime >= once
 # ═════════════════════════════════════════════════════════════════════════════
 def _regime(rna_z, prot_z, nsrc_rna, nsrc_prot, has_p, a, ctx):
+    """Flag each two-layer line as conflicting (regime 3) or not, for given z-scores.
+
+    Reproduces the regime-3 test inside core_score_chain: a line is flagged when its
+    standardised, winsorised RNA and protein signals both exceed REGIME3_SIG_THRESH
+    in magnitude and disagree in sign. Used by `regime3_flip` to detect regime changes
+    under perturbation.
+
+    Parameters
+    ----------
+    rna_z, prot_z : numpy.ndarray
+        Per-line RNA and protein z-scores.
+    nsrc_rna, nsrc_prot : numpy.ndarray
+        Per-line source counts (select the standardisation stratum).
+    has_p : numpy.ndarray of bool
+        Two-layer mask.
+    a : dict
+        Per-gene anchor.
+    ctx : dict
+        Notebook names/constants, with keys "_lookup", "RNA_WINSOR_BOUND",
+        "PROT_STD_WINSOR_BOUND" and "REGIME3_SIG_THRESH".
+
+    Returns
+    -------
+    numpy.ndarray of bool
+        True where the line falls in the conflicting (regime-3) branch.
+    """
     _lookup = ctx["_lookup"]
     RNA_W = ctx["RNA_WINSOR_BOUND"]; PROT_W = ctx["PROT_STD_WINSOR_BOUND"]; THR = ctx["REGIME3_SIG_THRESH"]
     rmed, rsd = _lookup(nsrc_rna, a["rna_str"])
@@ -242,8 +479,33 @@ def _regime(rna_z, prot_z, nsrc_rna, nsrc_prot, has_p, a, ctx):
 
 
 def regime3_flip(con, genes, ctx, N=800, seed=42):
-    """ctx must include _gene_leaves, build_anchor, _lookup, CORE_SCORE and the
-    winsor/threshold constants."""
+    """Check 7 — how often two-layer lines switch scoring regime under perturbation.
+
+    For each gene, records each two-layer line's regime at the centre, then perturbs
+    RNA and protein across N draws and flags any line whose regime ever differs from
+    its centre value. Reports the mean fraction of two-layer lines that flip at least
+    once — a high fraction shows the conflicting/consistent branch boundary sits near
+    the data for many lines, so the regime logic is genuinely exercised.
+
+    Parameters
+    ----------
+    con : database connection
+        Open warehouse connection.
+    genes : iterable of str
+        Genes to evaluate.
+    ctx : dict
+        Notebook names/constants: must include "_gene_leaves", "build_anchor",
+        "_lookup", "CORE_SCORE" and the winsor/threshold constants used by `_regime`.
+    N : int, optional
+        Monte-Carlo draws per gene (default 800).
+    seed : int, optional
+        RNG seed (default 42).
+
+    Returns
+    -------
+    pandas.DataFrame
+        One row per gene with "ever_flip_frac"; the mean across genes is printed.
+    """
     import json
     _gene_leaves = ctx["_gene_leaves"]; build_anchor = ctx["build_anchor"]; CORE_SCORE = ctx["CORE_SCORE"]
     g_globals = json.loads((CORE_SCORE.parent / "ci_globals.json").read_text())
@@ -277,6 +539,37 @@ def regime3_flip(con, genes, ctx, N=800, seed=42):
 # 8. Correlated-error sensitivity — win-rate ranking under correlated draws
 # ═════════════════════════════════════════════════════════════════════════════
 def _mc_corr(base, anchor, ctx, N=500, k=10, seed=1, rho_err=0.0, ci=0.95):
+    """Monte-Carlo top-1 win-rate per line with correlated RNA/protein errors.
+
+    A trimmed variant of the CI simulation that returns only the win-rate, used by
+    `correlated_error_sensitivity`. The protein perturbation is drawn with correlation
+    `rho_err` to the RNA perturbation via e_prot = rho·e_rna + sqrt(1 − rho²)·e_ind, so
+    rho_err=0 reproduces the independent baseline.
+
+    Parameters
+    ----------
+    base : pandas.DataFrame
+        Per-line frame from `_base_anchor`.
+    anchor : dict
+        Per-gene anchor.
+    ctx : dict
+        Notebook names; requires "core_score_chain".
+    N : int, optional
+        Monte-Carlo draws (default 500).
+    k : int, optional
+        Unused; kept for signature parity with the full simulation (default 10).
+    seed : int, optional
+        RNG seed (default 1).
+    rho_err : float, optional
+        Target error correlation, clipped to (−0.999, 0.999). Default 0.0.
+    ci : float, optional
+        Unused; kept for signature parity with the full simulation (default 0.95).
+
+    Returns
+    -------
+    pandas.Series
+        Top-1 win-rate (%) indexed by model_id.
+    """
     core_score_chain = ctx["core_score_chain"]
     rng = np.random.default_rng(seed)
     ids = base.model_id.to_numpy(); n = len(base); lineage = base.lineage.to_numpy()
@@ -297,7 +590,35 @@ def _mc_corr(base, anchor, ctx, N=500, k=10, seed=1, rho_err=0.0, ci=0.95):
 
 
 def correlated_error_sensitivity(con, genes, ctx, rhos=(0.0, 0.25, 0.5), N=400):
-    """ctx = dict(_gene_leaves, build_anchor, core_score_chain, CORE_SCORE)."""
+    """Check 8 — win-rate ranking is stable under correlated measurement errors.
+
+    For each gene, compares the top-1 win-rate ranking at each `rho_err` against the
+    independent (rho=0) baseline by Spearman correlation, also tracking the largest
+    single-line win-rate shift in percentage points. Spearman near 1 with small shifts
+    means the independence assumption in the main method is not load-bearing. Genes
+    that fail to load are skipped with a message.
+
+    Parameters
+    ----------
+    con : database connection
+        Open warehouse connection.
+    genes : iterable of str
+        Genes to sweep.
+    ctx : dict
+        Notebook names, with keys "_gene_leaves", "build_anchor", "core_score_chain"
+        and "CORE_SCORE".
+    rhos : tuple[float, ...], optional
+        Error correlations to test; must include 0.0 as the baseline
+        (default 0.0, 0.25, 0.5).
+    N : int, optional
+        Monte-Carlo draws per run (default 400).
+
+    Returns
+    -------
+    pandas.DataFrame
+        One row per (gene, non-zero rho) with "spearman" and "max_shift_pp"; a by-rho
+        summary is printed.
+    """
     rows = []
     for gid in genes:
         try:
@@ -325,7 +646,41 @@ def correlated_error_sensitivity(con, genes, ctx, rhos=(0.0, 0.25, 0.5), N=400):
 # 9. Winsor test — is the saturation dominance the Φ transform or the clip?
 # ═════════════════════════════════════════════════════════════════════════════
 def winsor_test(con, genes, run_gene_ci, RNA_Z, _resolve_gid, ns, bounds=(5.0, 10.0), N=300):
-    """ns = notebook globals(); temporarily rebinds the three winsor bounds."""
+    """Check 9 — is the score saturation driven by the Φ transform or the winsor clip?
+
+    Temporarily widens all three winsor bounds (e.g. ±5 → ±10) and checks whether the
+    relationship between CI width and score saturation, and between CI width and
+    measured source disagreement, survives. If those correlations are essentially
+    unchanged, saturation near 0/1 comes from the normal-CDF transform rather than the
+    clipping. The original bounds are always restored in a finally block.
+
+    Parameters
+    ----------
+    con : database connection
+        Open warehouse connection.
+    genes : iterable of str
+        Genes to pool over.
+    run_gene_ci : callable
+        The notebook's run_gene_ci entry point.
+    RNA_Z : pathlib.Path
+        Path to the RNA z-score parquet; its sibling bulk_rna_z_by_source.parquet
+        supplies the per-source disagreement (src_sd).
+    _resolve_gid : callable
+        The notebook's symbol→gene_id resolver.
+    ns : dict
+        Namespace holding the winsor bounds (usually the notebook globals()); the
+        three bounds are rebound in place and restored on exit.
+    bounds : tuple[float, ...], optional
+        Winsor bounds to test (default 5.0, 10.0).
+    N : int, optional
+        Monte-Carlo draws per run (default 300).
+
+    Returns
+    -------
+    dict
+        Maps each bound to {"corr_saturation", "corr_srcsd", "mean_width"}; a summary
+        table is printed.
+    """
     orig = (ns["RNA_WINSOR_BOUND"], ns["PROT_STD_WINSOR_BOUND"], ns["PROT_RESID_WINSOR_BOUND"])
     rbs = pd.read_parquet(RNA_Z.parent / "bulk_rna_z_by_source.parquet")
     rbs["gene_id"] = rbs.gene_id.str.upper(); rbs["model_id"] = rbs.model_id.str.lower()
