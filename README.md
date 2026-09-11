@@ -31,7 +31,7 @@ Scoring and ranking logic lives entirely in the backend pipeline — never in th
 ## Installation
 
 ```bash
-git clone <repository-url>
+git clone [<https://github.com/UoB-AstraZeneca-25-26/UoB-GeneTraceAI-25-26/tree/main>]
 cd UoB-GeneTraceAI-25-26
 
 python3 -m venv .venv && source .venv/bin/activate
